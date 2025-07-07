@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { players } from "@/data/players";
+import type { Player } from "@/types/player";
 import { formation433, formation442 } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
@@ -12,7 +12,7 @@ interface Dragging {
 }
 
 /* ───────── util: 初期スタメン計算 ───────── */
-function makeInitialFieldIds(fm: Formation): Set<number> {
+function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
   const chosen = new Set<number>();
 
   const keys = Object.keys(fm.positions);
@@ -22,7 +22,7 @@ function makeInitialFieldIds(fm: Formation): Set<number> {
     if (!slot) return;
 
     /* ① position が合う選手を優先して埋める */
-    const fit = players
+    const fit = list
       .filter((p) => !chosen.has(p.id) && p.position.includes(posKey))
       .slice(0, slot.max);
 
@@ -33,7 +33,7 @@ function makeInitialFieldIds(fm: Formation): Set<number> {
     /* ② 足りない分を残りから埋める */
     const need = slot.max - fit.length;
     if (need > 0) {
-      players
+      list
         .filter((p) => !chosen.has(p.id))
         .slice(0, need)
         .forEach((pl) => {
@@ -78,15 +78,11 @@ const freezeDefaults = (
 
 export default function Formation() {
   /* ───────── state ───────── */
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formation, setFormation] = useState<Formation>(formation433);
-  const [fieldIds, setFieldIds] = useState<Set<number>>(() => makeInitialFieldIds(formation433));
-  const [lineupOrder, setLineupOrder] = useState<number[]>(() => Array.from(makeInitialFieldIds(formation433)));
-  const [benchIds, setBenchIds] = useState<Set<number>>(
-    () => new Set(players.map((p) => p.id).filter((id) => !fieldIds.has(id)))
-  );
-  const [benchOrder, setBenchOrder] = useState<number[]>(() =>
-    players.map((p) => p.id).filter((id) => !fieldIds.has(id))
-  );
+  const [lineupOrder, setLineupOrder] = useState<number[]>([]);
+  const [benchOrder, setBenchOrder] = useState<number[]>([]);
   const [playerPositions, setPlayerPositions] = useState<Record<number, { top: number; left: number }>>({});
   const [dragging, setDragging] = useState<Dragging | null>(null);
 
@@ -97,6 +93,24 @@ export default function Formation() {
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
 
   let orderIndex = 0;
+
+  // fetch players once
+  useEffect(() => {
+    fetch('/api/players')
+      .then((res) => res.json())
+      .then((data: Player[]) => {
+        setPlayers(data);
+      });
+  }, []);
+
+  // initialize ids when players or formation change
+  useEffect(() => {
+    if (players.length === 0) return;
+    const ids = makeInitialFieldIds(formation, players);
+    setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
+    setLineupOrder(Array.from(ids));
+    setLoading(false);
+  }, [players, formation]);
 
   /* ───────── drag handler ───────── */
   useEffect(() => {
@@ -173,18 +187,6 @@ export default function Formation() {
     const fieldId = selectedIsBench ? id : selectedId;
 
     // swap lists
-    setFieldIds((prev) => {
-      const next = new Set(prev);
-      next.delete(fieldId);
-      next.add(benchId);
-      return next;
-    });
-    setBenchIds((prev) => {
-      const next = new Set(prev);
-      next.delete(benchId);
-      next.add(fieldId);
-      return next;
-    });
 
     /* --- update benchOrder: replace benchId with fieldId --- */
     setBenchOrder((prev) => {
@@ -220,6 +222,10 @@ export default function Formation() {
 
   const sortedKeys = Object.keys(formation.positions);
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
@@ -231,8 +237,8 @@ export default function Formation() {
           if (!base) return null;
 
           /* --- slot fill: split into customs & defaults --- */
-          const customs: typeof players = [];
-          const defaults: typeof players = [];
+          const customs: Player[] = [];
+          const defaults: Player[] = [];
 
           /* ① カスタム座標を持つ選手を先に収集 */
           lineupOrder.forEach((pid) => {
@@ -263,7 +269,7 @@ export default function Formation() {
 
           const group = [...customs, ...defaults];
 
-          return group.map((p, idx) => {
+          return group.map((p) => {
             const offset =
               defaults.includes(p)
                 ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * 10)
@@ -311,10 +317,8 @@ export default function Formation() {
         <button
           className="px-3 py-1 border rounded"
           onClick={() => {
-            const ids = makeInitialFieldIds(formation433);
+            const ids = makeInitialFieldIds(formation433, players);
             setFormation(formation433);
-            setFieldIds(ids);
-            setBenchIds(new Set(players.map((p) => p.id).filter((id) => !ids.has(id))));
             setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
             setLineupOrder(Array.from(ids));
             setCustomMode(false);
@@ -328,10 +332,8 @@ export default function Formation() {
         <button
           className="px-3 py-1 border rounded"
           onClick={() => {
-            const ids = makeInitialFieldIds(formation442);
+            const ids = makeInitialFieldIds(formation442, players);
             setFormation(formation442);
-            setFieldIds(ids);
-            setBenchIds(new Set(players.map((p) => p.id).filter((id) => !ids.has(id))));
             setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
             setLineupOrder(Array.from(ids));
             setCustomMode(false);
