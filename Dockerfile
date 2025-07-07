@@ -10,6 +10,15 @@ COPY package*.json ./
 # 依存をインストール
 RUN npm install
 
+# Prisma CLI をグローバルにインストール
+RUN npm install -g prisma
+
+# Prisma スキーマをコピー
+COPY prisma ./prisma
+
+# Prisma Client を生成
+RUN prisma generate
+
 # ソースを全部コピー
 COPY . .
 
@@ -17,4 +26,4 @@ COPY . .
 EXPOSE 3000
 
 # 開発サーバー起動
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "prisma migrate deploy && npm run dev"]

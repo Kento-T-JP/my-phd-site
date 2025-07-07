@@ -57,3 +57,18 @@ During CI deployment, run:
 ```bash
 npm run deploy:migrate
 ```
+
+## Docker Compose
+
+Build and start the application along with a Postgres database:
+
+```bash
+docker compose up --build
+```
+
+Migrations are applied automatically when the app container starts. After the
+services are running you can seed the database with:
+
+```bash
+docker compose exec app npm run seed
+```
