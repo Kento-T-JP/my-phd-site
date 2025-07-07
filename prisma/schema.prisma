@@ -1,0 +1,18 @@
+// Prisma schema for players
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id       Int      @id
+  name     String
+  position String[]
+  number   Int?
+  image    String?
+}
