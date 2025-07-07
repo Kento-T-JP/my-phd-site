@@ -8,4 +8,21 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: npm run dev
+    command: sh -c "prisma migrate deploy && npm run dev"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/mydb?schema=public"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
