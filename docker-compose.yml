@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -8,7 +8,13 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: sh -c "prisma migrate deploy && npm run dev"
+    command: >-
+      sh -c "
+        npm ci &&
+        npx prisma generate &&
+        prisma migrate deploy &&
+        npm run dev
+      "
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/mydb?schema=public"
     depends_on:
@@ -21,6 +27,7 @@ services:
       POSTGRES_DB: mydb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--locale=en_US.utf8 --encoding=UTF8"
     volumes:
       - db-data:/var/lib/postgresql/data
 

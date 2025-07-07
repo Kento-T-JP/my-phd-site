@@ -16,11 +16,11 @@ export const players: Player[] = [
   { id: 10, name: "菅原 由勢", position: ["RB"], number: 2 },
   { id: 11, name: "酒井 宏樹", position: ["RB"], number: 19 },
 
-  { id: 15, name: "久保 建英", position: ["CM", "RW", "RM"], number: 20 },
   { id: 12, name: "遠藤 航", position: ["CM"], number: 6 },
   { id: 13, name: "守田 英正", position: ["CM"], number: 13 },
   { id: 14, name: "田中 碧", position: ["CM"], number: 17 },
 
+  { id: 15, name: "久保 建英", position: ["CM", "RW", "RM"], number: 20 },
   { id: 16, name: "三笘 薫", position: ["LM", "LW"], number: 11 },
   { id: 17, name: "相馬 勇紀", position: ["LW"], number: 9 },
 

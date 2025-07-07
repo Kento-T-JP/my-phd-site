@@ -12,7 +12,6 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.11.1",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -20,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@prisma/client": "^6.11.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
