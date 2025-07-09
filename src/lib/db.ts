@@ -1,19 +1,16 @@
+// ESM 接続専用
 import { PrismaClient } from '@prisma/client';
-import type { Player } from '@/types/player';
-import { players as defaultPlayers } from '@/data/players';
 
 const prisma = new PrismaClient();
 
-async function ensureSeed() {
-  const count = await prisma.player.count();
-  if (count === 0) {
-    await prisma.player.createMany({ data: defaultPlayers });
-  }
-}
-
-export async function getPlayers(): Promise<Player[]> {
-  await ensureSeed();
-  return prisma.player.findMany({ orderBy: { id: 'asc' } });
-}
-
 export default prisma;
+
+/**
+ * すべての選手を id 昇順で取得するユーティリティ関数。
+ * API ルート（/api/players）などから呼び出して使用します。
+ */
+export async function getPlayers() {
+  return prisma.player.findMany({
+    orderBy: { id: 'asc' }
+  });
+}

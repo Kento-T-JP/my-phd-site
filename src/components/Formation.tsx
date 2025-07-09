@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Player } from "@/types/player";
-import { formation433, formation442 } from "@/data/formations";
+import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
 interface Dragging {
@@ -66,7 +66,7 @@ const freezeDefaults = (
     for (let i = 0; i < base.max && idx < idsArray.length; i++) {
       const pid = idsArray[idx++];
       if (!playerPositions[pid]) {
-        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * 10 : 0);
+        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * 14 : 0);
         newPos[pid] = { top: base.top, left: base.left + offset };
       }
     }
@@ -80,7 +80,7 @@ export default function Formation() {
   /* ───────── state ───────── */
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formation, setFormation] = useState<Formation>(formation433);
+  const [formation, setFormation] = useState<Formation>(formations[0]);
   const [lineupOrder, setLineupOrder] = useState<number[]>([]);
   const [benchOrder, setBenchOrder] = useState<number[]>([]);
   const [playerPositions, setPlayerPositions] = useState<Record<number, { top: number; left: number }>>({});
@@ -92,7 +92,7 @@ export default function Formation() {
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
 
-  let orderIndex = 0;
+  let orderIndex = 0; // そのまま利用（変更不要）
 
   // fetch players once
   useEffect(() => {
@@ -272,7 +272,7 @@ export default function Formation() {
           return group.map((p) => {
             const offset =
               defaults.includes(p)
-                ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * 10)
+                ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * 16)
                 : 0;
             const def = { top: base.top, left: base.left + offset };
             const pos = playerPositions[p.id] ?? def;
@@ -280,7 +280,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`absolute w-20 p-2 rounded text-center cursor-pointer ${
+                className={`absolute w-24 p-2 rounded text-center cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-white"
                 }`}
                 style={{
@@ -312,38 +312,28 @@ export default function Formation() {
         })}
       </div>
 
-      {/* buttons */}
-      <div className="mt-4 space-x-2">
-        <button
-          className="px-3 py-1 border rounded"
-          onClick={() => {
-            const ids = makeInitialFieldIds(formation433, players);
-            setFormation(formation433);
-            setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
-            setLineupOrder(Array.from(ids));
-            setCustomMode(false);
-            setDefaultsFrozen(false);
-            setPlayerPositions({});
-            setSelectedId(null);
-          }}
-        >
-          4‑3‑3
-        </button>
-        <button
-          className="px-3 py-1 border rounded"
-          onClick={() => {
-            const ids = makeInitialFieldIds(formation442, players);
-            setFormation(formation442);
-            setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
-            setLineupOrder(Array.from(ids));
-            setCustomMode(false);
-            setDefaultsFrozen(false);
-            setPlayerPositions({});
-            setSelectedId(null);
-          }}
-        >
-          4‑4‑2
-        </button>
+      {/* formation selector */}
+      <div className="mt-4 space-x-2 flex flex-wrap">
+        {formations.map((f) => (
+          <button
+            key={f.name}
+            className={`px-3 py-1 border rounded ${
+              formation.name === f.name ? "bg-green-300" : ""
+            }`}
+            onClick={() => {
+              const ids = makeInitialFieldIds(f, players);
+              setFormation(f);
+              setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
+              setLineupOrder(Array.from(ids));
+              setCustomMode(false);
+              setDefaultsFrozen(false);
+              setPlayerPositions({});
+              setSelectedId(null);
+            }}
+          >
+            {f.name}
+          </button>
+        ))}
       </div>
 
       {/* bench */}
@@ -356,7 +346,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`px-3 py-1 border rounded cursor-pointer ${
+                className={`px-4 py-2 border rounded cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
                 }`}
                 onClick={() => handleClick(p.id, true)}

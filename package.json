@@ -9,7 +9,7 @@
     "lint": "next lint",
     "migrate": "prisma migrate dev",
     "deploy:migrate": "prisma migrate deploy",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "next": "15.3.5",
@@ -29,6 +29,10 @@
     "prisma": "^6.11.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tsx": "^4.7.1"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

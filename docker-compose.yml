@@ -10,9 +10,8 @@ services:
       - /app/node_modules
     command: >-
       sh -c "
-        npm ci &&
-        npx prisma generate &&
         prisma migrate deploy &&
+        prisma db seed &&
         npm run dev
       "
     environment:

@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install
 
 # Prisma CLI をグローバルにインストール
-RUN npm install -g prisma
+RUN npm install -g prisma ts-node tsx @types/node
 
 # Prisma スキーマをコピー
 COPY prisma ./prisma
@@ -25,5 +25,5 @@ COPY . .
 # ポート公開
 EXPOSE 3000
 
-# 開発サーバー起動
-CMD ["sh", "-c", "prisma migrate deploy && npm run dev"]
+# マイグレーション → シード → 開発サーバーを起動
+CMD ["sh", "-c", "prisma migrate deploy && prisma db seed && npm run dev"]
