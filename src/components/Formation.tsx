@@ -231,7 +231,7 @@ export default function Formation() {
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
 
       {/* field */}
-      <div className="field relative w-full h-[600px] border bg-green-700 rounded">
+      <div className="field relative w-full h-[600px] border bg-green-700 rounded overflow-hidden">
         {sortedKeys.map((posKey) => {
           const base = formation.positions[posKey as keyof typeof formation.positions];
           if (!base) return null;
@@ -280,7 +280,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`absolute w-24 p-2 rounded text-center cursor-pointer ${
+                className={`absolute w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-white"
                 }`}
                 style={{
@@ -307,7 +307,7 @@ export default function Formation() {
                   <img
                     src={p.image}
                     alt={p.name}
-                    className="w-16 h-16 object-cover rounded-full mx-auto pointer-events-none"
+                    className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 )}
                 <div className="font-semibold">{p.name}</div>
@@ -353,7 +353,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`px-4 py-2 border rounded cursor-pointer ${
+                className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
                 }`}
                 onClick={() => handleClick(p.id, true)}
@@ -362,7 +362,7 @@ export default function Formation() {
                   <img
                     src={p.image}
                     alt={p.name}
-                    className="w-16 h-16 object-cover rounded-full mx-auto pointer-events-none"
+                    className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 )}
                 <div className="font-semibold">{p.name}</div>
