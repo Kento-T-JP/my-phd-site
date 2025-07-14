@@ -15,7 +15,7 @@ export default function NewPlayerPage() {
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
@@ -36,17 +36,16 @@ export default function NewPlayerPage() {
     const allPositions = otherPosition
       ? [...positions, otherPosition.trim()]
       : positions;
-    const data: { name: string; position: string[]; number?: number; image?: string } = {
-      name,
-      position: allPositions,
-    };
-    if (number) data.number = parseInt(number, 10);
-    if (image) data.image = image;
+
+    const form = new FormData();
+    form.append("name", name);
+    allPositions.forEach((p) => form.append("position", p));
+    if (number) form.append("number", number);
+    if (image) form.append("image", image);
 
     const res = await fetch("/api/players", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: form,
     });
 
     setErrors({});
@@ -133,16 +132,17 @@ export default function NewPlayerPage() {
           )}
         </div>
         <div>
-          <label className="block mb-1">Image URL (optional)</label>
+          <label className="block mb-1">Image (optional)</label>
           <input
+            type="file"
+            accept="image/*"
             className="w-full p-2 border rounded"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
+            onChange={(e) => setImage(e.target.files?.[0] || null)}
           />
-        {errors.image && (
-          <p className="text-red-600 text-sm mt-1">{errors.image}</p>
-        )}
-      </div>
+          {errors.image && (
+            <p className="text-red-600 text-sm mt-1">{errors.image}</p>
+          )}
+        </div>
       {successMessage && (
         <div className="text-green-600">{successMessage}</div>
       )}
