@@ -1,9 +1,9 @@
 import type { Player } from "@/types/player";
 
 export const players: Player[] = [
-  { id: 1,  name: "大迫 敬介", position: ["GK"],                number: 1  },
-  { id: 2,  name: "谷 晃生",   position: ["GK"],                number: 23 },
-  { id: 3,  name: "鈴木 彩艶", position: ["GK"],                number: 12 },
+  { id: 1,  name: "大迫 敬介", position: ["GK"],                number: 1,  image: "/vercel.svg" },
+  { id: 2,  name: "谷 晃生",   position: ["GK"],                number: 23, image: "/vercel.svg" },
+  { id: 3,  name: "鈴木 彩艶", position: ["GK"],                number: 12, image: "/vercel.svg" },
 
   { id: 4,  name: "関根 大輝", position: ["RB"],                number: 2  },
   { id: 5,  name: "渡辺 剛",   position: ["CB"],                number: 4  },
