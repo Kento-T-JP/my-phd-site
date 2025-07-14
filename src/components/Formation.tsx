@@ -281,7 +281,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`absolute w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
+                className={`absolute group w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-white"
                 }`}
                 style={{
@@ -313,13 +313,13 @@ export default function Formation() {
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
                     No image
                   </div>
                 )}
                 <div className="font-semibold">{p.name}</div>
-                <div className="text-sm">{p.position.join(", ")}</div>
-                <div className="text-xs">#{p.number}</div>
+                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
             );
           });
@@ -360,7 +360,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer ${
+                className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer group ${
                   selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
                 }`}
                 onClick={() => handleClick(p.id, true)}
@@ -374,13 +374,13 @@ export default function Formation() {
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
                     No image
                   </div>
                 )}
                 <div className="font-semibold">{p.name}</div>
-                <div className="text-sm">{p.position.join(", ")}</div>
-                <div className="text-xs">#{p.number}</div>
+                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
             );
           })}
