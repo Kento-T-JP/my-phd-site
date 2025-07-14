@@ -1,21 +1,37 @@
 "use client";
 
 import { useState } from "react";
+import { formations } from "@/data/formations";
+import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
+
+const positionOptions: PositionKey[] = Array.from(
+  new Set(formations.flatMap((f) => Object.keys(f.positions)))
+) as PositionKey[];
 
 export default function NewPlayerPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [position, setPosition] = useState("");
+  const [positions, setPositions] = useState<PositionKey[]>([]);
+  const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState("");
   const [message, setMessage] = useState<string[]>([]);
 
+  const togglePosition = (pos: PositionKey) => {
+    setPositions((prev) =>
+      prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const allPositions = otherPosition
+      ? [...positions, otherPosition.trim()]
+      : positions;
     const data: { name: string; position: string[]; number?: number; image?: string } = {
       name,
-      position: position.split(/,\s*/).filter(Boolean),
+      position: allPositions,
     };
     if (number) data.number = parseInt(number, 10);
     if (image) data.image = image;
@@ -31,7 +47,7 @@ export default function NewPlayerPage() {
     } else {
       const err = await res.json();
       if (Array.isArray(err.error)) {
-        setMessage(err.error.map((e: any) => e.message));
+        setMessage(err.error.map((e: { message: string }) => e.message));
       } else {
         setMessage([err.error || "Failed to create player"]);
       }
@@ -52,12 +68,24 @@ export default function NewPlayerPage() {
           />
         </div>
         <div>
-          <label className="block mb-1">Position (comma separated)</label>
+          <label className="block mb-1">Positions</label>
+          <div className="flex flex-wrap gap-2">
+            {positionOptions.map((pos) => (
+              <label key={pos} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={positions.includes(pos)}
+                  onChange={() => togglePosition(pos)}
+                />
+                {pos}
+              </label>
+            ))}
+          </div>
           <input
-            className="w-full p-2 border rounded"
-            value={position}
-            onChange={(e) => setPosition(e.target.value)}
-            required
+            className="w-full p-2 border rounded mt-2"
+            placeholder="Other (optional)"
+            value={otherPosition}
+            onChange={(e) => setOtherPosition(e.target.value)}
           />
         </div>
         <div>
