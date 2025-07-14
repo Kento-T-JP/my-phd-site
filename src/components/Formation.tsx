@@ -317,7 +317,7 @@ export default function Formation() {
                     No image
                   </div>
                 )}
-                <div className="font-semibold">{p.name}</div>
+                <div className="font-semibold truncate">{p.name}</div>
                 <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
                 <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
@@ -378,7 +378,7 @@ export default function Formation() {
                     No image
                   </div>
                 )}
-                <div className="font-semibold">{p.name}</div>
+                <div className="font-semibold truncate">{p.name}</div>
                 <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
                 <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
