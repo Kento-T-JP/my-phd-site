@@ -17,6 +17,12 @@ export default function NewPlayerPage() {
   const [number, setNumber] = useState("");
   const [image, setImage] = useState("");
   const [message, setMessage] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    position?: string;
+    number?: string;
+    image?: string;
+  }>({});
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -42,12 +48,27 @@ export default function NewPlayerPage() {
       body: JSON.stringify(data),
     });
 
+    setErrors({});
+    setMessage([]);
+
     if (res.ok) {
       router.push("/");
     } else {
       const err = await res.json();
       if (Array.isArray(err.error)) {
-        setMessage(err.error.map((e: { message: string }) => e.message));
+        const fieldErrors: {
+          name?: string;
+          position?: string;
+          number?: string;
+          image?: string;
+        } = {};
+        err.error.forEach((e: { path: (string | number)[]; message: string }) => {
+          const field = e.path[0] as keyof typeof fieldErrors;
+          if (field in fieldErrors) {
+            fieldErrors[field] = e.message;
+          }
+        });
+        setErrors(fieldErrors);
       } else {
         setMessage([err.error || "Failed to create player"]);
       }
@@ -66,6 +87,9 @@ export default function NewPlayerPage() {
             onChange={(e) => setName(e.target.value)}
             required
           />
+          {errors.name && (
+            <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+          )}
         </div>
         <div>
           <label className="block mb-1">Positions</label>
@@ -87,6 +111,9 @@ export default function NewPlayerPage() {
             value={otherPosition}
             onChange={(e) => setOtherPosition(e.target.value)}
           />
+          {errors.position && (
+            <p className="text-red-600 text-sm mt-1">{errors.position}</p>
+          )}
         </div>
         <div>
           <label className="block mb-1">Number</label>
@@ -96,6 +123,9 @@ export default function NewPlayerPage() {
             value={number}
             onChange={(e) => setNumber(e.target.value)}
           />
+          {errors.number && (
+            <p className="text-red-600 text-sm mt-1">{errors.number}</p>
+          )}
         </div>
         <div>
           <label className="block mb-1">Image URL (optional)</label>
@@ -104,6 +134,9 @@ export default function NewPlayerPage() {
             value={image}
             onChange={(e) => setImage(e.target.value)}
           />
+          {errors.image && (
+            <p className="text-red-600 text-sm mt-1">{errors.image}</p>
+          )}
         </div>
         {message.length > 0 && (
           <div className="text-red-600">
