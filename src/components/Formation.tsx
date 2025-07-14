@@ -303,12 +303,16 @@ export default function Formation() {
                   handleClick(p.id, false);
                 }}
               >
-                {p.image && (
+                {p.image ? (
                   <img
                     src={p.image}
                     alt={p.name}
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
+                ) : (
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-xs">
+                    No image
+                  </div>
                 )}
                 <div className="font-semibold">{p.name}</div>
                 <div className="text-sm">{p.position.join(", ")}</div>
@@ -358,12 +362,16 @@ export default function Formation() {
                 }`}
                 onClick={() => handleClick(p.id, true)}
               >
-                {p.image && (
+                {p.image ? (
                   <img
                     src={p.image}
                     alt={p.name}
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
+                ) : (
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-xs">
+                    No image
+                  </div>
                 )}
                 <div className="font-semibold">{p.name}</div>
                 <div className="text-sm">{p.position.join(", ")}</div>
