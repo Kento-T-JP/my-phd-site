@@ -4,12 +4,16 @@ import { players }        from '../src/data/players';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.player.deleteMany();           // 全削除
-  await prisma.player.createMany({            // 一括挿入
-    data: players,
-    skipDuplicates: true,
-  });
-  console.log(`✅ Seeded ${players.length} players`);
+  const count = await prisma.player.count();
+  if (count === 0) {
+    await prisma.player.createMany({
+      data: players,
+      skipDuplicates: true,
+    });
+    console.log(`✅ Seeded ${players.length} players`);
+  } else {
+    console.log(`✅ Players already exist, skipping seed.`);
+  }
 }
 
 main()

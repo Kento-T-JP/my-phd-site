@@ -66,7 +66,7 @@ const freezeDefaults = (
     for (let i = 0; i < base.max && idx < idsArray.length; i++) {
       const pid = idsArray[idx++];
       if (!playerPositions[pid]) {
-        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * 14 : 0);
+        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * 16 : 0);
         newPos[pid] = { top: base.top, left: base.left + offset };
       }
     }

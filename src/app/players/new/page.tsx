@@ -9,7 +9,7 @@ export default function NewPlayerPage() {
   const [position, setPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +30,11 @@ export default function NewPlayerPage() {
       router.push("/");
     } else {
       const err = await res.json();
-      setMessage(err.error || "Failed to create player");
+      if (Array.isArray(err.error)) {
+        setMessage(err.error.map((e: any) => e.message));
+      } else {
+        setMessage([err.error || "Failed to create player"]);
+      }
     }
   };
 
@@ -73,12 +77,25 @@ export default function NewPlayerPage() {
             onChange={(e) => setImage(e.target.value)}
           />
         </div>
-        {message && <p className="text-red-600">{message}</p>}
+        {message.length > 0 && (
+          <div className="text-red-600">
+            {message.map((m, idx) => (
+              <p key={idx}>{m}</p>
+            ))}
+          </div>
+        )}
         <button
           type="submit"
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Submit
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="px-4 py-2 bg-gray-300 text-black rounded"
+        >
+          Back
         </button>
       </form>
     </main>
