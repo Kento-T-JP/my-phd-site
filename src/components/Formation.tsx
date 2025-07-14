@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Player } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
@@ -304,9 +305,11 @@ export default function Formation() {
                 }}
               >
                 {p.image ? (
-                  <img
+                  <Image
                     src={p.image}
                     alt={p.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
@@ -363,9 +366,11 @@ export default function Formation() {
                 onClick={() => handleClick(p.id, true)}
               >
                 {p.image ? (
-                  <img
+                  <Image
                     src={p.image}
                     alt={p.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
