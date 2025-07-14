@@ -17,6 +17,7 @@ export default function NewPlayerPage() {
   const [number, setNumber] = useState("");
   const [image, setImage] = useState("");
   const [message, setMessage] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -50,9 +51,13 @@ export default function NewPlayerPage() {
 
     setErrors({});
     setMessage([]);
+    setSuccessMessage("");
 
     if (res.ok) {
-      router.push("/");
+      setSuccessMessage("Player created successfully!");
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     } else {
       const err = await res.json();
       if (Array.isArray(err.error)) {
@@ -134,15 +139,18 @@ export default function NewPlayerPage() {
             value={image}
             onChange={(e) => setImage(e.target.value)}
           />
-          {errors.image && (
-            <p className="text-red-600 text-sm mt-1">{errors.image}</p>
-          )}
-        </div>
-        {message.length > 0 && (
-          <div className="text-red-600">
-            {message.map((m, idx) => (
-              <p key={idx}>{m}</p>
-            ))}
+        {errors.image && (
+          <p className="text-red-600 text-sm mt-1">{errors.image}</p>
+        )}
+      </div>
+      {successMessage && (
+        <div className="text-green-600">{successMessage}</div>
+      )}
+      {message.length > 0 && (
+        <div className="text-red-600">
+          {message.map((m, idx) => (
+            <p key={idx}>{m}</p>
+          ))}
           </div>
         )}
         <button
