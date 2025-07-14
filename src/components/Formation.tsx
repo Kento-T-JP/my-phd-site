@@ -279,47 +279,54 @@ export default function Formation() {
             const pos = playerPositions[p.id] ?? def;
 
             return (
-              <div
-                key={p.id}
-                className={`absolute group w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
-                  selectedId === p.id ? "bg-blue-200" : "bg-white"
-                }`}
-                style={{
-                  top: `${pos.top}%`,
-                  left: `${pos.left}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-                onMouseDown={(e) => {
-                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setDragging({
-                    id: p.id,
-                    offsetX: e.clientX - r.left - r.width / 2,
-                    offsetY: e.clientY - r.top - r.height / 2,
-                  });
-                  if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
-                  setCustomMode(true);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClick(p.id, false);
-                }}
-              >
-                {p.image ? (
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
-                  />
-                ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
-                    No image
-                  </div>
-                )}
-                <div className="font-semibold whitespace-normal break-words">{p.name}</div>
-                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
-                <div className="text-xs hidden group-hover:block">#{p.number}</div>
+              <div key={p.id} className="relative group">
+                <div
+                  className={`absolute w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
+                    selectedId === p.id ? "bg-blue-200" : "bg-white"
+                  }`}
+                  style={{
+                    top: `${pos.top}%`,
+                    left: `${pos.left}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                  onMouseDown={(e) => {
+                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setDragging({
+                      id: p.id,
+                      offsetX: e.clientX - r.left - r.width / 2,
+                      offsetY: e.clientY - r.top - r.height / 2,
+                    });
+                    if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
+                    setCustomMode(true);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClick(p.id, false);
+                  }}
+                >
+                  {p.image ? (
+                    <Image
+                      src={p.image}
+                      alt={p.name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
+                      No image
+                    </div>
+                  )}
+                  <div className="font-semibold whitespace-normal break-words">{p.name}</div>
+                  <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                  <div className="text-xs hidden group-hover:block">#{p.number}</div>
+                </div>
+                <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 -top-2 left-1/2 -translate-x-1/2 translate-y-full pointer-events-none">
+                  <div>{p.name}</div>
+                  <div>{p.position.join(', ')}</div>
+                  <div>#{p.number}</div>
+                  <div className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45 -translate-x-1/2"></div>
+                </div>
               </div>
             );
           });
@@ -358,29 +365,36 @@ export default function Formation() {
             const p = players.find((pl) => pl.id === bid);
             if (!p) return null;
             return (
-              <div
-                key={p.id}
-                className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer group ${
-                  selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
-                }`}
-                onClick={() => handleClick(p.id, true)}
-              >
-                {p.image ? (
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
-                  />
-                ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
-                    No image
-                  </div>
-                )}
-                <div className="font-semibold whitespace-normal break-words">{p.name}</div>
-                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
-                <div className="text-xs hidden group-hover:block">#{p.number}</div>
+              <div key={p.id} className="relative group">
+                <div
+                  className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer ${
+                    selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
+                  }`}
+                  onClick={() => handleClick(p.id, true)}
+                >
+                  {p.image ? (
+                    <Image
+                      src={p.image}
+                      alt={p.name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
+                      No image
+                    </div>
+                  )}
+                  <div className="font-semibold whitespace-normal break-words">{p.name}</div>
+                  <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                  <div className="text-xs hidden group-hover:block">#{p.number}</div>
+                </div>
+                <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 -top-2 left-1/2 -translate-x-1/2 translate-y-full pointer-events-none">
+                  <div>{p.name}</div>
+                  <div>{p.position.join(', ')}</div>
+                  <div>#{p.number}</div>
+                  <div className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45 -translate-x-1/2"></div>
+                </div>
               </div>
             );
           })}
