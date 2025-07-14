@@ -9,14 +9,17 @@
     "lint": "next lint",
     "migrate": "prisma migrate dev",
     "deploy:migrate": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "update:images": "tsx scripts/updatePlayerImages.ts"
   },
   "dependencies": {
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.5.0",
-    "zod": "^4.0.5"
+    "zod": "^4.0.5",
+    "axios": "^1.6.8",
+    "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
