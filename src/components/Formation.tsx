@@ -12,6 +12,9 @@ interface Dragging {
   offsetY: number;
 }
 
+/** horizontal spacing between players in the same line (percentage points) */
+const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
+
 /* ───────── util: 初期スタメン計算 ───────── */
 function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
   const chosen = new Set<number>();
@@ -67,7 +70,7 @@ const freezeDefaults = (
     for (let i = 0; i < base.max && idx < idsArray.length; i++) {
       const pid = idsArray[idx++];
       if (!playerPositions[pid]) {
-        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * 16 : 0);
+        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * OFFSET_STEP : 0);
         newPos[pid] = { top: base.top, left: base.left + offset };
       }
     }
@@ -273,7 +276,7 @@ export default function Formation() {
           return group.map((p) => {
             const offset =
               defaults.includes(p)
-                ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * 16)
+                ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * OFFSET_STEP)
                 : 0;
             const def = { top: base.top, left: base.left + offset };
             const pos = playerPositions[p.id] ?? def;
@@ -281,7 +284,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`absolute group w-24 max-w-24 max-h-32 p-2 rounded text-center cursor-pointer ${
+                className={`absolute group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer ${
                   selectedId === p.id ? "bg-blue-200" : "bg-white"
                 }`}
                 style={{
@@ -313,13 +316,12 @@ export default function Formation() {
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full mx-auto pointer-events-none text-center text-xs">
                     No image
                   </div>
                 )}
                 <div className="font-semibold whitespace-normal break-words">{p.name}</div>
                 <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
-                <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
             );
           });
@@ -360,7 +362,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`w-24 max-w-24 max-h-32 px-4 py-2 border rounded cursor-pointer group ${
+                className={`w-32 max-w-32 max-h-32 px-4 py-2 border rounded cursor-pointer group ${
                   selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
                 }`}
                 onClick={() => handleClick(p.id, true)}
@@ -374,13 +376,12 @@ export default function Formation() {
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full pointer-events-none text-center text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full mx-auto pointer-events-none text-center text-xs">
                     No image
                   </div>
                 )}
                 <div className="font-semibold whitespace-normal break-words">{p.name}</div>
                 <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
-                <div className="text-xs hidden group-hover:block">#{p.number}</div>
               </div>
             );
           })}
