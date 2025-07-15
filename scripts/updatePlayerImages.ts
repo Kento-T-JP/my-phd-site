@@ -8,8 +8,7 @@ const prisma = new PrismaClient();
 
 const template = process.env.PLAYER_PROFILE_URL;
 if (!template || !template.includes('{id}')) {
-  console.error('PLAYER_PROFILE_URL env variable must contain {id} placeholder');
-  process.exit(1);
+  throw new Error('PLAYER_PROFILE_URL env variable must contain {id} placeholder');
 }
 
 async function main() {
