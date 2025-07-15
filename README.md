@@ -45,7 +45,11 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
 
 ### Migrations & seeding
 
-Run the following commands to create the schema and populate initial players:
+Player data is not stored in the repository. Instead, the seed script
+scrapes the [JFA Samurai Blue](https://www.jfa.jp/samuraiblue/) roster and
+imports the players into your local database. Set the `JFA_MEMBER_URL`
+environment variable to the member page URL (for example,
+`https://www.jfa.jp/samuraiblue/member.html`). Then run:
 
 ```bash
 npm run migrate
