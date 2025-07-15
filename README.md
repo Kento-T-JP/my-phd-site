@@ -48,12 +48,12 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
 Player data is not stored in the repository. Instead, the seed script
 scrapes the [JFA Samurai Blue](https://www.jfa.jp/samuraiblue/) roster and
 imports the players into your local database. Set the `JFA_MEMBER_URL`
-environment variable to the member page URL (for example,
-`https://www.jfa.jp/samuraiblue/member.html`). Then run:
+environment variable to the member page URL. You can pass it inline when
+running the seed command:
 
 ```bash
-npm run migrate
-npm run seed
+JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run migrate
+JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run seed
 ```
 
 During CI deployment, run:
@@ -64,17 +64,18 @@ npm run deploy:migrate
 
 ## Docker Compose
 
-Build and start the application along with a Postgres database:
+Build and start the application along with a Postgres database. Pass the
+`JFA_MEMBER_URL` variable so the seed script can scrape the roster:
 
 ```bash
-docker compose up --build
+JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose up --build
 ```
 
 Migrations are applied automatically when the app container starts. After the
-services are running you can seed the database with:
+services are running you can seed the database again if needed:
 
 ```bash
-docker compose exec app npm run seed
+JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec app npm run seed
 ```
 
 

@@ -9,6 +9,7 @@ services:
     command: ["./wait-for-it.sh", "db:5432", "--", "sh", "-c", "prisma migrate deploy && prisma db seed && npm run dev"]
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/mydb?schema=public"
+      JFA_MEMBER_URL: ${JFA_MEMBER_URL}
     depends_on:
       - db
 
