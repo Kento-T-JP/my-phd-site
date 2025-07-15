@@ -15,8 +15,8 @@ interface Dragging {
 /** horizontal spacing between players in the same line (percentage points) */
 const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 
-/** 8 文字以上を “長い名前” とみなしてフォント縮小 */
-const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 8;
+/** 5 文字以上を “長い名前” とみなしてフォント縮小 */
+const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
 /* ───────── util: 初期スタメン計算 ───────── */
 function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
@@ -30,7 +30,12 @@ function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
 
     /* ① position が合う選手を優先して埋める */
     const fit = list
-      .filter((p) => !chosen.has(p.id) && p.position.includes(posKey))
+      .filter((p) =>
+        !chosen.has(p.id) &&
+        (slot.allowed
+          ? p.position.some((pos) => slot.allowed!.includes(pos))
+          : p.position.includes(posKey))
+      )
       .slice(0, slot.max);
 
     fit.forEach((pl) => {

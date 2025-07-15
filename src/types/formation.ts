@@ -7,6 +7,7 @@ export interface Formation {
       top: number;
       left: number;
       max: number;
+      allowed?: string[];
     };
   };
 }
