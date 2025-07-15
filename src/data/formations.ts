@@ -47,6 +47,19 @@ export const formation4231 = {
   },
 } as const satisfies Formation;
 
+export const formation3421 = {
+  name: "3-4-2-1",
+  positions: {
+    GK: { top: 85, left: 50, max: 1, allowed: ["GK"] },
+    CB: { top: 65, left: 50, max: 3, allowed: ["DF"] },
+    LM: { top: 42, left: 20, max: 1, allowed: ["MF/FW"] },
+    CMF: { top: 47, left: 50, max: 2, allowed: ["MF/FW"] },
+    RM: { top: 42, left: 80, max: 1, allowed: ["MF/FW"] },
+    OMF: { top: 30, left: 50, max: 2, allowed: ["MF/FW"] },
+    CF: { top: 10, left: 50, max: 1, allowed: ["MF/FW"] },
+  },
+} as const satisfies Formation;
+
 /**
  * すべてのフォーメーションを配列でまとめる。
  * Formation.tsx などで map して動的 UI を生成するために使用。
@@ -55,4 +68,5 @@ export const formations = [
   formation433,
   formation442,
   formation4231,
+  formation3421,
 ] as const satisfies readonly Formation[];

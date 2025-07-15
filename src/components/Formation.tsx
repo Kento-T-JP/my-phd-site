@@ -292,7 +292,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`absolute group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer ${
+                className={`absolute group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 ${
                   selectedId === p.id ? "bg-blue-200" : "bg-white"
                 }`}
                 style={{
@@ -385,7 +385,7 @@ export default function Formation() {
             return (
               <div
                 key={p.id}
-                className={`w-32 max-w-32 max-h-32 px-4 py-2 border rounded cursor-pointer group ${
+                className={`w-32 max-w-32 max-h-32 px-4 py-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 ${
                   selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
                 }`}
                 onClick={() => handleClick(p.id, true)}

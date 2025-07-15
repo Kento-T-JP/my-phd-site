@@ -7,6 +7,8 @@ WORKDIR /app
 # package.json と lock をコピー
 COPY package*.json ./
 
+RUN apk add --no-cache bash
+
 # 依存をインストール
 RUN npm install
 
@@ -19,6 +21,9 @@ COPY prisma ./prisma
 # Prisma Client を生成
 RUN npx prisma generate
 
+COPY wait-for-it.sh ./wait-for-it.sh
+RUN chmod +x wait-for-it.sh
+
 # ソースを全部コピー
 COPY . .
 
@@ -26,4 +31,4 @@ COPY . .
 EXPOSE 3000
 
 # マイグレーション → シード → 開発サーバーを起動
-CMD ["sh", "-c", "prisma migrate deploy && prisma db seed && npm run dev"]
+CMD ["sh", "-c", "./wait-for-it.sh db:5432 -- prisma migrate deploy && prisma db seed && npm run dev"]
