@@ -12,8 +12,10 @@ async function scrape(url: string) {
   const $ = cheerio.load(data);
   const players: { name: string; number?: number; image?: string }[] = [];
   $('li').each((_, el) => {
-    const name = $(el).find('.nameJa').text().trim();
-    if (!name) return;
+    let name = $(el).find('.nameJa').text().trim();
+    if (!name) {
+      name = 'Unknown';
+    }
     const numText = $(el).find('.number').text().trim();
     const number = numText ? parseInt(numText, 10) : undefined;
     let image = $(el).find('img').attr('src');
