@@ -91,6 +91,14 @@ npm run update:images
 The script downloads each player's photo into `public/uploads/players/` and
 updates the `image` field in the database.
 
+## Verifying scraping permissions
+
+Before running the scraper, confirm that your chosen data source permits
+automated downloads. Check the site's `robots.txt` to ensure scraping the
+relevant paths is allowed and review any terms of service for attribution or
+other requirements. If the source requires credits, include them where
+appropriate in your project.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
