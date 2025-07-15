@@ -1,6 +1,6 @@
 import Formation from "@/components/Formation";
 import Link from "next/link";
-import JfaImportPage from "./admin/jfa-import/page";
+import JfaImportForm from "@/components/JfaImportForm";
 import type { Player } from "@/types/player";
 
 async function fetchPlayers(): Promise<Player[]> {
@@ -16,7 +16,12 @@ export default async function Home() {
   const players = await fetchPlayers();
 
   if (players.length === 0) {
-    return <JfaImportPage />;
+    return (
+      <main className="p-8 max-w-md mx-auto">
+        <h1 className="text-xl font-bold mb-4">JFAメンバーインポート</h1>
+        <JfaImportForm />
+      </main>
+    );
   }
 
   return (
