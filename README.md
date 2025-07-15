@@ -73,31 +73,6 @@ services are running you can seed the database with:
 docker compose exec app npm run seed
 ```
 
-## Updating player images
-
-Set a `DATABASE_URL` for Prisma and define `PLAYER_PROFILE_URL` with a
-template containing `{id}` for each player's profile page. Example:
-
-```dotenv
-PLAYER_PROFILE_URL="https://example.com/player/{id}"
-```
-
-Run the scraper with:
-
-```bash
-npm run update:images
-```
-
-The script downloads each player's photo into `public/uploads/players/` and
-updates the `image` field in the database.
-
-## Verifying scraping permissions
-
-Before running the scraper, confirm that your chosen data source permits
-automated downloads. Check the site's `robots.txt` to ensure scraping the
-relevant paths is allowed and review any terms of service for attribution or
-other requirements. If the source requires credits, include them where
-appropriate in your project.
 
 ## License
 
