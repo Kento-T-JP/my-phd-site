@@ -90,3 +90,7 @@ npm run update:images
 
 The script downloads each player's photo into `public/uploads/players/` and
 updates the `image` field in the database.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
