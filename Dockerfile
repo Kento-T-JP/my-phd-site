@@ -17,7 +17,7 @@ RUN npm install -g prisma ts-node tsx @types/node
 COPY prisma ./prisma
 
 # Prisma Client を生成
-RUN prisma generate
+RUN npx prisma generate
 
 # ソースを全部コピー
 COPY . .

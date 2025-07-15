@@ -13,18 +13,19 @@
     "update:images": "tsx scripts/updatePlayerImages.ts"
   },
   "dependencies": {
+    "axios": "^1.10.0",
+    "cheerio": "^1.0.0-rc.12",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.5.0",
-    "zod": "^4.0.5",
-    "axios": "^1.6.8",
-    "cheerio": "^1.0.0-rc.12"
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@prisma/client": "^6.11.1",
     "@tailwindcss/postcss": "^4",
+    "@types/cheerio": "^0.22.33",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -34,8 +35,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.1",
-    "typescript": "^5",
-    "@types/cheerio": "^0.22.33"
+    "typescript": "^5"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

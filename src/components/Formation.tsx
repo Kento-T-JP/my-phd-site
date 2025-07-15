@@ -15,6 +15,9 @@ interface Dragging {
 /** horizontal spacing between players in the same line (percentage points) */
 const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 
+/** 8 文字以上を “長い名前” とみなしてフォント縮小 */
+const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 8;
+
 /* ───────── util: 初期スタメン計算 ───────── */
 function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
   const chosen = new Set<number>();
@@ -320,8 +323,23 @@ export default function Formation() {
                     No image
                   </div>
                 )}
-                <div className="font-semibold whitespace-normal break-words">{p.name}</div>
-                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                {/* player name (always visible) */}
+                <div
+                  className={`font-semibold whitespace-normal break-words ${
+                    isLongName(p.name) ? "text-xs leading-tight" : ""
+                  }`}
+                  title={p.number ? `背番号: ${p.number}` : ""}
+                >
+                  {p.name}
+                </div>
+                {/* jersey number appears on hover, just like the position */}
+                {p.number && (
+                  <div className="text-sm hidden group-hover:block">背番号: {p.number}</div>
+                )}
+                {/* position stays as‑is */}
+                <div className="text-sm hidden group-hover:block">
+                  {p.position.join(", ")}
+                </div>
               </div>
             );
           });
@@ -380,8 +398,23 @@ export default function Formation() {
                     No image
                   </div>
                 )}
-                <div className="font-semibold whitespace-normal break-words">{p.name}</div>
-                <div className="text-sm hidden group-hover:block">{p.position.join(", ")}</div>
+                {/* player name (always visible) */}
+                <div
+                  className={`font-semibold whitespace-normal break-words ${
+                    isLongName(p.name) ? "text-xs leading-tight" : ""
+                  }`}
+                  title={p.number ? `背番号: ${p.number}` : ""}
+                >
+                  {p.name}
+                </div>
+                {/* jersey number appears on hover */}
+                {p.number && (
+                  <div className="text-sm hidden group-hover:block">背番号: {p.number}</div>
+                )}
+                {/* position info */}
+                <div className="text-sm hidden group-hover:block">
+                  {p.position.join(", ")}
+                </div>
               </div>
             );
           })}
