@@ -40,7 +40,7 @@ export default function NewPlayerPage() {
     const form = new FormData();
     form.append("name", name);
     allPositions.forEach((p) => form.append("position", p));
-    if (number) form.append("number", number);
+    if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
 
     const res = await fetch("/api/players", {

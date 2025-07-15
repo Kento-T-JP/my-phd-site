@@ -25,10 +25,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const form = await req.formData();
-    const name = form.get("name");
-    const positions = form.getAll("position");
-    const number = form.get("number");
+  const form = await req.formData();
+  const name = form.get("name");
+  const positions = form.getAll("position");
+  const numberEntry = form.get("number");
+  const number =
+    typeof numberEntry === "string" && numberEntry.trim() === ""
+      ? undefined
+      : numberEntry;
 
     const parsed = PlayerSchema.safeParse({
       name,
