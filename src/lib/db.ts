@@ -25,3 +25,16 @@ export async function createPlayer(data: Omit<Player, 'id'>) {
   const nextId = (max._max.id ?? 0) + 1;
   return prisma.player.create({ data: { ...data, id: nextId } });
 }
+
+/**
+ * 名前をキーに既存レコードを更新、なければ新規作成します。
+ */
+export async function upsertPlayer(data: Omit<Player, 'id'>) {
+  const existing = await prisma.player.findFirst({ where: { name: data.name } });
+  if (existing) {
+    return prisma.player.update({ where: { id: existing.id }, data });
+  }
+  const max = await prisma.player.aggregate({ _max: { id: true } });
+  const nextId = (max._max.id ?? 0) + 1;
+  return prisma.player.create({ data: { ...data, id: nextId } });
+}
