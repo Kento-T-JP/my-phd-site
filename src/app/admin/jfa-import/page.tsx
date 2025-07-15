@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function JfaImportPage() {
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,6 +19,9 @@ export default function JfaImportPage() {
     const data = await res.json();
     if (res.ok) {
       setMessage(`${data.count}人登録しました`);
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
     } else {
       setMessage(data.error || "エラーが発生しました");
     }

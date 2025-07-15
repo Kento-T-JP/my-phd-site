@@ -17,7 +17,10 @@ const PlayerSchema = z.object({
 
 export async function GET() {
   const players = await getPlayers();
-  return NextResponse.json(players);
+  const filtered = players.filter(
+    (p) => p.name.toLowerCase() !== 'unknown'
+  );
+  return NextResponse.json(filtered);
 }
 
 export async function POST(req: Request) {

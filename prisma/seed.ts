@@ -1,16 +1,30 @@
 import { PrismaClient } from '@prisma/client';
-import { players }        from '../src/data/players';
+import { scrapeJfaPlayers, validateJfaUrl } from '../src/lib/jfa';
+import { upsertPlayer } from '../src/lib/db';
 
 const prisma = new PrismaClient();
+
+const JFA_URL = process.env.JFA_MEMBER_URL || '';
 
 async function main() {
   const count = await prisma.player.count();
   if (count === 0) {
-    await prisma.player.createMany({
-      data: players,
-      skipDuplicates: true,
-    });
-    console.log(`✅ Seeded ${players.length} players`);
+    if (validateJfaUrl(JFA_URL)) {
+      const scraped = await scrapeJfaPlayers(JFA_URL);
+      let added = 0;
+      for (const p of scraped) {
+        await upsertPlayer({
+          name: p.name,
+          number: p.number,
+          image: p.image,
+          position: p.position,
+        });
+        added++;
+      }
+      console.log(`✅ Seeded ${added} players from JFA`);
+    } else {
+      console.log('❌ Invalid or missing JFA_MEMBER_URL environment variable');
+    }
   } else {
     console.log(`✅ Players already exist, skipping seed.`);
   }

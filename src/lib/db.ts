@@ -21,6 +21,10 @@ export async function getPlayers() {
  * 既存の id の最大値に 1 を足した値を採番して保存します。
  */
 export async function createPlayer(data: Omit<Player, 'id'>) {
+  const dup = await prisma.player.findFirst({ where: { name: data.name } });
+  if (dup) {
+    throw new Error('Player with this name already exists');
+  }
   const max = await prisma.player.aggregate({ _max: { id: true } });
   const nextId = (max._max.id ?? 0) + 1;
   return prisma.player.create({ data: { ...data, id: nextId } });
