@@ -38,3 +38,20 @@ export async function upsertPlayer(data: Omit<Player, 'id'>) {
   }
   return prisma.player.create({ data });
 }
+
+/**
+ * Update an existing player by id.
+ * Throws if another player already has the same name.
+ */
+export async function updatePlayer(id: number, data: Omit<Player, 'id'>) {
+  const dup = await prisma.player.findFirst({
+    where: {
+      name: data.name,
+      NOT: { id },
+    },
+  });
+  if (dup) {
+    throw new Error('Player with this name already exists');
+  }
+  return prisma.player.update({ where: { id }, data });
+}

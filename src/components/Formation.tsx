@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Player } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
@@ -434,6 +435,12 @@ export default function Formation() {
                 <div className="text-sm hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
+                <Link
+                  href={`/players/${p.id}/edit`}
+                  className="text-blue-600 text-xs mt-1 underline block"
+                >
+                  Edit
+                </Link>
               </div>
             );
           })}
