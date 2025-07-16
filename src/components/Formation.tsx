@@ -92,6 +92,7 @@ export default function Formation() {
   /* ───────── state ───────── */
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formation, setFormation] = useState<Formation>(formations[0]);
   const [lineupOrder, setLineupOrder] = useState<number[]>([]);
   const [benchOrder, setBenchOrder] = useState<number[]>([]);
@@ -108,11 +109,20 @@ export default function Formation() {
 
   // fetch players once
   useEffect(() => {
-    fetch('/api/players')
-      .then((res) => res.json())
-      .then((data: Player[]) => {
+    async function fetchPlayers() {
+      try {
+        const res = await fetch('/api/players');
+        if (!res.ok) throw new Error('Failed to fetch players');
+        const data: Player[] = await res.json();
         setPlayers(data);
-      });
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load players');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPlayers();
   }, []);
 
   // initialize ids when players or formation change
@@ -233,6 +243,10 @@ export default function Formation() {
   const drawn = new Set<number>();
 
   const sortedKeys = Object.keys(formation.positions);
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
 
   if (loading) {
     return <div>Loading...</div>;
