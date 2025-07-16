@@ -79,6 +79,10 @@ JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec ap
 ```
 
 
+## Editing Players
+
+Each player card on the formation page has an **Edit** link. Clicking it opens a form pre-filled with the player's details. Submitting this form sends a request to `/api/players/[id]` to save changes. The same validation as creation is applied and duplicate names will return a 400 error.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

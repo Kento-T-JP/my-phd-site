@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const PlayerSchema = z.object({
+export const PlayerSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   position: z.array(z.string()).min(1, { message: "At least one position is required" }),
   number: z.coerce
