@@ -19,6 +19,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } | Pr
   const [image, setImage] = useState<File | null>(null);
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -35,6 +36,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } | Pr
         setPositions(p.position as PositionKey[]);
         setNumber(p.number ? String(p.number) : "");
       }
+      setLoading(false);
     }
     load();
   }, [id]);
@@ -92,6 +94,14 @@ export default function EditPlayerPage({ params }: { params: { id: string } | Pr
       }
     }
   };
+
+  if (loading) {
+    return (
+      <main className="p-8 max-w-md mx-auto">
+        <p>Loading...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="p-8 max-w-md mx-auto">
@@ -169,7 +179,8 @@ export default function EditPlayerPage({ params }: { params: { id: string } | Pr
         )}
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded"
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          disabled={loading}
         >
           Submit
         </button>
