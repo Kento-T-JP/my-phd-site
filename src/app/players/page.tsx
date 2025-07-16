@@ -1,0 +1,43 @@
+import Link from "next/link";
+import type { Player } from "@/types/player";
+
+async function fetchPlayers(): Promise<Player[]> {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const res = await fetch(`${base}/api/players`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("Failed to fetch players");
+  }
+  return (await res.json()) as Player[];
+}
+
+export default async function PlayersPage() {
+  const players = await fetchPlayers();
+
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold mb-4">選手一覧</h1>
+      <table className="w-full table-auto border-collapse">
+        <thead>
+          <tr>
+            <th className="border-b px-2 py-1 text-left">背番号</th>
+            <th className="border-b px-2 py-1 text-left">名前</th>
+            <th className="border-b px-2 py-1" />
+          </tr>
+        </thead>
+        <tbody>
+          {players.map((p) => (
+            <tr key={p.id} className="border-b">
+              <td className="px-2 py-1">{p.number ?? "-"}</td>
+              <td className="px-2 py-1">{p.name}</td>
+              <td className="px-2 py-1 text-right">
+                <Link href={`/players/${p.id}/edit`} className="text-blue-600 underline">
+                  編集
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </main>
+  );
+}
