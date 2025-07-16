@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,8 @@ const positionOptions: PositionKey[] = Array.from(
   new Set(formations.flatMap((f) => Object.keys(f.positions)))
 ) as PositionKey[];
 
-export default function EditPlayerPage({ params }: { params: { id: string } }) {
+export default function EditPlayerPage({ params }: { params: { id: string } | Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
@@ -27,7 +28,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/players/${params.id}`);
+      const res = await fetch(`/api/players/${id}`);
       if (res.ok) {
         const p = await res.json();
         setName(p.name);
@@ -36,7 +37,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
       }
     }
     load();
-  }, [params.id]);
+  }, [id]);
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -56,7 +57,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
 
-    const res = await fetch(`/api/players/${params.id}`, {
+    const res = await fetch(`/api/players/${id}`, {
       method: "PUT",
       body: form,
     });
