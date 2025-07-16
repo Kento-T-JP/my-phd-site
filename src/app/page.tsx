@@ -31,6 +31,9 @@ export default async function Home() {
         <Link href="/players/new" className="text-blue-600 underline">
           新規選手登録
         </Link>
+        <Link href="/players" className="text-blue-600 underline">
+          選手一覧
+        </Link>
         <Link href="/admin/jfa-import" className="text-blue-600 underline">
           JFAメンバーインポート
         </Link>
