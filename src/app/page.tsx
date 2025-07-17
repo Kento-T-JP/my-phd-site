@@ -32,7 +32,7 @@ export default async function Home() {
           新規選手登録
         </Link>
         <Link href="/players" className="text-blue-600 underline">
-          選手一覧
+          選手一覧を編集
         </Link>
         <Link href="/admin/jfa-import" className="text-blue-600 underline">
           JFAメンバーインポート

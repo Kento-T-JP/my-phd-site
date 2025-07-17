@@ -15,7 +15,7 @@ export default async function PlayersPage() {
 
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">選手一覧</h1>
+      <h1 className="text-2xl font-bold mb-4">選手一覧を編集</h1>
       <table className="w-full table-auto border-collapse">
         <thead>
           <tr>
