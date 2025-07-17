@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Player } from "@/types/player";
@@ -18,6 +18,11 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 
 /** 5 文字以上を “長い名前” とみなしてフォント縮小 */
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
+
+export function filterPlayers(list: Player[], search: string): Player[] {
+  const s = search.toLowerCase();
+  return list.filter((p) => p.name.toLowerCase().includes(s));
+}
 
 /* ───────── util: 初期スタメン計算 ───────── */
 function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
@@ -105,6 +110,9 @@ export default function Formation() {
 
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredPlayers = filterPlayers(players, search);
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
@@ -126,14 +134,20 @@ export default function Formation() {
     fetchPlayers();
   }, []);
 
-  // initialize ids when players or formation change
+  // initialize ids when players, formation, or search change
   useEffect(() => {
-    if (players.length === 0) return;
-    const ids = makeInitialFieldIds(formation, players);
-    setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
+    if (filteredPlayers.length === 0) {
+      setBenchOrder([]);
+      setLineupOrder([]);
+      return;
+    }
+    const ids = makeInitialFieldIds(formation, filteredPlayers);
+    setBenchOrder(
+      filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+    );
     setLineupOrder(Array.from(ids));
     setLoading(false);
-  }, [players, formation]);
+  }, [filteredPlayers, formation]);
 
   /* ───────── drag handler ───────── */
   useEffect(() => {
@@ -256,6 +270,13 @@ export default function Formation() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
+      <input
+        type="text"
+        className="border p-1 mb-4"
+        placeholder="Filter players..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
       {/* field */}
       <div className="field relative w-full h-[600px] border bg-green-700 rounded overflow-hidden">
@@ -375,9 +396,11 @@ export default function Formation() {
               formation.name === f.name ? "bg-green-300" : ""
             }`}
             onClick={() => {
-              const ids = makeInitialFieldIds(f, players);
+              const ids = makeInitialFieldIds(f, filteredPlayers);
               setFormation(f);
-              setBenchOrder(players.map((p) => p.id).filter((id) => !ids.has(id)));
+              setBenchOrder(
+                filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+              );
               setLineupOrder(Array.from(ids));
               setCustomMode(false);
               setDefaultsFrozen(false);
