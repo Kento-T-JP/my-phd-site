@@ -435,12 +435,6 @@ export default function Formation() {
                 <div className="text-sm hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
-                <Link
-                  href={`/players/${p.id}/edit`}
-                  className="text-blue-600 text-xs mt-1 underline block"
-                >
-                  Edit
-                </Link>
               </div>
             );
           })}
