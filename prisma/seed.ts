@@ -10,9 +10,9 @@ async function main() {
   const count = await prisma.player.count();
   if (count === 0) {
     if (validateJfaUrl(JFA_URL)) {
-      const scraped = await scrapeJfaPlayers(JFA_URL);
+      const { players } = await scrapeJfaPlayers(JFA_URL);
       let added = 0;
-      for (const p of scraped) {
+      for (const p of players) {
         await upsertPlayer({
           name: p.name,
           number: p.number,
