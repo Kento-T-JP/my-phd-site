@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -9,8 +9,8 @@ const positionOptions: PositionKey[] = Array.from(
   new Set(formations.flatMap((f) => Object.keys(f.positions)))
 ) as PositionKey[];
 
-export default function EditPlayerPage({ params }: { params: { id: string } | Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EditPlayerPage({ params }: { params: { id: string } }) {
+  const id = params.id;
   const router = useRouter();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
