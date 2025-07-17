@@ -11,6 +11,9 @@ export async function scrapeJfaPlayers(url: string) {
 
   const players: { name: string; number?: number; image?: string; position: string[] }[] = [];
 
+  const titleSpan = $('.outer-block.pankz .pankz-list span').eq(2);
+  const title = titleSpan.find('a').text().trim() || titleSpan.text().trim();
+
   $('.section-block').each((_, block) => {
     const posGroup = $(block).find('h4').first().text().trim();
     $(block)
@@ -39,5 +42,5 @@ export async function scrapeJfaPlayers(url: string) {
       });
   });
 
-  return players;
+  return { players, title };
 }

@@ -26,9 +26,10 @@ describe('scrapeJfaPlayers', () => {
   it('parses players from sample HTML', async () => {
     const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: fixture });
 
-    const players = await scrapeJfaPlayers('https://www.jfa.jp/samuraiblue/member.html');
+    const result = await scrapeJfaPlayers('https://www.jfa.jp/samuraiblue/member.html');
 
-    expect(players).toEqual([
+    expect(result.title).toBe('AFC Asian Cup 2024');
+    expect(result.players).toEqual([
       {
         name: 'John Doe',
         number: 1,

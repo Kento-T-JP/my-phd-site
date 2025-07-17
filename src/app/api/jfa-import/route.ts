@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     if (typeof url !== 'string' || !validateJfaUrl(url)) {
       return NextResponse.json({ error: 'Invalid JFA member URL' }, { status: 400 });
     }
-    const players = await scrapeJfaPlayers(url);
+    const { players, title } = await scrapeJfaPlayers(url);
     let count = 0;
     for (const p of players) {
       await upsertPlayer({
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       });
       count++;
     }
-    return NextResponse.json({ count });
+    return NextResponse.json({ count, title });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to import';
     return NextResponse.json({ error: msg }, { status: 500 });
