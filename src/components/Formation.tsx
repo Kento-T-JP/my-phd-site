@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Player } from "@/types/player";
@@ -112,7 +112,10 @@ export default function Formation() {
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filteredPlayers = filterPlayers(players, search);
+  const filteredPlayers = useMemo(
+    () => filterPlayers(players, search),
+    [players, search]
+  );
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
