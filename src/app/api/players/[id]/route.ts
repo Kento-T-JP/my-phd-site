@@ -3,13 +3,26 @@ import prisma, { updatePlayer } from '@/lib/db';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
+import React from 'react';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id);
-  if (Number.isNaN(id)) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  let unwrapped;
+  if (
+    (React as any).use &&
+    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
+  ) {
+    unwrapped = React.use(params as any);
+  } else {
+    unwrapped = await params;
+  }
+  const num = Number(unwrapped.id);
+  if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
-  const player = await prisma.player.findUnique({ where: { id } });
+  const player = await prisma.player.findUnique({ where: { id: num } });
   if (!player) {
     return NextResponse.json({ error: 'Player not found' }, { status: 404 });
   }
@@ -57,12 +70,24 @@ async function handleUpdate(req: Request, id: number) {
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id);
-  if (Number.isNaN(id)) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  let unwrapped;
+  if (
+    (React as any).use &&
+    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
+  ) {
+    unwrapped = React.use(params as any);
+  } else {
+    unwrapped = await params;
+  }
+  const num = Number(unwrapped.id);
+  if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
-  return handleUpdate(req, id);
+  return handleUpdate(req, num);
 }
 
 export const PATCH = PUT;

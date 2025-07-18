@@ -21,7 +21,9 @@ describe('player API routes', () => {
   it('GET returns a player', async () => {
     const { GET } = await import('../src/app/api/players/[id]/route');
     prisma.player.findUnique.mockResolvedValue({ id: 1, name: 'A', position: ['GK'] });
-    const res = await GET(new Request('http://test'), { params: { id: '1' } });
+    const res = await GET(new Request('http://test'), {
+      params: Promise.resolve({ id: '1' }),
+    });
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.name).toBe('A');
@@ -30,7 +32,9 @@ describe('player API routes', () => {
   it('GET 404 when missing', async () => {
     const { GET } = await import('../src/app/api/players/[id]/route');
     prisma.player.findUnique.mockResolvedValue(null);
-    const res = await GET(new Request('http://test'), { params: { id: '2' } });
+    const res = await GET(new Request('http://test'), {
+      params: Promise.resolve({ id: '2' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -41,7 +45,9 @@ describe('player API routes', () => {
     form.append('name', 'B');
     form.append('position', 'GK');
     const req = new Request('http://test', { method: 'PUT', body: form });
-    const res = await PUT(req, { params: { id: '1' } });
+    const res = await PUT(req, {
+      params: Promise.resolve({ id: '1' }),
+    });
     expect(res.status).toBe(400);
   });
 });
