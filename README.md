@@ -37,7 +37,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Database setup
 
-This project uses [Prisma](https://www.prisma.io/) with a local Postgres database. Create a `.env` file with a `DATABASE_URL` pointing to your instance. For example, with Docker:
+This project uses [Prisma](https://www.prisma.io/) with a local Postgres database. Copy `.env.example` to `.env` and set `DATABASE_URL` for your instance. For example, with Docker:
 
 ```dotenv
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
@@ -48,7 +48,8 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
 Player data is not stored in the repository. Instead, the seed script
 scrapes the [JFA Samurai Blue](https://www.jfa.jp/samuraiblue/) roster and
 imports the players into your local database. Set the `JFA_MEMBER_URL`
-environment variable to the member page URL. You can pass it inline when
+environment variable to the member page URL (add it to your `.env` file or
+pass it inline). You can pass it inline when
 running the seed command:
 
 ```bash
