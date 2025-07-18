@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set(formations.flatMap((f) => Object.keys(f.positions)))
 ) as PositionKey[];
 
-export default function EditPlayerPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default function EditPlayerPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
