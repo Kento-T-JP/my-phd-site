@@ -16,6 +16,7 @@ export async function POST(req: Request) {
         number: p.number,
         image: p.image,
         position: p.position,
+        tournament: p.tournament,
       });
       count++;
     }
