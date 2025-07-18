@@ -16,4 +16,5 @@ model Player {
   position String[]
   number   Int?
   image    String?
+  tournament String?
 }

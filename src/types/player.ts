@@ -10,4 +10,5 @@ export interface Player {
   position: string[]; // 複数ポジション対応
   number?: number;
   image?: string;
+  tournament?: string;
 }
