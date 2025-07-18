@@ -9,10 +9,13 @@ export async function scrapeJfaPlayers(url: string) {
   const { data } = await axios.get(url);
   const $ = cheerio.load(data);
 
-  const players: { name: string; number?: number; image?: string; position: string[] }[] = [];
+  const players: { name: string; number?: number; image?: string; position: string[]; tournament: string }[] = [];
 
   const titleSpan = $('.outer-block.pankz .pankz-list span').eq(2);
-  const title = titleSpan.find('a').text().trim() || titleSpan.text().trim();
+  let title = titleSpan.find('a').text().trim() || titleSpan.text().trim();
+  if (!title) {
+    title = new Date().toISOString().slice(0, 10);
+  }
 
   $('.section-block').each((_, block) => {
     const posGroup = $(block).find('h4').first().text().trim();
@@ -38,6 +41,7 @@ export async function scrapeJfaPlayers(url: string) {
           number,
           image,
           position: [posGroup],
+          tournament: title,
         });
       });
   });

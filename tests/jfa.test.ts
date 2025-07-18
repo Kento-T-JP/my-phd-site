@@ -35,24 +35,28 @@ describe('scrapeJfaPlayers', () => {
         number: 1,
         image: 'https://images.example.com/gk1.jpg',
         position: ['Goalkeepers'],
+        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'Jane Smith',
         number: 2,
         image: 'https://www.jfa.jp/gk2.jpg',
         position: ['Goalkeepers'],
+        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'NoNumber Player',
         number: undefined,
         image: 'https://www.jfa.jp/gk3.jpg',
         position: ['Goalkeepers'],
+        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'Bob Brown',
         number: 3,
         image: 'https://www.jfa.jp/df1.jpg',
         position: ['Defenders'],
+        tournament: 'AFC Asian Cup 2024',
       },
     ]);
 
