@@ -8,6 +8,11 @@ const players: Player[] = [
   { id: 3, name: 'Charlie', position: ['FW'], tournament: 'CupA' },
 ];
 
+const mixedPlayers = [
+  ...players,
+  { id: 4, name: 'Dave', position: ['MF'] },
+];
+
 describe('filterPlayers', () => {
   it('filters by name substring', () => {
     expect(filterPlayers(players, 'al')).toEqual([players[0]]);
@@ -18,5 +23,12 @@ describe('filterPlayers', () => {
   it('filters by tournament', () => {
     expect(filterPlayers(players, '', 'CupA')).toEqual([players[0], players[2]]);
     expect(filterPlayers(players, 'b', 'CupA')).toEqual([]);
+  });
+
+  it('excludes players without tournament when filtering', () => {
+    expect(filterPlayers(mixedPlayers, '', 'CupA')).toEqual([
+      players[0],
+      players[2],
+    ]);
   });
 });

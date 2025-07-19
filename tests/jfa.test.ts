@@ -18,9 +18,13 @@ describe('validateJfaUrl', () => {
 
 describe('scrapeJfaPlayers', () => {
   const fixture = fs.readFileSync('tests/fixtures/sample_jfa.html', 'utf8');
+  const fallbackFixture = fs.readFileSync(
+    'tests/fixtures/fallback_jfa.html',
+    'utf8'
+  );
 
   beforeEach(() => {
-    vi.mocked(axios.get).mockReset();
+    vi.resetAllMocks();
   });
 
   it('parses players from sample HTML', async () => {
@@ -57,6 +61,29 @@ describe('scrapeJfaPlayers', () => {
         image: 'https://www.jfa.jp/df1.jpg',
         position: ['Defenders'],
         tournament: 'AFC Asian Cup 2024',
+      },
+    ]);
+
+    spy.mockRestore();
+  });
+
+  it('falls back to previous crumb title with date', async () => {
+    const spy = vi
+      .spyOn(axios, 'get')
+      .mockResolvedValue({ data: fallbackFixture });
+
+    const result = await scrapeJfaPlayers(
+      'https://www.jfa.jp/samuraiblue/20240720/member.html'
+    );
+
+    expect(result.title).toBe('SAMURAI BLUE (2024-07-20)');
+    expect(result.players).toEqual([
+      {
+        name: 'John Doe',
+        number: 1,
+        image: 'https://www.jfa.jp/gk1.jpg',
+        position: ['Goalkeepers'],
+        tournament: 'SAMURAI BLUE (2024-07-20)',
       },
     ]);
 
