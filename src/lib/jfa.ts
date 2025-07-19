@@ -11,11 +11,45 @@ export async function scrapeJfaPlayers(url: string) {
 
   const players: { name: string; number?: number; image?: string; position: string[]; tournament: string }[] = [];
 
-  const titleSpan = $('.outer-block.pankz .pankz-list span').eq(2);
-  let title = titleSpan.find('a').text().trim() || titleSpan.text().trim();
+  // --- Tournament (breadcrumb) title extraction (robust) ---
+  const crumbSpans = $('.outer-block.pankz .pankz-list span');
+  function norm(t: string) {
+    return t.replace(/\s+/g, ' ').trim();
+  }
+  let title = '';
+  if (crumbSpans.length) {
+    const texts = crumbSpans
+      .map((i, el) => norm($(el).find('a').text() || $(el).text()))
+      .get()
+      .filter(t => t.length > 0);
+
+    // If last crumb is a generic label like 招集メンバー/スタッフ, use the one before it
+    if (texts.length >= 2) {
+      const last = texts[texts.length - 1];
+      if (/招集|スタッフ/.test(last)) {
+        title = texts[texts.length - 2];
+      }
+    }
+    // Fallback: if still empty, choose last meaningful crumb (excluding ホーム)
+    if (!title) {
+      for (let i = texts.length - 1; i >= 0; i--) {
+        if (texts[i] && texts[i] !== 'ホーム') {
+          title = texts[i];
+          break;
+        }
+      }
+    }
+  }
   if (!title) {
     title = new Date().toISOString().slice(0, 10);
   }
+  const urlDateMatch = url.match(/\/(\d{8})\/?/);
+  if (urlDateMatch) {
+    const raw = urlDateMatch[1];
+    const formatted = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+    title += ` (${formatted})`;
+  }
+  // --- end tournament title extraction ---
 
   $('.section-block').each((_, block) => {
     const posGroup = $(block).find('h4').first().text().trim();

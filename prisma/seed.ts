@@ -18,6 +18,7 @@ async function main() {
           number: p.number,
           image: p.image,
           position: p.position,
+          tournament: p.tournament,
         });
         added++;
       }
