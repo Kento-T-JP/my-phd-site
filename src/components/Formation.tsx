@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import type { Player } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
@@ -19,9 +18,17 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 /** 5 文字以上を “長い名前” とみなしてフォント縮小 */
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
-export function filterPlayers(list: Player[], search: string): Player[] {
+export function filterPlayers(
+  list: Player[],
+  search: string,
+  tournament?: string
+): Player[] {
   const s = search.toLowerCase();
-  return list.filter((p) => p.name.toLowerCase().includes(s));
+  return list.filter(
+    (p) =>
+      p.name.toLowerCase().includes(s) &&
+      (!tournament || p.tournament === tournament)
+  );
 }
 
 /* ───────── util: 初期スタメン計算 ───────── */
@@ -111,10 +118,26 @@ export default function Formation() {
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedTournament, setSelectedTournament] = useState<string>("");
+
+  const tournaments = useMemo(
+    () => Array.from(new Set(players.map((p) => p.tournament).filter(Boolean))) as string[],
+    [players]
+  );
+
+  // restore tournament selection from localStorage once
+  useEffect(() => {
+    const saved = localStorage.getItem("selectedTournament");
+    if (saved) setSelectedTournament(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("selectedTournament", selectedTournament);
+  }, [selectedTournament]);
 
   const filteredPlayers = useMemo(
-    () => filterPlayers(players, search),
-    [players, search]
+    () => filterPlayers(players, search, selectedTournament || undefined),
+    [players, search, selectedTournament]
   );
 
   let orderIndex = 0; // そのまま利用（変更不要）
@@ -273,13 +296,27 @@ export default function Formation() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
-      <input
-        type="text"
-        className="border p-1 mb-4"
-        placeholder="Filter players..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          className="border p-1 flex-1"
+          placeholder="Filter players..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="border p-1"
+          value={selectedTournament}
+          onChange={(e) => setSelectedTournament(e.target.value)}
+        >
+          <option value="">All tournaments</option>
+          {tournaments.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* field */}
       <div className="field relative w-full h-[600px] border bg-green-700 rounded overflow-hidden">
