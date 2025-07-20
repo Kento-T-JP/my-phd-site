@@ -14,5 +14,30 @@ model Player {
   position   String[]
   number     Int?
   image      String?
-  tournament String?
+  rosterPlayers RosterPlayer[]
+}
+
+model Tournament {
+  id      Int     @id @default(autoincrement())
+  name    String
+  rosters Roster[]
+}
+
+model Roster {
+  id           Int       @id @default(autoincrement())
+  date         DateTime
+  tournamentId Int
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  players      RosterPlayer[]
+
+  @@unique([tournamentId, date])
+}
+
+model RosterPlayer {
+  rosterId Int
+  playerId Int
+  roster   Roster @relation(fields: [rosterId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id])
+
+  @@unique([rosterId, playerId])
 }
