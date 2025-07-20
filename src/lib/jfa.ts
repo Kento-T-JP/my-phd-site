@@ -9,13 +9,15 @@ export async function scrapeJfaPlayers(url: string) {
   const { data } = await axios.get(url);
   const $ = cheerio.load(data);
 
-  const players: { name: string; number?: number; image?: string; position: string[]; tournament: string }[] = [];
+  const players: { name: string; number?: number; image?: string; position: string[] }[] = [];
 
   // --- Tournament (breadcrumb) title extraction (robust) ---
   const crumbSpans = $('.outer-block.pankz .pankz-list span');
   function norm(t: string) {
     return t.replace(/\s+/g, ' ').trim();
   }
+  let tournament = '';
+  let rosterDate: Date | undefined;
   let title = '';
   if (crumbSpans.length) {
     const texts = crumbSpans
@@ -27,28 +29,32 @@ export async function scrapeJfaPlayers(url: string) {
     if (texts.length >= 2) {
       const last = texts[texts.length - 1];
       if (/招集|スタッフ/.test(last)) {
-        title = texts[texts.length - 2];
+        tournament = texts[texts.length - 2];
       }
     }
     // Fallback: if still empty, choose last meaningful crumb (excluding ホーム)
-    if (!title) {
+    if (!tournament) {
       for (let i = texts.length - 1; i >= 0; i--) {
         if (texts[i] && texts[i] !== 'ホーム') {
-          title = texts[i];
+          tournament = texts[i];
           break;
         }
       }
     }
   }
-  if (!title) {
-    title = new Date().toISOString().slice(0, 10);
+  if (!tournament) {
+    tournament = new Date().toISOString().slice(0, 10);
   }
   const urlDateMatch = url.match(/\/(\d{8})\/?/);
   if (urlDateMatch) {
     const raw = urlDateMatch[1];
-    const formatted = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
-    title += ` (${formatted})`;
+    rosterDate = new Date(
+      `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+    );
   }
+  title = rosterDate
+    ? `${tournament} (${rosterDate.toISOString().slice(0, 10)})`
+    : tournament;
   // --- end tournament title extraction ---
 
   $('.section-block').each((_, block) => {
@@ -75,10 +81,9 @@ export async function scrapeJfaPlayers(url: string) {
           number,
           image,
           position: [posGroup],
-          tournament: title,
         });
       });
   });
 
-  return { players, title };
+  return { players, tournament, rosterDate, title };
 }

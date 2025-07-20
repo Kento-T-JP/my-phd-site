@@ -55,3 +55,26 @@ export async function updatePlayer(id: number, data: Omit<Player, 'id'> & { tour
   }
   return prisma.player.update({ where: { id }, data });
 }
+
+/** Upsert a tournament by name. */
+export async function upsertTournament(name: string) {
+  const existing = await prisma.tournament.findFirst({ where: { name } });
+  if (existing) return existing;
+  return prisma.tournament.create({ data: { name } });
+}
+
+/** Upsert a roster by (tournamentId, date). */
+export async function upsertRoster(tournamentId: number, date: Date) {
+  const existing = await prisma.roster.findFirst({ where: { tournamentId, date } });
+  if (existing) return existing;
+  return prisma.roster.create({ data: { tournamentId, date } });
+}
+
+/** Link players to a roster, skipping duplicates. */
+export async function addRosterPlayers(rosterId: number, playerIds: number[]) {
+  if (playerIds.length === 0) return;
+  await prisma.rosterPlayer.createMany({
+    data: playerIds.map((playerId) => ({ rosterId, playerId })),
+    skipDuplicates: true,
+  });
+}
