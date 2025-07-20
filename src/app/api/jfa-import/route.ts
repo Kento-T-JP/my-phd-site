@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { upsertPlayer } from '@/lib/db';
+import { upsertPlayer, upsertTournament, upsertRoster, addRosterPlayers } from '@/lib/db';
 import { validateJfaUrl, scrapeJfaPlayers } from '@/lib/jfa';
 
 export async function POST(req: Request) {
@@ -8,19 +8,21 @@ export async function POST(req: Request) {
     if (typeof url !== 'string' || !validateJfaUrl(url)) {
       return NextResponse.json({ error: 'Invalid JFA member URL' }, { status: 400 });
     }
-    const { players, title } = await scrapeJfaPlayers(url);
-    let count = 0;
+    const { players, tournament, rosterDate, title } = await scrapeJfaPlayers(url);
+    const t = await upsertTournament(tournament);
+    const r = await upsertRoster(t.id, rosterDate ?? new Date());
+    const ids: number[] = [];
     for (const p of players) {
-      await upsertPlayer({
+      const player = await upsertPlayer({
         name: p.name,
         number: p.number,
         image: p.image,
         position: p.position,
-        tournament: p.tournament,
       });
-      count++;
+      ids.push(player.id);
     }
-    return NextResponse.json({ count, title });
+    await addRosterPlayers(r.id, ids);
+    return NextResponse.json({ count: ids.length, title });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to import';
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -33,34 +33,32 @@ describe('scrapeJfaPlayers', () => {
     const result = await scrapeJfaPlayers('https://www.jfa.jp/samuraiblue/member.html');
 
     expect(result.title).toBe('AFC Asian Cup 2024');
+    expect(result.tournament).toBe('AFC Asian Cup 2024');
+    expect(result.rosterDate).toBeUndefined();
     expect(result.players).toEqual([
       {
         name: 'John Doe',
         number: 1,
         image: 'https://images.example.com/gk1.jpg',
         position: ['Goalkeepers'],
-        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'Jane Smith',
         number: 2,
         image: 'https://www.jfa.jp/gk2.jpg',
         position: ['Goalkeepers'],
-        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'NoNumber Player',
         number: undefined,
         image: 'https://www.jfa.jp/gk3.jpg',
         position: ['Goalkeepers'],
-        tournament: 'AFC Asian Cup 2024',
       },
       {
         name: 'Bob Brown',
         number: 3,
         image: 'https://www.jfa.jp/df1.jpg',
         position: ['Defenders'],
-        tournament: 'AFC Asian Cup 2024',
       },
     ]);
 
@@ -77,13 +75,14 @@ describe('scrapeJfaPlayers', () => {
     );
 
     expect(result.title).toBe('SAMURAI BLUE (2024-07-20)');
+    expect(result.tournament).toBe('SAMURAI BLUE');
+    expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-07-20');
     expect(result.players).toEqual([
       {
         name: 'John Doe',
         number: 1,
         image: 'https://www.jfa.jp/gk1.jpg',
         position: ['Goalkeepers'],
-        tournament: 'SAMURAI BLUE (2024-07-20)',
       },
     ]);
 
