@@ -18,11 +18,11 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 /** 5 文字以上を “長い名前” とみなしてフォント縮小 */
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
-export function filterPlayers(
-  list: Player[],
+export function filterPlayers<T extends Player & { tournament?: string }>(
+  list: T[],
   search: string,
   tournament?: string
-): Player[] {
+): T[] {
   const s = search.toLowerCase();
   return list.filter(
     (p) =>
@@ -103,7 +103,7 @@ const freezeDefaults = (
 
 export default function Formation() {
   /* ───────── state ───────── */
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<(Player & { tournament?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formation, setFormation] = useState<Formation>(formations[0]);
@@ -148,7 +148,7 @@ export default function Formation() {
       try {
         const res = await fetch('/api/players');
         if (!res.ok) throw new Error('Failed to fetch players');
-        const data: Player[] = await res.json();
+        const data: (Player & { tournament?: string })[] = await res.json();
         setPlayers(data);
       } catch (err) {
         console.error(err);

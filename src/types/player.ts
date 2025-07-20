@@ -10,5 +10,24 @@ export interface Player {
   position: string[]; // 複数ポジション対応
   number?: number;
   image?: string;
-  tournament?: string;
+  rosterPlayers?: RosterPlayer[];
+}
+
+export interface Tournament {
+  id: number;
+  name: string;
+  rosters?: Roster[];
+}
+
+export interface Roster {
+  id: number;
+  date: Date;
+  tournamentId: number;
+  tournament?: Tournament;
+  players?: RosterPlayer[];
+}
+
+export interface RosterPlayer {
+  rosterId: number;
+  playerId: number;
 }
