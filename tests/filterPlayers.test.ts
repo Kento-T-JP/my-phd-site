@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { filterPlayers } from '@/components/Formation';
 import type { Player } from '@/types/player';
 
-interface PlayerWithTournament extends Player {
-  tournament?: string;
+interface PlayerWithRoster extends Player {
+  rosterPlayers?: { rosterId: number }[];
 }
 
-const players: PlayerWithTournament[] = [
-  { id: 1, name: 'Alice', position: ['GK'], tournament: 'CupA' },
-  { id: 2, name: 'Bob', position: ['DF'], tournament: 'CupB' },
-  { id: 3, name: 'Charlie', position: ['FW'], tournament: 'CupA' },
+const players: PlayerWithRoster[] = [
+  { id: 1, name: 'Alice', position: ['GK'], rosterPlayers: [{ rosterId: 1 }] },
+  { id: 2, name: 'Bob', position: ['DF'], rosterPlayers: [{ rosterId: 2 }] },
+  { id: 3, name: 'Charlie', position: ['FW'], rosterPlayers: [{ rosterId: 1 }] },
 ];
 
 const mixedPlayers = [
@@ -24,13 +24,13 @@ describe('filterPlayers', () => {
     expect(filterPlayers(players, '')).toEqual(players);
   });
 
-  it('filters by tournament', () => {
-    expect(filterPlayers(players, '', 'CupA')).toEqual([players[0], players[2]]);
-    expect(filterPlayers(players, 'b', 'CupA')).toEqual([]);
+  it('filters by roster', () => {
+    expect(filterPlayers(players, '', 1)).toEqual([players[0], players[2]]);
+    expect(filterPlayers(players, 'b', 1)).toEqual([]);
   });
 
-  it('excludes players without tournament when filtering', () => {
-    expect(filterPlayers(mixedPlayers, '', 'CupA')).toEqual([
+  it('excludes players without roster when filtering', () => {
+    expect(filterPlayers(mixedPlayers, '', 1)).toEqual([
       players[0],
       players[2],
     ]);
