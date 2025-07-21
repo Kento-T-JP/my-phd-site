@@ -4,8 +4,7 @@ import JfaImportForm from "@/components/JfaImportForm";
 import type { Player } from "@/types/player";
 
 async function fetchPlayers(): Promise<Player[]> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${base}/api/players`, { cache: "no-store" });
+  const res = await fetch("/api/players", { cache: "no-store" });
   if (!res.ok) {
     throw new Error("Failed to fetch players");
   }
