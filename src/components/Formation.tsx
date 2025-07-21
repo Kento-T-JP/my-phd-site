@@ -18,16 +18,16 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 /** 5 文字以上を “長い名前” とみなしてフォント縮小 */
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
-export function filterPlayers<T extends Player & { tournament?: string }>(
+export function filterPlayers<T extends Player & { rosterPlayers?: { rosterId: number }[] }>(
   list: T[],
   search: string,
-  tournament?: string
+  rosterId?: number
 ): T[] {
   const s = search.toLowerCase();
   return list.filter(
     (p) =>
       p.name.toLowerCase().includes(s) &&
-      (!tournament || p.tournament === tournament)
+      (rosterId === undefined || (p.rosterPlayers ?? []).some(rp => rp.rosterId === rosterId))
   );
 }
 
@@ -103,7 +103,8 @@ const freezeDefaults = (
 
 export default function Formation() {
   /* ───────── state ───────── */
-  const [players, setPlayers] = useState<(Player & { tournament?: string })[]>([]);
+  const [players, setPlayers] = useState<(Player & { rosterPlayers?: { rosterId: number }[] })[]>([]);
+  const [rosters, setRosters] = useState<{ id: number; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formation, setFormation] = useState<Formation>(formations[0]);
@@ -118,26 +119,36 @@ export default function Formation() {
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
-  const [selectedTournament, setSelectedTournament] = useState<string>("");
+  const [selectedRoster, setSelectedRoster] = useState<string>("");
 
-  const tournaments = useMemo(
-    () => Array.from(new Set(players.map((p) => p.tournament).filter(Boolean))) as string[],
-    [players]
-  );
-
-  // restore tournament selection from localStorage once
+  // load roster options once
   useEffect(() => {
-    const saved = localStorage.getItem("selectedTournament");
-    if (saved) setSelectedTournament(saved);
+    async function fetchRosters() {
+      try {
+        const res = await fetch('/api/rosters/titles');
+        if (!res.ok) throw new Error('Failed to fetch rosters');
+        const data: { id: number; title: string }[] = await res.json();
+        setRosters(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchRosters();
+  }, []);
+
+  // restore roster selection from localStorage once
+  useEffect(() => {
+    const saved = localStorage.getItem("selectedRoster");
+    if (saved) setSelectedRoster(saved);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("selectedTournament", selectedTournament);
-  }, [selectedTournament]);
+    localStorage.setItem("selectedRoster", selectedRoster);
+  }, [selectedRoster]);
 
   const filteredPlayers = useMemo(
-    () => filterPlayers(players, search, selectedTournament || undefined),
-    [players, search, selectedTournament]
+    () => filterPlayers(players, search, selectedRoster ? Number(selectedRoster) : undefined),
+    [players, search, selectedRoster]
   );
 
   let orderIndex = 0; // そのまま利用（変更不要）
@@ -148,7 +159,7 @@ export default function Formation() {
       try {
         const res = await fetch('/api/players');
         if (!res.ok) throw new Error('Failed to fetch players');
-        const data: (Player & { tournament?: string })[] = await res.json();
+        const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
         setPlayers(data);
       } catch (err) {
         console.error(err);
@@ -306,13 +317,13 @@ export default function Formation() {
         />
         <select
           className="border p-1"
-          value={selectedTournament}
-          onChange={(e) => setSelectedTournament(e.target.value)}
+          value={selectedRoster}
+          onChange={(e) => setSelectedRoster(e.target.value)}
         >
-          <option value="">All tournaments</option>
-          {tournaments.map((t) => (
-            <option key={t} value={t}>
-              {t}
+          <option value="">All rosters</option>
+          {rosters.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.title}
             </option>
           ))}
         </select>
