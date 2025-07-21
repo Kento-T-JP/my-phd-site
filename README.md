@@ -57,6 +57,29 @@ JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run migrate
 JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run seed
 ```
 
+### Migrating tournament data
+
+When upgrading from an older schema that stored the tournament name on the
+`Player` table, first apply the migrations that create the new `Tournament` and
+`Roster` tables:
+
+```bash
+npm run deploy:migrate
+```
+
+Next run the migration script to copy existing data into the new tables:
+
+```bash
+npx tsx scripts/migratePlayersToTournaments.ts
+```
+
+After verifying the results, apply the remaining migration to drop the legacy
+column:
+
+```bash
+npm run deploy:migrate
+```
+
 During CI deployment, run:
 
 ```bash

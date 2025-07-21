@@ -1,11 +1,4 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `tournament` on the `Player` table. All the data in the column will be lost.
-
-*/
--- AlterTable
-ALTER TABLE "Player" DROP COLUMN "tournament";
+-- Migration to create roster tables while keeping existing `Player.tournament` data
 
 -- CreateTable
 CREATE TABLE "Tournament" (
