@@ -2,9 +2,10 @@ import Formation from "@/components/Formation";
 import Link from "next/link";
 import JfaImportForm from "@/components/JfaImportForm";
 import type { Player } from "@/types/player";
+import { getBaseUrl } from "@/lib/url";
 
 async function fetchPlayers(): Promise<Player[]> {
-  const res = await fetch("/api/players", { cache: "no-store" });
+  const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error("Failed to fetch players");
   }
