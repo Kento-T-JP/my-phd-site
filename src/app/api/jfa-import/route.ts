@@ -11,20 +11,21 @@ export async function POST(req: Request) {
     const { players, tournament, rosterDate, title } = await scrapeJfaPlayers(url);
     const t = await upsertTournament(tournament);
     const r = await upsertRoster(t.id, rosterDate ?? new Date());
-    const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
-    for (const p of players) {
-      const player = await upsertPlayer({
-        name: p.name,
-        number: p.number,
-        image: p.image,
-        position: p.position,
-      });
-      rosterEntries.push({
-        playerId: player.id,
-        number: p.number ?? undefined,
-        position: p.position,
-      });
-    }
+    const rosterEntries = await Promise.all(
+      players.map(async (p) => {
+        const player = await upsertPlayer({
+          name: p.name,
+          number: p.number,
+          image: p.image,
+          position: p.position,
+        });
+        return {
+          playerId: player.id,
+          number: p.number ?? undefined,
+          position: p.position,
+        } as { playerId: number; number?: number; position?: string[] };
+      })
+    );
     await addRosterPlayers(r.id, rosterEntries);
     return NextResponse.json({ count: rosterEntries.length, title });
   } catch (err) {
