@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
+import BackButton from "@/components/BackButton";
 
 async function fetchPlayers(): Promise<Player[]> {
   const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
@@ -38,6 +39,9 @@ export default async function PlayersPage() {
           ))}
         </tbody>
       </table>
+      <div className="mt-4">
+        <BackButton />
+      </div>
     </main>
   );
 }
