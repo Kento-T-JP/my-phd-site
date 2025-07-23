@@ -426,10 +426,10 @@ export default function Formation() {
                 </div>
                 {/* jersey number appears on hover, just like the position */}
                 {p.number && (
-                  <div className="text-sm hidden group-hover:block">背番号: {p.number}</div>
+                  <div className="text-sm text-black hidden group-hover:block">背番号: {p.number}</div>
                 )}
                 {/* position stays as‑is */}
-                <div className="text-sm hidden group-hover:block">
+                <div className="text-sm text-black hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
               </div>
@@ -503,10 +503,10 @@ export default function Formation() {
                 </div>
                 {/* jersey number appears on hover */}
                 {p.number && (
-                  <div className="text-sm hidden group-hover:block">背番号: {p.number}</div>
+                  <div className="text-sm text-black hidden group-hover:block">背番号: {p.number}</div>
                 )}
                 {/* position info */}
-                <div className="text-sm hidden group-hover:block">
+                <div className="text-sm text-black hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
               </div>
