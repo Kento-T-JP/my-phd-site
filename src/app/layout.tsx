@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,6 +28,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <header className="bg-[#002D62] text-white flex items-center p-4">
+          <Image
+            src="/emblem.svg"
+            alt="Samurai Blue Emblem"
+            width={40}
+            height={40}
+            className="mr-2"
+          />
+          <span className="text-xl font-bold">SAMURAI BLUE</span>
+        </header>
         {children}
       </body>
     </html>

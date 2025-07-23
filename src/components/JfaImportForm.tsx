@@ -38,7 +38,10 @@ export default function JfaImportForm() {
           onChange={(e) => setUrl(e.target.value)}
           required
         />
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-yellow-400 text-blue-900 rounded"
+        >
           Fetch
         </button>
       </form>
