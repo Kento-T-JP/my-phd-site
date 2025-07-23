@@ -28,9 +28,9 @@ export default async function PlayersPage() {
           {players.map((p) => (
             <tr key={p.id} className="border-b">
               <td className="px-2 py-1">{p.number ?? "-"}</td>
-              <td className="px-2 py-1">{p.name}</td>
+              <td className="px-2 py-1 text-black">{p.name}</td>
               <td className="px-2 py-1 text-right">
-                <Link href={`/players/${p.id}/edit`} className="text-blue-600 underline">
+                <Link href={`/players/${p.id}/edit`} className="text-yellow-300 underline">
                   編集
                 </Link>
               </td>

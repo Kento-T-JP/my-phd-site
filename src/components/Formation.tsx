@@ -417,7 +417,7 @@ export default function Formation() {
                 )}
                 {/* player name (always visible) */}
                 <div
-                  className={`font-semibold whitespace-normal break-words ${
+                  className={`font-semibold whitespace-normal break-words text-black ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
                   }`}
                   title={p.number ? `背番号: ${p.number}` : ""}
@@ -494,7 +494,7 @@ export default function Formation() {
                 )}
                 {/* player name (always visible) */}
                 <div
-                  className={`font-semibold whitespace-normal break-words ${
+                  className={`font-semibold whitespace-normal break-words text-black ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
                   }`}
                   title={p.number ? `背番号: ${p.number}` : ""}
