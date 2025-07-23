@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Samurai Blue base colors */
+  --background: #002D62;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -14,7 +15,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #00183d;
     --foreground: #ededed;
   }
 }
