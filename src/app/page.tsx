@@ -1,6 +1,7 @@
 import Formation from "@/components/Formation";
 import Link from "next/link";
 import JfaImportForm from "@/components/JfaImportForm";
+import BackButton from "@/components/BackButton";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 
@@ -39,6 +40,9 @@ export default async function Home() {
         </Link>
       </div>
       <Formation />
+      <div className="mt-4">
+        <BackButton />
+      </div>
     </main>
   );
 }
