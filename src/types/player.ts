@@ -30,4 +30,6 @@ export interface Roster {
 export interface RosterPlayer {
   rosterId: number;
   playerId: number;
+  number?: number;
+  position?: string[];
 }

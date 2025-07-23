@@ -21,7 +21,13 @@ export async function getPlayers(rosterId?: number) {
         },
       },
     });
-    return roster?.players.map((rp) => rp.player) ?? [];
+    return (
+      roster?.players.map((rp) => ({
+        ...rp.player,
+        number: rp.number ?? rp.player.number,
+        position: rp.position?.length ? rp.position : rp.player.position,
+      })) ?? []
+    );
   }
   return prisma.player.findMany({
     orderBy: { id: 'asc' },
@@ -43,7 +49,7 @@ export async function createPlayer(
   }
   const player = await prisma.player.create({ data });
   if (rosterId) {
-    await addRosterPlayers(rosterId, [player.id]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
   }
   return player;
 }
@@ -63,7 +69,7 @@ export async function upsertPlayer(
     player = await prisma.player.create({ data });
   }
   if (rosterId) {
-    await addRosterPlayers(rosterId, [player.id]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
   }
   return player;
 }
@@ -88,7 +94,7 @@ export async function updatePlayer(
   }
   const player = await prisma.player.update({ where: { id }, data });
   if (rosterId) {
-    await addRosterPlayers(rosterId, [player.id]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
   }
   return player;
 }
@@ -108,10 +114,18 @@ export async function upsertRoster(tournamentId: number, date: Date) {
 }
 
 /** Link players to a roster, skipping duplicates. */
-export async function addRosterPlayers(rosterId: number, playerIds: number[]) {
-  if (playerIds.length === 0) return;
+export async function addRosterPlayers(
+  rosterId: number,
+  players: { playerId: number; number?: number; position?: string[] }[],
+) {
+  if (players.length === 0) return;
   await prisma.rosterPlayer.createMany({
-    data: playerIds.map((playerId) => ({ rosterId, playerId })),
+    data: players.map((p) => ({
+      rosterId,
+      playerId: p.playerId,
+      number: p.number,
+      position: p.position,
+    })),
     skipDuplicates: true,
   });
 }

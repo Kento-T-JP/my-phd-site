@@ -36,6 +36,8 @@ model Roster {
 model RosterPlayer {
   rosterId Int
   playerId Int
+  number   Int?
+  position String[]
   roster   Roster @relation(fields: [rosterId], references: [id])
   player   Player @relation(fields: [playerId], references: [id])
 

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const { players, tournament, rosterDate, title } = await scrapeJfaPlayers(url);
     const t = await upsertTournament(tournament);
     const r = await upsertRoster(t.id, rosterDate ?? new Date());
-    const ids: number[] = [];
+    const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
     for (const p of players) {
       const player = await upsertPlayer({
         name: p.name,
@@ -19,10 +19,14 @@ export async function POST(req: Request) {
         image: p.image,
         position: p.position,
       });
-      ids.push(player.id);
+      rosterEntries.push({
+        playerId: player.id,
+        number: p.number ?? undefined,
+        position: p.position,
+      });
     }
-    await addRosterPlayers(r.id, ids);
-    return NextResponse.json({ count: ids.length, title });
+    await addRosterPlayers(r.id, rosterEntries);
+    return NextResponse.json({ count: rosterEntries.length, title });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to import';
     return NextResponse.json({ error: msg }, { status: 500 });
