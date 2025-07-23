@@ -14,7 +14,10 @@ async function main() {
   for (const [name, ids] of groups) {
     const t = await upsertTournament(name);
     const r = await upsertRoster(t.id, today);
-    await addRosterPlayers(r.id, ids);
+    await addRosterPlayers(
+      r.id,
+      ids.map((id) => ({ playerId: id }))
+    );
     console.log(`Created roster for ${name} with ${ids.length} players`);
   }
 }

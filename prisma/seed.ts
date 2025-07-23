@@ -19,7 +19,7 @@ async function main() {
       const t = await upsertTournament(tournament);
       const r = await upsertRoster(t.id, rosterDate ?? new Date());
       let added = 0;
-      const ids: number[] = [];
+      const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
       for (const p of players) {
         const pl = await upsertPlayer({
           name: p.name,
@@ -27,10 +27,10 @@ async function main() {
           image: p.image,
           position: p.position,
         });
-        ids.push(pl.id);
+        rosterEntries.push({ playerId: pl.id, number: p.number ?? undefined, position: p.position });
         added++;
       }
-      await addRosterPlayers(r.id, ids);
+      await addRosterPlayers(r.id, rosterEntries);
       console.log(`✅ Seeded ${added} players from JFA`);
     } else {
       console.log('❌ Invalid or missing JFA_MEMBER_URL environment variable');
