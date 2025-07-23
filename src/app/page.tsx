@@ -40,9 +40,6 @@ export default async function Home() {
         </Link>
       </div>
       <Formation />
-      <div className="mt-4">
-        <BackButton />
-      </div>
     </main>
   );
 }
