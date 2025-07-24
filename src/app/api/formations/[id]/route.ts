@@ -1,0 +1,76 @@
+import { NextResponse } from "next/server";
+import prisma from "@/lib/db";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import React from "react";
+
+async function getUser() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) return null;
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  return user;
+}
+
+async function unwrap(params: Promise<{ id: string }>) {
+  if ((React as any).use && (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current) {
+    return React.use(params as any) as unknown as { id: string };
+  }
+  return await params;
+}
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await unwrap(params);
+  const num = Number(id);
+  if (Number.isNaN(num)) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+  const user = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const formation = await prisma.formation.findUnique({ where: { id: num } });
+  if (!formation || formation.userId !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json(formation);
+}
+
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await unwrap(params);
+  const num = Number(id);
+  if (Number.isNaN(num)) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+  const user = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const data = await req.json();
+  const formation = await prisma.formation.findUnique({ where: { id: num } });
+  if (!formation || formation.userId !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const updated = await prisma.formation.update({
+    where: { id: num },
+    data: { name: data.name ?? formation.name, positions: data.positions ?? formation.positions },
+  });
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await unwrap(params);
+  const num = Number(id);
+  if (Number.isNaN(num)) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+  const user = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const formation = await prisma.formation.findUnique({ where: { id: num } });
+  if (!formation || formation.userId !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  await prisma.formation.delete({ where: { id: num } });
+  return NextResponse.json({ success: true });
+}

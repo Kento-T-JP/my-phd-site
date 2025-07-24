@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import type { Player } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
@@ -120,6 +122,8 @@ export default function Formation() {
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
+
+  const { data: session } = useSession();
 
   // load roster options once
   useEffect(() => {
@@ -300,6 +304,31 @@ export default function Formation() {
 
     setSelectedId(null);
     setSelectedIsBench(null);
+  };
+
+  const handleSave = async () => {
+    if (!session) {
+      alert("Please log in to save your formation.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/formations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formation.name,
+          positions: { lineupOrder, benchOrder, playerPositions },
+        }),
+      });
+      if (res.ok) {
+        alert("Saved!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save");
+      }
+    } catch (err) {
+      alert("Failed to save");
+    }
   };
 
   /* ───────── render helpers ───────── */
@@ -525,6 +554,21 @@ export default function Formation() {
             );
           })}
         </div>
+      </div>
+
+      <div className="mt-4">
+        {session ? (
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Save
+          </button>
+        ) : (
+          <Link href="/login" className="underline">
+            Login to save
+          </Link>
+        )}
       </div>
     </div>
   );
