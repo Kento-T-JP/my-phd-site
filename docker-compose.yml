@@ -4,6 +4,7 @@ services:
     build: .
     ports:
       - "3000:3000"
+      - "5555:5555"
     volumes:
       - .:/app
     command: ["./wait-for-it.sh", "db:5432", "--", "sh", "-c", "prisma migrate deploy && prisma db seed && npm run dev"]
