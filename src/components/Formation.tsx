@@ -188,22 +188,33 @@ export default function Formation() {
 
   /* ───────── drag handler ───────── */
   useEffect(() => {
+    let rafId: number | null = null;
+    let nextLeft = 0;
+    let nextTop = 0;
+
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        setPlayerPositions((prev) => {
+          const prevPos = prev[dragging!.id];
+          // 位置がほぼ変わらない（0.2% 未満）の場合は更新しない
+          if (prevPos && Math.abs(prevPos.left - nextLeft) < 0.2 && Math.abs(prevPos.top - nextTop) < 0.2) {
+            return prev;
+          }
+          return { ...prev, [dragging!.id]: { top: nextTop, left: nextLeft } };
+        });
+        rafId = null;
+      });
+    };
+
     const move = (e: MouseEvent) => {
       if (!dragging) return;
       const field = document.querySelector(".field") as HTMLElement | null;
       if (!field) return;
       const rect = field.getBoundingClientRect();
-      const left = ((e.clientX - rect.left - dragging.offsetX) / rect.width) * 100;
-      const top = ((e.clientY - rect.top - dragging.offsetY) / rect.height) * 100;
-
-      setPlayerPositions((prev) => {
-        const prevPos = prev[dragging.id];
-        // 位置がほぼ変わらない（0.2% 未満）の場合は更新しない
-        if (prevPos && Math.abs(prevPos.left - left) < 0.2 && Math.abs(prevPos.top - top) < 0.2) {
-          return prev;              // 変化が小さい → そのまま
-        }
-        return { ...prev, [dragging.id]: { top, left } };
-      });
+      nextLeft = ((e.clientX - rect.left - dragging.offsetX) / rect.width) * 100;
+      nextTop = ((e.clientY - rect.top - dragging.offsetY) / rect.height) * 100;
+      scheduleUpdate();
     };
     const up = () => setDragging(null);
     window.addEventListener("mousemove", move);
@@ -211,6 +222,7 @@ export default function Formation() {
     return () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [dragging]);
 
