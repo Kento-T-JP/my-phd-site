@@ -22,6 +22,9 @@ export default function Header() {
               ? `Logged in as ${session.user.email}`
               : "Logged in"}
           </span>
+          <Link href="/mypage" className="underline">
+            My Page
+          </Link>
           <button onClick={() => signOut()} className="underline">
             Logout
           </button>
