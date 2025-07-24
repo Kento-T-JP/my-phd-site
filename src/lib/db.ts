@@ -119,15 +119,19 @@ export async function addRosterPlayers(
   players: { playerId: number; number?: number; position?: string[] }[],
 ) {
   if (players.length === 0) return;
-  await prisma.rosterPlayer.createMany({
-    data: players.map((p) => ({
-      rosterId,
-      playerId: p.playerId,
-      number: p.number,
-      position: p.position,
-    })),
-    skipDuplicates: true,
-  });
+  const upserts = players.map((p) =>
+    prisma.rosterPlayer.upsert({
+      where: { rosterId_playerId: { rosterId, playerId: p.playerId } },
+      update: {},
+      create: {
+        rosterId,
+        playerId: p.playerId,
+        number: p.number,
+        position: p.position,
+      },
+    })
+  );
+  await prisma.$transaction(upserts);
 }
 
 /** Get all rosters ordered by date. */
