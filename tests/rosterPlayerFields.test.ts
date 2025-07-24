@@ -2,27 +2,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import prisma, { addRosterPlayers, getPlayers } from '@/lib/db';
 
 const mockPrisma = prisma as unknown as {
-  rosterPlayer: { createMany: any };
+  rosterPlayer: { upsert: any };
+  $transaction: any;
   roster: { findUnique: any };
 };
 
 describe('RosterPlayer fields', () => {
   beforeEach(() => {
-    mockPrisma.rosterPlayer.createMany = vi.fn();
+    mockPrisma.rosterPlayer.upsert = vi.fn();
+    mockPrisma.$transaction = vi.fn(async (ops: any[]) => Promise.all(ops));
     mockPrisma.roster.findUnique = vi.fn();
   });
 
   it('addRosterPlayers inserts number and position', async () => {
-    mockPrisma.rosterPlayer.createMany.mockResolvedValue({ count: 1 });
+    mockPrisma.rosterPlayer.upsert.mockResolvedValue({});
     await addRosterPlayers(1, [
       { playerId: 2, number: 10, position: ['GK'] },
     ]);
-    expect(mockPrisma.rosterPlayer.createMany).toHaveBeenCalledWith({
-      data: [
-        { rosterId: 1, playerId: 2, number: 10, position: ['GK'] },
-      ],
-      skipDuplicates: true,
+    expect(mockPrisma.rosterPlayer.upsert).toHaveBeenCalledWith({
+      where: { rosterId_playerId: { rosterId: 1, playerId: 2 } },
+      update: {},
+      create: {
+        rosterId: 1,
+        playerId: 2,
+        number: 10,
+        position: ['GK'],
+      },
     });
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
   });
 
   it('getPlayers returns roster-specific fields', async () => {
