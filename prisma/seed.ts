@@ -18,20 +18,22 @@ async function main() {
       const { players, tournament, rosterDate } = await scrapeJfaPlayers(JFA_URL);
       const t = await upsertTournament(tournament);
       const r = await upsertRoster(t.id, rosterDate ?? new Date());
-      let added = 0;
-      const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
-      for (const p of players) {
-        const pl = await upsertPlayer({
+      const promises = players.map((p) =>
+        upsertPlayer({
           name: p.name,
           number: p.number,
           image: p.image,
           position: p.position,
-        });
-        rosterEntries.push({ playerId: pl.id, number: p.number ?? undefined, position: p.position });
-        added++;
-      }
+        })
+      );
+      const inserted = await Promise.all(promises);
+      const rosterEntries = inserted.map((pl, idx) => ({
+        playerId: pl.id,
+        number: players[idx].number ?? undefined,
+        position: players[idx].position,
+      }));
       await addRosterPlayers(r.id, rosterEntries);
-      console.log(`✅ Seeded ${added} players from JFA`);
+      console.log(`✅ Seeded ${inserted.length} players from JFA`);
     } else {
       console.log('❌ Invalid or missing JFA_MEMBER_URL environment variable');
     }
