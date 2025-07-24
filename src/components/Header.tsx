@@ -20,9 +20,14 @@ export default function Header() {
           Logout
         </button>
       ) : (
-        <Link href="/login" className="underline">
-          Login
-        </Link>
+        <div className="space-x-4">
+          <Link href="/login" className="underline">
+            Login
+          </Link>
+          <Link href="/register" className="underline">
+            Register
+          </Link>
+        </div>
       )}
     </header>
   );
