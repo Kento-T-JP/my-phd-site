@@ -16,9 +16,16 @@ export default function Header() {
       />
       <span className="text-xl font-bold flex-grow">SAMURAI BLUE</span>
       {session ? (
-        <button onClick={() => signOut()} className="underline">
-          Logout
-        </button>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm">
+            {session.user?.email
+              ? `Logged in as ${session.user.email}`
+              : "Logged in"}
+          </span>
+          <button onClick={() => signOut()} className="underline">
+            Logout
+          </button>
+        </div>
       ) : (
         <div className="space-x-4">
           <Link href="/login" className="underline">
