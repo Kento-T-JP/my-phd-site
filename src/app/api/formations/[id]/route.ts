@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { FormationUpdateSchema } from "../route";
 import React from "react";
 
 async function getUser() {
@@ -48,14 +49,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await req.json();
+  const body = await req.json();
+  const parsed = FormationUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  }
+  const data = parsed.data;
   const formation = await prisma.formation.findUnique({ where: { id: num } });
   if (!formation || formation.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const updated = await prisma.formation.update({
     where: { id: num },
-    data: { name: data.name ?? formation.name, positions: data.positions ?? formation.positions },
+    data: {
+      name: data.name ?? formation.name,
+      positions: data.positions ?? formation.positions,
+    },
   });
   return NextResponse.json(updated);
 }

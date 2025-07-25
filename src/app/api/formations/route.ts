@@ -2,6 +2,33 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { z } from "zod";
+
+export const FormationNodeSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  playerId: z.number().int(),
+});
+
+const PlayerPosSchema = z.object({ top: z.number(), left: z.number() });
+
+const PositionsSchema = z.object({
+  lineupOrder: z.array(z.number()).optional(),
+  benchOrder: z.array(z.number()).optional(),
+  playerPositions: z.record(z.string(), PlayerPosSchema).optional(),
+});
+
+export const FormationCreateSchema = z.object({
+  name: z.string().optional(),
+  positions: PositionsSchema,
+  nodes: z.array(FormationNodeSchema).optional(),
+});
+
+export const FormationUpdateSchema = z.object({
+  name: z.string().optional(),
+  positions: PositionsSchema.optional(),
+  nodes: z.array(FormationNodeSchema).optional(),
+});
 
 async function getUser() {
   const session = await getServerSession(authOptions);
@@ -27,7 +54,12 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { name, positions, nodes } = await req.json();
+  const body = await req.json();
+  const parsed = FormationCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  }
+  const { name, positions, nodes } = parsed.data;
   const saved = await prisma.formation.create({
     data: {
       name: name || "Untitled",
