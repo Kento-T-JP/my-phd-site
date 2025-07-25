@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import type { SavedFormation } from "@/types/formation";
+import BackButton from "@/components/BackButton";
 
 interface FormationData {
   id: number;
