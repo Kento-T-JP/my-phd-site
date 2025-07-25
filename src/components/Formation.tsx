@@ -146,6 +146,7 @@ export default function Formation({
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
+  const [alias, setAlias] = useState("");
 
   const { data: session } = useSession();
 
@@ -341,12 +342,16 @@ export default function Formation({
       alert("Please log in to save your formation.");
       return;
     }
+    const name = alias.trim() || formation.name;
+    if (!window.confirm('Save formation "' + name + '"?')) {
+      return;
+    }
     try {
       const res = await fetch("/api/formations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formation.name,
+          name,
           positions: { lineupOrder, benchOrder, playerPositions },
         }),
       });
@@ -586,14 +591,23 @@ export default function Formation({
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex gap-2 items-center">
         {session ? (
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Save
-          </button>
+          <>
+            <input
+              type="text"
+              className="border p-1 flex-1"
+              placeholder="Formation name"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+            />
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              Save
+            </button>
+          </>
         ) : (
           <Link href="/login" className="underline">
             Login to save
