@@ -11,3 +11,16 @@ export interface Formation {
     };
   };
 }
+
+export interface FormationNode {
+  id: number;
+  x: number;
+  y: number;
+  playerId: number;
+  formationId: number;
+}
+
+export interface SavedFormation extends Formation {
+  id: number;
+  nodes: FormationNode[];
+}

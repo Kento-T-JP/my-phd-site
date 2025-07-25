@@ -14,7 +14,11 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const list = await prisma.formation.findMany({ where: { userId: user.id }, orderBy: { id: 'asc' } });
+  const list = await prisma.formation.findMany({
+    where: { userId: user.id },
+    orderBy: { id: "asc" },
+    include: { nodes: true },
+  });
   return NextResponse.json(list);
 }
 
@@ -23,13 +27,23 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { name, positions } = await req.json();
+  const { name, positions, nodes } = await req.json();
   const saved = await prisma.formation.create({
     data: {
       name: name || "Untitled",
       positions,
       userId: user.id,
+      nodes: nodes
+        ? {
+            create: nodes.map((n: any) => ({
+              x: n.x,
+              y: n.y,
+              playerId: n.playerId,
+            })),
+          }
+        : undefined,
     },
+    include: { nodes: true },
   });
   return NextResponse.json(saved, { status: 201 });
 }
