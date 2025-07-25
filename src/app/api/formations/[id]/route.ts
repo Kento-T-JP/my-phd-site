@@ -28,7 +28,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const formation = await prisma.formation.findUnique({ where: { id: num } });
+  const formation = await prisma.formation.findUnique({
+    where: { id: num },
+    include: { nodes: true },
+  });
   if (!formation || formation.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

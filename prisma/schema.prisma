@@ -9,25 +9,26 @@ datasource db {
 }
 
 model Player {
-  id         Int      @id @default(autoincrement())
-  name       String   @unique
-  position   String[]
-  number     Int?
-  image      String?
-  rosterPlayers RosterPlayer[]
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  position       String[]
+  number         Int?
+  image          String?
+  rosterPlayers  RosterPlayer[]
+  formationNodes FormationNode[]
 }
 
 model Tournament {
-  id      Int     @id @default(autoincrement())
+  id      Int      @id @default(autoincrement())
   name    String
   rosters Roster[]
 }
 
 model Roster {
-  id           Int       @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   date         DateTime
   tournamentId Int
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament     @relation(fields: [tournamentId], references: [id])
   players      RosterPlayer[]
 
   @@unique([tournamentId, date])
@@ -38,25 +39,36 @@ model RosterPlayer {
   playerId Int
   number   Int?
   position String[]
-  roster   Roster @relation(fields: [rosterId], references: [id])
-  player   Player @relation(fields: [playerId], references: [id])
+  roster   Roster   @relation(fields: [rosterId], references: [id])
+  player   Player   @relation(fields: [playerId], references: [id])
 
   @@unique([rosterId, playerId])
 }
 
 model User {
-  id             Int        @id @default(autoincrement())
-  email          String     @unique
+  id             Int         @id @default(autoincrement())
+  email          String      @unique
   hashedPassword String
   formations     Formation[]
 }
 
 model Formation {
-  id        Int    @id @default(autoincrement())
-  user      User   @relation(fields: [userId], references: [id])
+  id        Int             @id @default(autoincrement())
+  user      User            @relation(fields: [userId], references: [id])
   userId    Int
   name      String
   positions Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  nodes     FormationNode[]
+}
+
+model FormationNode {
+  id          Int       @id @default(autoincrement())
+  x           Float
+  y           Float
+  playerId    Int
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  formationId Int
+  player      Player    @relation(fields: [playerId], references: [id])
 }
