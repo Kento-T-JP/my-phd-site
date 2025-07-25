@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 interface FormationData {
   id: number;
@@ -64,6 +65,9 @@ export default function MyPage() {
           ))}
         </ul>
       )}
+      <div className="mt-4">
+        <BackButton />
+      </div>
     </main>
   );
 }
