@@ -28,6 +28,12 @@ export default function MyPage() {
     load();
   }, [session]);
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this formation?")) return;
+    await fetch(`/api/formations/${id}`, { method: "DELETE" });
+    setList((prev) => prev.filter((f) => f.id !== id));
+  };
+
   if (status === "loading") {
     return (
       <main className="p-8">
@@ -59,9 +65,15 @@ export default function MyPage() {
         <ul>
           {list.map((f) => (
             <li key={f.id} className="mb-2">
-              <Link href={`/?formationId=${f.id}`} className="underline">
+              <Link href={`/?formationId=${f.id}`} className="underline mr-2">
                 {f.name}
               </Link>
+              <button
+                onClick={() => handleDelete(f.id)}
+                className="text-red-500 underline"
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
