@@ -2,16 +2,11 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-
-interface FormationData {
-  id: number;
-  name: string;
-  positions: any;
-}
+import type { SavedFormation } from "@/types/formation";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
-  const [list, setList] = useState<FormationData[]>([]);
+  const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +14,7 @@ export default function FormationsPage() {
     async function load() {
       const res = await fetch("/api/formations");
       if (res.ok) {
-        setList(await res.json());
+        setList((await res.json()) as SavedFormation[]);
       }
       setLoading(false);
     }

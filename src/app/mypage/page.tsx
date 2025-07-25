@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import BackButton from "@/components/BackButton";
 
 interface FormationData {
   id: number;
@@ -12,7 +11,7 @@ interface FormationData {
 
 export default function MyPage() {
   const { data: session, status } = useSession();
-  const [list, setList] = useState<FormationData[]>([]);
+  const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,7 +19,7 @@ export default function MyPage() {
     async function load() {
       const res = await fetch("/api/formations");
       if (res.ok) {
-        setList(await res.json());
+        setList((await res.json()) as SavedFormation[]);
       }
       setLoading(false);
     }
