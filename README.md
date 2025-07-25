@@ -101,6 +101,20 @@ services are running you can seed the database again if needed:
 ```bash
 JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec app npm run seed
 ```
+## Testing
+
+Before running the test suite, ensure you have Node.js 20 or later installed and install project dependencies:
+
+```bash
+npm install
+```
+
+Run the tests with:
+
+```bash
+npm test
+```
+
 
 
 ## Editing Players
