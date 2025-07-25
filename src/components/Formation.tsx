@@ -8,6 +8,15 @@ import type { Player } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
+export interface InitialFormation {
+  name: string;
+  positions: {
+    lineupOrder: number[];
+    benchOrder: number[];
+    playerPositions: Record<number, { top: number; left: number }>;
+  };
+}
+
 interface Dragging {
   id: number;
   offsetX: number;
@@ -103,16 +112,31 @@ const freezeDefaults = (
   setDefaultsFrozen(true);
 };
 
-export default function Formation() {
+export default function Formation({
+  initialFormation,
+}: {
+  initialFormation?: InitialFormation;
+}) {
   /* ───────── state ───────── */
-  const [players, setPlayers] = useState<(Player & { rosterPlayers?: { rosterId: number }[] })[]>([]);
+  const base = initialFormation
+    ? formations.find((f) => f.name === initialFormation.name) ?? formations[0]
+    : formations[0];
+  const [formation, setFormation] = useState<Formation>(base);
+  const [lineupOrder, setLineupOrder] = useState<number[]>(
+    initialFormation?.positions.lineupOrder ?? []
+  );
+  const [benchOrder, setBenchOrder] = useState<number[]>(
+    initialFormation?.positions.benchOrder ?? []
+  );
+  const [playerPositions, setPlayerPositions] = useState<
+    Record<number, { top: number; left: number }>
+  >(initialFormation?.positions.playerPositions ?? {});
+  const [players, setPlayers] = useState<
+    (Player & { rosterPlayers?: { rosterId: number }[] })[]
+  >([]);
   const [rosters, setRosters] = useState<{ id: number; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formation, setFormation] = useState<Formation>(formations[0]);
-  const [lineupOrder, setLineupOrder] = useState<number[]>([]);
-  const [benchOrder, setBenchOrder] = useState<number[]>([]);
-  const [playerPositions, setPlayerPositions] = useState<Record<number, { top: number; left: number }>>({});
   const [dragging, setDragging] = useState<Dragging | null>(null);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -175,11 +199,17 @@ export default function Formation() {
     fetchPlayers();
   }, []);
 
-  // initialize ids when players, formation, or search change
+  // initialize ids when players or formation change and no initial lineup
   useEffect(() => {
     if (filteredPlayers.length === 0) {
-      setBenchOrder([]);
-      setLineupOrder([]);
+      if (lineupOrder.length === 0) {
+        setBenchOrder([]);
+        setLineupOrder([]);
+      }
+      return;
+    }
+    if (lineupOrder.length > 0) {
+      setLoading(false);
       return;
     }
     const ids = makeInitialFieldIds(formation, filteredPlayers);
@@ -188,7 +218,7 @@ export default function Formation() {
     );
     setLineupOrder(Array.from(ids));
     setLoading(false);
-  }, [filteredPlayers, formation]);
+  }, [filteredPlayers, formation, lineupOrder.length]);
 
   /* ───────── drag handler ───────── */
   useEffect(() => {

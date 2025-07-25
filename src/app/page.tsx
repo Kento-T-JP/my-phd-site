@@ -13,8 +13,30 @@ async function fetchPlayers(): Promise<Player[]> {
   return (await res.json()) as Player[];
 }
 
-export default async function Home() {
+import type { SavedFormation } from "@/types/formation";
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { formationId?: string };
+}) {
   const players = await fetchPlayers();
+
+  const formationId = searchParams?.formationId;
+  let initialFormation: SavedFormation | undefined;
+  if (formationId) {
+    try {
+      const res = await fetch(
+        `${getBaseUrl()}/api/formations/${formationId}`,
+        { cache: "no-store" }
+      );
+      if (res.ok) {
+        initialFormation = (await res.json()) as SavedFormation;
+      }
+    } catch {
+      // ignore errors and fall back to default
+    }
+  }
 
   if (players.length === 0) {
     return (
@@ -39,7 +61,7 @@ export default async function Home() {
           JFAメンバーインポート
         </Link>
       </div>
-      <Formation />
+      <Formation initialFormation={initialFormation} />
     </main>
   );
 }
