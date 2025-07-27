@@ -4,6 +4,7 @@ import JfaImportForm from "@/components/JfaImportForm";
 import BackButton from "@/components/BackButton";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
+import { cookies } from "next/headers";
 
 async function fetchPlayers(): Promise<Player[]> {
   const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
@@ -26,9 +27,13 @@ export default async function Home({
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
+      const cookieHeader = cookies().toString();
       const res = await fetch(
         `${getBaseUrl()}/api/formations/${formationId}`,
-        { cache: "no-store" }
+        {
+          cache: "no-store",
+          headers: { cookie: cookieHeader },
+        }
       );
       if (res.ok) {
         initialFormation = (await res.json()) as SavedFormation;
