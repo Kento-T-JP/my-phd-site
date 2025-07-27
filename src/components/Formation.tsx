@@ -151,6 +151,22 @@ export default function Formation({
 
   const { data: session } = useSession();
 
+  // update when a different formation is supplied from props
+  useEffect(() => {
+    if (!initialFormation) return;
+    const base =
+      formations.find((f) => f.name === initialFormation.name) ?? formations[0];
+    setFormation(base);
+    setLineupOrder(initialFormation.positions.lineupOrder ?? []);
+    setBenchOrder(initialFormation.positions.benchOrder ?? []);
+    setPlayerPositions(initialFormation.positions.playerPositions ?? {});
+    setAlias(initialFormation.name ?? "");
+    setCustomMode(false);
+    setDefaultsFrozen(false);
+    setSelectedId(null);
+    setSelectedIsBench(null);
+  }, [initialFormation]);
+
   // load roster options once
   useEffect(() => {
     async function fetchRosters() {
