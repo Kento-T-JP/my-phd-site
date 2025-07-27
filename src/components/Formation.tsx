@@ -115,8 +115,12 @@ const freezeDefaults = (
 
 export default function Formation({
   initialFormation,
+  onSaved,
+  onUpdated,
 }: {
   initialFormation?: InitialFormation;
+  onSaved?: () => void;
+  onUpdated?: () => void;
 }) {
   /* ───────── state ───────── */
   const base = initialFormation
@@ -374,6 +378,7 @@ export default function Formation({
       });
       if (res.ok) {
         alert("Saved!");
+        onSaved?.();
       } else {
         const data = await res.json();
         alert(data.error || "Failed to save");
@@ -403,6 +408,7 @@ export default function Formation({
       });
       if (res.ok) {
         alert("Updated!");
+        onUpdated?.();
       } else {
         const data = await res.json();
         alert(data.error || "Failed to update");

@@ -11,20 +11,23 @@ export default function FormationsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | "">("");
 
+  async function loadList() {
+    const res = await fetch("/api/formations");
+    if (res.ok) {
+      const data = (await res.json()) as SavedFormation[];
+      setList(data);
+      if (data.length > 0) {
+        setSelectedId((prev) =>
+          prev === "" ? data[0].id : prev
+        );
+      }
+    }
+    setLoading(false);
+  }
+
   useEffect(() => {
     if (!session) return;
-    async function load() {
-      const res = await fetch("/api/formations");
-      if (res.ok) {
-        const data = (await res.json()) as SavedFormation[];
-        setList(data);
-        if (data.length > 0) {
-          setSelectedId(data[0].id);
-        }
-      }
-      setLoading(false);
-    }
-    load();
+    loadList();
   }, [session]);
 
   const handleDelete = async (id: number) => {
@@ -81,7 +84,11 @@ export default function FormationsPage() {
             )}
           </div>
           {selectedFormation && (
-            <Formation initialFormation={selectedFormation} />
+            <Formation
+              initialFormation={selectedFormation}
+              onSaved={loadList}
+              onUpdated={loadList}
+            />
           )}
         </>
       )}
