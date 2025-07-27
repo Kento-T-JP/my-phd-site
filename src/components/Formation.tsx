@@ -9,6 +9,7 @@ import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
 export interface InitialFormation {
+  id?: number;
   name: string;
   positions: {
     lineupOrder: number[];
@@ -146,7 +147,7 @@ export default function Formation({
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
-  const [alias, setAlias] = useState("");
+  const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const { data: session } = useSession();
 
@@ -363,6 +364,35 @@ export default function Formation({
       }
     } catch (err) {
       alert("Failed to save");
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!session || !initialFormation?.id) {
+      alert("No formation to update.");
+      return;
+    }
+    const name = alias.trim() || formation.name;
+    if (!window.confirm('Update formation "' + name + '"?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/formations/${initialFormation.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          positions: { lineupOrder, benchOrder, playerPositions },
+        }),
+      });
+      if (res.ok) {
+        alert("Updated!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update");
+      }
+    } catch (err) {
+      alert("Failed to update");
     }
   };
 
@@ -607,6 +637,14 @@ export default function Formation({
             >
               Save
             </button>
+            {initialFormation?.id && (
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                Update
+              </button>
+            )}
           </>
         ) : (
           <Link href="/login" className="underline">
