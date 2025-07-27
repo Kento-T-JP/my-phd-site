@@ -3,18 +3,24 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import type { SavedFormation } from "@/types/formation";
+import Formation from "@/components/Formation";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | "">("");
 
   useEffect(() => {
     if (!session) return;
     async function load() {
       const res = await fetch("/api/formations");
       if (res.ok) {
-        setList((await res.json()) as SavedFormation[]);
+        const data = (await res.json()) as SavedFormation[];
+        setList(data);
+        if (data.length > 0) {
+          setSelectedId(data[0].id);
+        }
       }
       setLoading(false);
     }
@@ -24,7 +30,11 @@ export default function FormationsPage() {
   const handleDelete = async (id: number) => {
     await fetch(`/api/formations/${id}`, { method: "DELETE" });
     setList((prev) => prev.filter((f) => f.id !== id));
+    setSelectedId((prev) => (prev === id ? "" : prev));
   };
+
+  const selectedFormation =
+    selectedId === "" ? null : list.find((f) => f.id === selectedId) || null;
 
   if (!session) {
     return (
@@ -44,25 +54,36 @@ export default function FormationsPage() {
       ) : list.length === 0 ? (
         <p>No formations saved.</p>
       ) : (
-        <ul>
-          {list.map((f) => (
-            <li key={f.id} className="mb-2">
-              <span className="mr-2">{f.name}</span>
-              <Link
-                href={`/?formationId=${f.id}`}
-                className="underline mr-2"
-              >
-                Select
-              </Link>
+        <>
+          <div className="mb-4">
+            <select
+              className="border p-1"
+              value={selectedId}
+              onChange={(e) =>
+                setSelectedId(
+                  e.target.value ? Number(e.target.value) : ""
+                )
+              }
+            >
+              {list.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+            {selectedId && (
               <button
-                onClick={() => handleDelete(f.id)}
-                className="text-red-500 underline"
+                onClick={() => handleDelete(Number(selectedId))}
+                className="ml-2 text-red-500 underline"
               >
                 Delete
               </button>
-            </li>
-          ))}
-        </ul>
+            )}
+          </div>
+          {selectedFormation && (
+            <Formation initialFormation={selectedFormation} />
+          )}
+        </>
       )}
     </main>
   );
