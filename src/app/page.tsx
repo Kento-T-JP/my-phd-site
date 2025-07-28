@@ -19,15 +19,15 @@ import type { SavedFormation } from "@/types/formation";
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { formationId?: string };
+  searchParams: Promise<{ formationId?: string }>;
 }) {
   const players = await fetchPlayers();
 
-  const formationId = searchParams?.formationId;
+  const { formationId } = await searchParams;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
-      const cookieHeader = cookies().toString();
+      const cookieHeader = (await cookies()).toString();
       const res = await fetch(
         `${getBaseUrl()}/api/formations/${formationId}`,
         {
