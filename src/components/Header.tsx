@@ -1,10 +1,13 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Header() {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const showHome = pathname !== "/";
   return (
     <header className="bg-[#002D62] text-white flex items-center p-4">
       <Image
@@ -15,6 +18,11 @@ export default function Header() {
         className="mr-2"
       />
       <span className="text-xl font-bold flex-grow">SAMURAI BLUE</span>
+      {showHome && (
+        <Link href="/" className="underline mr-4">
+          Home
+        </Link>
+      )}
       {session ? (
         <div className="flex items-center space-x-4">
           <span className="text-sm">
