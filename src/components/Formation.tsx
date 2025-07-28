@@ -230,6 +230,13 @@ export default function Formation({
     fetchPlayers();
   }, [selectedRoster]);
 
+  // reset lineup when changing rosters to ensure valid players are drawn
+  useEffect(() => {
+    setLineupOrder([]);
+    setBenchOrder([]);
+    setPlayerPositions({});
+  }, [selectedRoster]);
+
   // initialize ids when players or formation change and no initial lineup
   useEffect(() => {
     if (filteredPlayers.length === 0) {
