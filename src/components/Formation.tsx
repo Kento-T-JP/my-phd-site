@@ -192,6 +192,15 @@ export default function Formation({
     if (saved) setSelectedRoster(saved);
   }, []);
 
+  // ensure stored roster still exists
+  useEffect(() => {
+    if (!selectedRoster || rosters.length === 0) return;
+    const exists = rosters.some(r => r.id === Number(selectedRoster));
+    if (!exists) {
+      setSelectedRoster("");
+    }
+  }, [rosters, selectedRoster]);
+
   useEffect(() => {
     localStorage.setItem("selectedRoster", selectedRoster);
   }, [selectedRoster]);
