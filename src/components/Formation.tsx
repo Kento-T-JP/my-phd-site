@@ -251,6 +251,17 @@ export default function Formation({
     setLoading(false);
   }, [filteredPlayers, formation, lineupOrder.length]);
 
+  // reset lineup when switching rosters
+  useEffect(() => {
+    const ids = makeInitialFieldIds(formation, filteredPlayers);
+    setBenchOrder(filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)));
+    setLineupOrder(Array.from(ids));
+    setCustomMode(false);
+    setDefaultsFrozen(false);
+    setPlayerPositions({});
+    setSelectedId(null);
+  }, [selectedRoster]);
+
   /* ───────── drag handler ───────── */
   useEffect(() => {
     let rafId: number | null = null;
