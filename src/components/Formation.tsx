@@ -115,10 +115,12 @@ const freezeDefaults = (
 
 export default function Formation({
   initialFormation,
+  rosterId,
   onSaved,
   onUpdated,
 }: {
   initialFormation?: InitialFormation;
+  rosterId?: number;
   onSaved?: () => void;
   onUpdated?: () => void;
 }) {
@@ -186,11 +188,15 @@ export default function Formation({
     fetchRosters();
   }, []);
 
-  // restore roster selection from localStorage once
+  // restore roster selection from localStorage once or sync with prop
   useEffect(() => {
+    if (rosterId !== undefined) {
+      setSelectedRoster(String(rosterId));
+      return;
+    }
     const saved = localStorage.getItem("selectedRoster");
     if (saved) setSelectedRoster(saved);
-  }, []);
+  }, [rosterId]);
 
   useEffect(() => {
     localStorage.setItem("selectedRoster", selectedRoster);
@@ -203,11 +209,14 @@ export default function Formation({
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
-  // fetch players once
+  // fetch players whenever roster changes
   useEffect(() => {
     async function fetchPlayers() {
       try {
-        const res = await fetch('/api/players');
+        const url = selectedRoster
+          ? `/api/rosters/${selectedRoster}/players`
+          : '/api/players';
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch players');
         const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
         setPlayers(data);
@@ -219,7 +228,7 @@ export default function Formation({
       }
     }
     fetchPlayers();
-  }, []);
+  }, [selectedRoster]);
 
   // initialize ids when players or formation change and no initial lineup
   useEffect(() => {
