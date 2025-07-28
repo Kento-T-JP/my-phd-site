@@ -19,11 +19,11 @@ import type { SavedFormation } from "@/types/formation";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ formationId?: string }>;
+  searchParams: Promise<{ formationId?: string; rosterId?: string }>;
 }) {
   const players = await fetchPlayers();
 
-  const { formationId } = await searchParams;
+  const { formationId, rosterId } = await searchParams;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
@@ -66,7 +66,10 @@ export default async function Home({
           JFAメンバーインポート
         </Link>
       </div>
-      <Formation initialFormation={initialFormation} />
+      <Formation
+        initialFormation={initialFormation}
+        rosterId={rosterId ? Number(rosterId) : undefined}
+      />
     </main>
   );
 }
