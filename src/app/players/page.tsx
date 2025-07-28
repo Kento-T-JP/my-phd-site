@@ -4,7 +4,7 @@ import { getBaseUrl } from "@/lib/url";
 import BackButton from "@/components/BackButton";
 
 async function fetchPlayers(): Promise<Player[]> {
-  const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
+  const res = await fetch(`${await getBaseUrl()}/api/players`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error("Failed to fetch players");
   }
