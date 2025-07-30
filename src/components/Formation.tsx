@@ -165,6 +165,9 @@ export default function Formation({
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
+  const [searchInput, setSearchInput] = useState("");
+  const [rosterInput, setRosterInput] = useState("");
+  const [positionInput, setPositionInput] = useState("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const { data: session } = useSession();
@@ -218,6 +221,18 @@ export default function Formation({
   useEffect(() => {
     localStorage.setItem("selectedRoster", selectedRoster);
   }, [selectedRoster]);
+
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
+
+  useEffect(() => {
+    setRosterInput(selectedRoster);
+  }, [selectedRoster]);
+
+  useEffect(() => {
+    setPositionInput(selectedPosition);
+  }, [selectedPosition]);
 
   const filteredPlayers = useMemo(
     () =>
@@ -479,13 +494,13 @@ export default function Formation({
           type="text"
           className="border p-1 flex-1"
           placeholder="Filter players..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
         />
         <select
           className="border p-1"
-          value={selectedRoster}
-          onChange={(e) => setSelectedRoster(e.target.value)}
+          value={rosterInput}
+          onChange={(e) => setRosterInput(e.target.value)}
         >
           <option value="">All rosters</option>
           {rosters.map((r) => (
@@ -496,8 +511,8 @@ export default function Formation({
         </select>
         <select
           className="border p-1"
-          value={selectedPosition}
-          onChange={(e) => setSelectedPosition(e.target.value)}
+          value={positionInput}
+          onChange={(e) => setPositionInput(e.target.value)}
         >
           <option value="">All positions</option>
           {positionOptions.map((pos) => (
@@ -506,6 +521,16 @@ export default function Formation({
             </option>
           ))}
         </select>
+        <button
+          className="px-2 py-1 bg-blue-500 text-white rounded"
+          onClick={() => {
+            setSearch(searchInput);
+            setSelectedRoster(rosterInput);
+            setSelectedPosition(positionInput);
+          }}
+        >
+          Apply Filters
+        </button>
       </div>
 
       {/* field */}
