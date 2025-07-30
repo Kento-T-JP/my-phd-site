@@ -28,7 +28,8 @@ body {
 
 /* ───── Blue Lock inspired field styling ───── */
 .formation-field {
-  background-color: #061a2e;
+  /* green field with cyan grid */
+  background-color: #064e3b;
   background-image:
     linear-gradient(rgba(56,189,248,0.15) 1px, transparent 1px),
     linear-gradient(90deg, rgba(56,189,248,0.15) 1px, transparent 1px),
@@ -46,6 +47,7 @@ body {
   width: 2px;
   background-color: rgba(56,189,248,0.4);
   transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .formation-field::after {
@@ -58,6 +60,7 @@ body {
   border: 2px solid rgba(56,189,248,0.4);
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .field-sweep {
