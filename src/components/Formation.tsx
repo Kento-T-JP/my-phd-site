@@ -285,16 +285,6 @@ export default function Formation({
     setLoading(false);
   }, [filteredPlayers, formation, lineupOrder.length]);
 
-  // reset lineup when switching rosters
-  useEffect(() => {
-    const ids = makeInitialFieldIds(formation, filteredPlayers);
-    setBenchOrder(filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)));
-    setLineupOrder(Array.from(ids));
-    setCustomMode(false);
-    setDefaultsFrozen(false);
-    setPlayerPositions({});
-    setSelectedId(null);
-  }, [selectedRoster, search, selectedPosition]);
 
   /* ───────── drag handler ───────── */
   useEffect(() => {
@@ -408,6 +398,17 @@ export default function Formation({
     if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
     setCustomMode(true);
 
+    setSelectedId(null);
+    setSelectedIsBench(null);
+  };
+
+  const handleReset = () => {
+    const ids = makeInitialFieldIds(formation, filteredPlayers);
+    setBenchOrder(filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)));
+    setLineupOrder(Array.from(ids));
+    setPlayerPositions({});
+    setCustomMode(false);
+    setDefaultsFrozen(false);
     setSelectedId(null);
     setSelectedIsBench(null);
   };
@@ -652,21 +653,18 @@ export default function Formation({
               formation.name === f.name ? "bg-green-300" : ""
             }`}
             onClick={() => {
-              const ids = makeInitialFieldIds(f, filteredPlayers);
               setFormation(f);
-              setBenchOrder(
-                filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
-              );
-              setLineupOrder(Array.from(ids));
-              setCustomMode(false);
-              setDefaultsFrozen(false);
-              setPlayerPositions({});
-              setSelectedId(null);
             }}
           >
             {f.name}
           </button>
         ))}
+        <button
+          className="px-3 py-1 border rounded"
+          onClick={handleReset}
+        >
+          Reset
+        </button>
       </div>
 
       {/* bench */}
