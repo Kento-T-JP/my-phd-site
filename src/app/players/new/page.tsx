@@ -6,7 +6,11 @@ import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
 
 const positionOptions: PositionKey[] = Array.from(
-  new Set(formations.flatMap((f) => Object.keys(f.positions)))
+  new Set([
+    ...formations.flatMap((f) => Object.keys(f.positions)),
+    "DF",
+    "MF/FW",
+  ])
 ) as PositionKey[];
 
 export default function NewPlayerPage() {
