@@ -279,7 +279,7 @@ export default function Formation({
     setDefaultsFrozen(false);
     setPlayerPositions({});
     setSelectedId(null);
-  }, [selectedRoster]);
+  }, [selectedRoster, search, selectedPosition]);
 
   /* ───────── drag handler ───────── */
   useEffect(() => {
