@@ -478,7 +478,8 @@ export default function Formation({
       </div>
 
       {/* field */}
-      <div className="field relative w-full h-[600px] border bg-green-700 rounded overflow-hidden">
+      <div className="field formation-field relative w-full h-[600px] border border-cyan-400/10 rounded overflow-hidden">
+        <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
           const base = formation.positions[posKey as keyof typeof formation.positions];
           if (!base) return null;
@@ -527,8 +528,8 @@ export default function Formation({
             return (
               <div
                 key={p.id}
-                className={`absolute group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 ${
-                  selectedId === p.id ? "bg-blue-200" : "bg-white"
+                className={`absolute group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+                  selectedId === p.id ? "ring-2 ring-cyan-300" : ""
                 }`}
                 style={{
                   top: `${pos.top}%`,
@@ -559,13 +560,13 @@ export default function Formation({
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full mx-auto pointer-events-none text-center text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
                     No image
                   </div>
                 )}
                 {/* player name (always visible) */}
                 <div
-                  className={`font-semibold whitespace-normal break-words text-black ${
+                  className={`font-semibold whitespace-normal break-words text-cyan-100 ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
                   }`}
                   title={p.number ? `背番号: ${p.number}` : ""}
@@ -574,10 +575,10 @@ export default function Formation({
                 </div>
                 {/* jersey number appears on hover, just like the position */}
                 {p.number && (
-                  <div className="text-sm text-black hidden group-hover:block">背番号: {p.number}</div>
+                  <div className="text-sm text-cyan-200 hidden group-hover:block">背番号: {p.number}</div>
                 )}
                 {/* position stays as‑is */}
-                <div className="text-sm text-black hidden group-hover:block">
+                <div className="text-sm text-cyan-200 hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
               </div>
@@ -622,8 +623,8 @@ export default function Formation({
             return (
               <div
                 key={p.id}
-                className={`w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 ${
-                  selectedId === p.id ? "bg-blue-200" : "bg-gray-200"
+                className={`w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+                  selectedId === p.id ? "ring-2 ring-cyan-300" : ""
                 }`}
                 onClick={() => handleClick(p.id, true)}
               >
@@ -636,13 +637,13 @@ export default function Formation({
                     className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
                   />
                 ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300 rounded-full mx-auto pointer-events-none text-center text-xs">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
                     No image
                   </div>
                 )}
                 {/* player name (always visible) */}
                 <div
-                  className={`font-semibold whitespace-normal break-words text-black ${
+                  className={`font-semibold whitespace-normal break-words text-cyan-100 ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
                   }`}
                   title={p.number ? `背番号: ${p.number}` : ""}
@@ -651,10 +652,10 @@ export default function Formation({
                 </div>
                 {/* jersey number appears on hover */}
                 {p.number && (
-                  <div className="text-sm text-black hidden group-hover:block">背番号: {p.number}</div>
+                  <div className="text-sm text-cyan-200 hidden group-hover:block">背番号: {p.number}</div>
                 )}
                 {/* position info */}
-                <div className="text-sm text-black hidden group-hover:block">
+                <div className="text-sm text-cyan-200 hidden group-hover:block">
                   {p.position.join(", ")}
                 </div>
               </div>
