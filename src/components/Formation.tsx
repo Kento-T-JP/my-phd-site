@@ -18,6 +18,12 @@ export interface InitialFormation {
   };
 }
 
+export interface FormationState {
+  lineupOrder: number[];
+  benchOrder: number[];
+  playerPositions: Record<number, { top: number; left: number }>;
+}
+
 interface Dragging {
   id: number;
   offsetX: number;
@@ -170,6 +176,18 @@ export default function Formation({
   const [positionInput, setPositionInput] = useState("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
+  const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
+    initialFormation
+      ? {
+          [initialFormation.name]: {
+            lineupOrder: initialFormation.positions.lineupOrder ?? [],
+            benchOrder: initialFormation.positions.benchOrder ?? [],
+            playerPositions: initialFormation.positions.playerPositions ?? {},
+          },
+        }
+      : {}
+  );
+
   const { data: session } = useSession();
 
   // update when a different formation is supplied from props
@@ -181,6 +199,14 @@ export default function Formation({
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
+    setFormationStates((prev) => ({
+      ...prev,
+      [initialFormation.name]: {
+        lineupOrder: initialFormation.positions.lineupOrder ?? [],
+        benchOrder: initialFormation.positions.benchOrder ?? [],
+        playerPositions: initialFormation.positions.playerPositions ?? {},
+      },
+    }));
     setAlias(initialFormation.name ?? "");
     setCustomMode(false);
     setDefaultsFrozen(false);
@@ -402,11 +428,47 @@ export default function Formation({
     setSelectedIsBench(null);
   };
 
+  const handleFormationChange = (f: Formation) => {
+    // save current state for existing formation
+    setFormationStates((prev) => ({
+      ...prev,
+      [formation.name]: { lineupOrder, benchOrder, playerPositions },
+    }));
+
+    const saved = formationStates[f.name];
+    if (saved) {
+      setLineupOrder(saved.lineupOrder);
+      setBenchOrder(saved.benchOrder);
+      setPlayerPositions(saved.playerPositions);
+      const hasCustom = Object.keys(saved.playerPositions).length > 0;
+      setCustomMode(hasCustom);
+      setDefaultsFrozen(hasCustom);
+    } else {
+      const ids = makeInitialFieldIds(f, filteredPlayers);
+      setLineupOrder(Array.from(ids));
+      setBenchOrder(
+        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+      );
+      setPlayerPositions({});
+      setCustomMode(false);
+      setDefaultsFrozen(false);
+    }
+    setFormation(f);
+    setSelectedId(null);
+    setSelectedIsBench(null);
+  };
+
   const handleReset = () => {
     const ids = makeInitialFieldIds(formation, filteredPlayers);
-    setBenchOrder(filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)));
-    setLineupOrder(Array.from(ids));
-    setPlayerPositions({});
+    const newState: FormationState = {
+      lineupOrder: Array.from(ids),
+      benchOrder: filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+      playerPositions: {},
+    };
+    setBenchOrder(newState.benchOrder);
+    setLineupOrder(newState.lineupOrder);
+    setPlayerPositions(newState.playerPositions);
+    setFormationStates((prev) => ({ ...prev, [formation.name]: newState }));
     setCustomMode(false);
     setDefaultsFrozen(false);
     setSelectedId(null);
@@ -653,7 +715,7 @@ export default function Formation({
               formation.name === f.name ? "bg-green-300" : ""
             }`}
             onClick={() => {
-              setFormation(f);
+              handleFormationChange(f);
             }}
           >
             {f.name}
