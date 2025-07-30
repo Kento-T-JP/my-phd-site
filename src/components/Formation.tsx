@@ -37,7 +37,11 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
 const positionOptions: PositionKey[] = Array.from(
-  new Set(formations.flatMap((f) => Object.keys(f.positions)))
+  new Set([
+    ...formations.flatMap((f) => Object.keys(f.positions)),
+    "DF",
+    "MF/FW",
+  ])
 ) as PositionKey[];
 
 export interface PlayerFilterOptions {
@@ -534,6 +538,11 @@ export default function Formation({
       alert("Failed to update");
     }
   };
+
+  useEffect(() => {
+    handleReset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, selectedRoster, selectedPosition]);
 
   /* ───────── render helpers ───────── */
   // track which IDs have already been drawn this frame
