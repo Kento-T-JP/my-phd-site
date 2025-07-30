@@ -19,20 +19,25 @@ const mixedPlayers = [
 
 describe('filterPlayers', () => {
   it('filters by name substring', () => {
-    expect(filterPlayers(players, 'al')).toEqual([players[0]]);
-    expect(filterPlayers(players, 'b')).toEqual([players[1]]);
-    expect(filterPlayers(players, '')).toEqual(players);
+    expect(filterPlayers(players, { name: 'al' })).toEqual([players[0]]);
+    expect(filterPlayers(players, { name: 'b' })).toEqual([players[1]]);
+    expect(filterPlayers(players, {})).toEqual(players);
   });
 
   it('filters by roster', () => {
-    expect(filterPlayers(players, '', 1)).toEqual([players[0], players[2]]);
-    expect(filterPlayers(players, 'b', 1)).toEqual([]);
+    expect(filterPlayers(players, { rosterId: 1 })).toEqual([players[0], players[2]]);
+    expect(filterPlayers(players, { name: 'b', rosterId: 1 })).toEqual([]);
   });
 
   it('excludes players without roster when filtering', () => {
-    expect(filterPlayers(mixedPlayers, '', 1)).toEqual([
+    expect(filterPlayers(mixedPlayers, { rosterId: 1 })).toEqual([
       players[0],
       players[2],
     ]);
+  });
+
+  it('filters by position', () => {
+    expect(filterPlayers(players, { position: 'GK' })).toEqual([players[0]]);
+    expect(filterPlayers(players, { position: 'FW' })).toEqual([players[2]]);
   });
 });

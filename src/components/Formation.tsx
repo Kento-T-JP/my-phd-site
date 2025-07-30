@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import type { Player } from "@/types/player";
+import type { Player, PositionKey } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
@@ -30,17 +30,30 @@ const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 /** 5 文字以上を “長い名前” とみなしてフォント縮小 */
 const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
-export function filterPlayers<T extends Player & { rosterPlayers?: { rosterId: number }[] }>(
-  list: T[],
-  search: string,
-  rosterId?: number
-): T[] {
-  const s = search.toLowerCase();
-  return list.filter(
-    (p) =>
-      p.name.toLowerCase().includes(s) &&
-      (rosterId === undefined || (p.rosterPlayers ?? []).some(rp => rp.rosterId === rosterId))
-  );
+const positionOptions: PositionKey[] = Array.from(
+  new Set(formations.flatMap((f) => Object.keys(f.positions)))
+) as PositionKey[];
+
+export interface PlayerFilterOptions {
+  name?: string;
+  rosterId?: number;
+  position?: string;
+}
+
+export function filterPlayers<
+  T extends Player & { rosterPlayers?: { rosterId: number }[] }
+>(list: T[], opts: PlayerFilterOptions = {}): T[] {
+  const name = opts.name?.toLowerCase() ?? "";
+  const pos = opts.position?.toLowerCase() ?? "";
+  return list.filter((p) => {
+    const matchName = !name || p.name.toLowerCase().includes(name);
+    const matchRoster =
+      opts.rosterId === undefined ||
+      (p.rosterPlayers ?? []).some((rp) => rp.rosterId === opts.rosterId);
+    const matchPos =
+      !pos || p.position.some((pp) => pp.toLowerCase().includes(pos));
+    return matchName && matchRoster && matchPos;
+  });
 }
 
 /* ───────── util: 初期スタメン計算 ───────── */
@@ -151,6 +164,7 @@ export default function Formation({
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
+  const [selectedPosition, setSelectedPosition] = useState<string>("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const { data: session } = useSession();
@@ -206,8 +220,13 @@ export default function Formation({
   }, [selectedRoster]);
 
   const filteredPlayers = useMemo(
-    () => filterPlayers(players, search, selectedRoster ? Number(selectedRoster) : undefined),
-    [players, search, selectedRoster]
+    () =>
+      filterPlayers(players, {
+        name: search,
+        rosterId: selectedRoster ? Number(selectedRoster) : undefined,
+        position: selectedPosition,
+      }),
+    [players, search, selectedRoster, selectedPosition]
   );
 
   let orderIndex = 0; // そのまま利用（変更不要）
@@ -472,6 +491,18 @@ export default function Formation({
           {rosters.map((r) => (
             <option key={r.id} value={r.id}>
               {r.title}
+            </option>
+          ))}
+        </select>
+        <select
+          className="border p-1"
+          value={selectedPosition}
+          onChange={(e) => setSelectedPosition(e.target.value)}
+        >
+          <option value="">All positions</option>
+          {positionOptions.map((pos) => (
+            <option key={pos} value={pos}>
+              {pos}
             </option>
           ))}
         </select>
