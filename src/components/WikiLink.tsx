@@ -16,7 +16,8 @@ export default function WikiLink({
   variant = 'chip',
   className = '',
 }: WikiLinkProps) {
-  const href = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(name.trim())}`;
+  const sanitizedName = name.replace(/[_\s]/g, '');
+  const href = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sanitizedName)}`;
   if (variant === 'icon') {
     return (
       <Tooltip content="View on Wikipedia →" className={`inline-block ${className}`.trim()}>
