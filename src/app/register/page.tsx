@@ -19,7 +19,7 @@ export default function RegisterPage() {
       router.push("/login");
     } else {
       const data = await res.json();
-      setError(data.error || "Failed to register");
+      setError(data.error || "登録に失敗しました");
     }
   };
 

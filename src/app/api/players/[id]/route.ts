@@ -20,11 +20,11 @@ export async function GET(
   }
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
-    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+    return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
   }
   const player = await prisma.player.findUnique({ where: { id: num } });
   if (!player) {
-    return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
   return NextResponse.json(player);
 }
@@ -65,7 +65,7 @@ async function handleUpdate(req: Request, id: number) {
     const player = await updatePlayer(id, { ...parsed.data, image: imagePath });
     return NextResponse.json(player);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to update player';
+    const message = err instanceof Error ? err.message : '選手情報の更新に失敗しました';
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -85,7 +85,7 @@ export async function PUT(
   }
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
-    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+    return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
   }
   return handleUpdate(req, num);
 }

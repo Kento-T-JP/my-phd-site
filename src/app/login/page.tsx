@@ -19,7 +19,7 @@ export default function LoginPage() {
     if (res?.ok) {
       router.push("/");
     } else {
-      setError("Invalid credentials");
+      setError("メールアドレスまたはパスワードが正しくありません");
     }
   };
 

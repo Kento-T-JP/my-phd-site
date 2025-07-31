@@ -5,13 +5,13 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 export const PlayerSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  position: z.array(z.string()).min(1, { message: "At least one position is required" }),
+  name: z.string().min(1, { message: "名前は必須です" }),
+  position: z.array(z.string()).min(1, { message: "ポジションを1つ以上選択してください" }),
   number: z.coerce
     .number()
-    .int({ message: "Number must be an integer" })
-    .min(1, { message: "Number must be at least 1" })
-    .max(99, { message: "Number must be at most 99" })
+    .int({ message: "背番号は整数で入力してください" })
+    .min(1, { message: "背番号は1以上で入力してください" })
+    .max(99, { message: "背番号は99以下で入力してください" })
     .optional(),
 });
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     const player = await createPlayer({ ...parsed.data, image: imagePath });
     return NextResponse.json(player, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to create player";
+    const message = err instanceof Error ? err.message : "選手の登録に失敗しました";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -45,7 +45,7 @@ export async function createPlayer(
 ) {
   const dup = await prisma.player.findFirst({ where: { name: data.name } });
   if (dup) {
-    throw new Error('Player with this name already exists');
+    throw new Error('同じ名前の選手が既に存在します');
   }
   const player = await prisma.player.create({ data });
   if (rosterId) {
@@ -90,7 +90,7 @@ export async function updatePlayer(
     },
   });
   if (dup) {
-    throw new Error('Player with this name already exists');
+    throw new Error('同じ名前の選手が既に存在します');
   }
   const player = await prisma.player.update({ where: { id }, data });
   if (rosterId) {
