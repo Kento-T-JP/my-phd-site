@@ -11,7 +11,7 @@
     "deploy:migrate": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
     "update:images": "tsx scripts/updatePlayerImages.ts",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
