@@ -114,6 +114,7 @@ Run the tests with:
 ```bash
 npm test
 ```
+(runs `vitest run` under the hood)
 
 
 
