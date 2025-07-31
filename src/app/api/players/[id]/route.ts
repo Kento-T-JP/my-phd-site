@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma, { updatePlayer } from '@/lib/db';
+import prisma, { updatePlayer, upsertTournamentRosterPlayers } from '@/lib/db';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -36,14 +36,27 @@ async function handleUpdate(req: Request, id: number) {
     const positions = form.getAll('position');
     const numberEntry = form.get('number');
     const number =
-      typeof numberEntry === 'string' && numberEntry.trim() === ''
+      numberEntry === null ||
+      (typeof numberEntry === 'string' && numberEntry.trim() === '')
         ? undefined
         : numberEntry;
+    const tournamentEntry = form.get('tournament');
+    const rosterEntry = form.get('roster');
+    const tournamentName =
+      typeof tournamentEntry === 'string' && tournamentEntry.trim() !== ''
+        ? tournamentEntry
+        : undefined;
+    const rosterTitle =
+      typeof rosterEntry === 'string' && rosterEntry.trim() !== ''
+        ? rosterEntry
+        : undefined;
 
     const parsed = PlayerSchema.safeParse({
       name,
       position: positions,
       number,
+      tournament: tournamentName,
+      roster: rosterTitle,
     });
 
     if (!parsed.success) {
@@ -62,8 +75,38 @@ async function handleUpdate(req: Request, id: number) {
       imagePath = `/uploads/players/${fileName}`;
     }
 
-    const player = await updatePlayer(id, { ...parsed.data, image: imagePath });
-    return NextResponse.json(player);
+    let player;
+    let rosterInfo;
+    await prisma.$transaction(async (tx) => {
+      player = await updatePlayer(
+        id,
+        { name: parsed.data.name, position: parsed.data.position, number: parsed.data.number, image: imagePath },
+        undefined,
+        tx,
+      );
+      if (tournamentName && rosterTitle) {
+        rosterInfo = await upsertTournamentRosterPlayers(
+          tournamentName,
+          rosterTitle,
+          [
+            {
+              playerId: player.id,
+              number: parsed.data.number,
+              position: parsed.data.position,
+            },
+          ],
+          tx,
+        );
+      }
+    });
+
+    if (rosterInfo) {
+      rosterInfo = await prisma.roster.findUnique({
+        where: { id: rosterInfo.id },
+        include: { tournament: true },
+      });
+    }
+    return NextResponse.json({ player, roster: rosterInfo });
   } catch (err) {
     const message = err instanceof Error ? err.message : '選手情報の更新に失敗しました';
     return NextResponse.json({ error: message }, { status: 400 });

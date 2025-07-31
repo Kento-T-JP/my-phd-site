@@ -49,14 +49,15 @@ export async function getPlayers(rosterId?: number) {
 export async function createPlayer(
   data: Omit<Player, 'id'>,
   rosterId?: number,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const dup = await prisma.player.findFirst({ where: { name: data.name } });
+  const dup = await client.player.findFirst({ where: { name: data.name } });
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const player = await prisma.player.create({ data });
+  const player = await client.player.create({ data });
   if (rosterId) {
-    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
   return player;
 }
@@ -67,16 +68,17 @@ export async function createPlayer(
 export async function upsertPlayer(
   data: Omit<Player, 'id'>,
   rosterId?: number,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const existing = await prisma.player.findFirst({ where: { name: data.name } });
+  const existing = await client.player.findFirst({ where: { name: data.name } });
   let player;
   if (existing) {
-    player = await prisma.player.update({ where: { id: existing.id }, data });
+    player = await client.player.update({ where: { id: existing.id }, data });
   } else {
-    player = await prisma.player.create({ data });
+    player = await client.player.create({ data });
   }
   if (rosterId) {
-    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
   return player;
 }
@@ -89,8 +91,9 @@ export async function updatePlayer(
   id: number,
   data: Omit<Player, 'id'>,
   rosterId?: number,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const dup = await prisma.player.findFirst({
+  const dup = await client.player.findFirst({
     where: {
       name: data.name,
       NOT: { id },
@@ -99,9 +102,9 @@ export async function updatePlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const player = await prisma.player.update({ where: { id }, data });
+  const player = await client.player.update({ where: { id }, data });
   if (rosterId) {
-    await addRosterPlayers(rosterId, [{ playerId: player.id }]);
+    await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
   return player;
 }
@@ -153,6 +156,21 @@ export async function addRosterPlayers(
     })
   );
   await client.$transaction(upserts);
+}
+
+/**
+ * Upsert tournament and roster then link players, all within a transaction.
+ */
+export async function upsertTournamentRosterPlayers(
+  tournament: string,
+  rosterTitle: string,
+  players: { playerId: number; number?: number; position?: string[] }[],
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  const t = await upsertTournament(tournament, client);
+  const r = await upsertRoster(t.id, rosterTitle, client);
+  await addRosterPlayers(r.id, players, client);
+  return r;
 }
 
 /** Get all rosters ordered by date. */
