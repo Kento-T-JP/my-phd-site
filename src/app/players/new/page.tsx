@@ -78,7 +78,11 @@ export default function NewPlayerPage() {
         });
         setErrors(fieldErrors);
       } else {
-        setMessage([err.error || "Failed to create player"]);
+        if (typeof err.error === "string" && err.error.includes("already exists")) {
+          setErrors({ name: err.error });
+        } else {
+          setMessage([err.error || "Failed to create player"]);
+        }
       }
     }
   };

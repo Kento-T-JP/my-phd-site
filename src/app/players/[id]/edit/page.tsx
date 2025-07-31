@@ -94,7 +94,11 @@ export default function EditPlayerPage() {
         });
         setErrors(fieldErrors);
       } else {
-        setMessage([err.error || "Failed to update player"]);
+        if (typeof err.error === "string" && err.error.includes("already exists")) {
+          setErrors({ name: err.error });
+        } else {
+          setMessage([err.error || "Failed to update player"]);
+        }
       }
     }
   };
