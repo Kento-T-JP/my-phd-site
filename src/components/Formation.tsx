@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import WikiLink from "@/components/WikiLink";
 import { useSession } from "next-auth/react";
 import type { Player, PositionKey } from "@/types/player";
 import { formations } from "@/data/formations";
@@ -696,10 +697,14 @@ export default function Formation({
                 <div
                   className={`font-semibold whitespace-normal break-words text-cyan-100 ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
-                  }`}
+                  } flex items-center justify-center`}
                   title={p.number ? `背番号: ${p.number}` : ""}
                 >
-                  {p.name}
+                  <span>{p.name}</span>
+                  <WikiLink
+                    name={p.name}
+                    className="ml-1"
+                  />
                 </div>
                 {/* jersey number appears on hover, just like the position */}
                 {p.number && (
@@ -770,10 +775,11 @@ export default function Formation({
                 <div
                   className={`font-semibold whitespace-normal break-words text-cyan-100 ${
                     isLongName(p.name) ? "text-xs leading-tight" : ""
-                  }`}
+                  } flex items-center justify-center`}
                   title={p.number ? `背番号: ${p.number}` : ""}
                 >
-                  {p.name}
+                  <span>{p.name}</span>
+                  <WikiLink name={p.name} className="ml-1" />
                 </div>
                 {/* jersey number appears on hover */}
                 {p.number && (

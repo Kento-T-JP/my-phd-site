@@ -1,4 +1,5 @@
 import Link from "next/link";
+import WikiLink from "@/components/WikiLink";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import BackButton from "@/components/BackButton";
@@ -29,7 +30,12 @@ export default async function PlayersPage() {
           {players.map((p) => (
             <tr key={p.id} className="border-b">
               <td className="px-2 py-1">{p.number ?? "-"}</td>
-              <td className="px-2 py-1 text-white">{p.name}</td>
+              <td className="px-2 py-1 text-white">
+                <span className="flex items-center">
+                  {p.name}
+                  <WikiLink name={p.name} className="ml-1" />
+                </span>
+              </td>
               <td className="px-2 py-1 text-right">
                 <Link href={`/players/${p.id}/edit`} className="text-yellow-300 underline">
                   編集
