@@ -20,4 +20,11 @@ describe('WikiLink', () => {
     expect(link).toHaveAttribute('href', 'https://en.wikipedia.org/wiki/JaneDoe');
     expect(link.className).toMatch(/w-full/);
   });
+
+  it('renders icon variant with tooltip text', () => {
+    render(<WikiLink name="IconUser" variant="icon" />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/IconUser');
+    expect(screen.getByText('View on Wikipedia →')).toBeInTheDocument();
+  });
 });
