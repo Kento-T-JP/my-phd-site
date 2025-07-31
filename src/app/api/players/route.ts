@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPlayers, createPlayer } from '@/lib/db';
+import prisma, { getPlayers, createPlayer, upsertTournamentRosterPlayers } from '@/lib/db';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -13,6 +13,8 @@ export const PlayerSchema = z.object({
     .min(1, { message: "背番号は1以上で入力してください" })
     .max(99, { message: "背番号は99以下で入力してください" })
     .optional(),
+  tournament: z.string().optional(),
+  roster: z.string().optional(),
 });
 
 export async function GET() {
@@ -30,15 +32,28 @@ export async function POST(req: Request) {
   const positions = form.getAll("position");
   const numberEntry = form.get("number");
   const number =
-    typeof numberEntry === "string" && numberEntry.trim() === ""
+    numberEntry === null ||
+    (typeof numberEntry === "string" && numberEntry.trim() === "")
       ? undefined
       : numberEntry;
+  const tournamentEntry = form.get("tournament");
+  const rosterEntry = form.get("roster");
+  const tournamentName =
+    typeof tournamentEntry === "string" && tournamentEntry.trim() !== ""
+      ? tournamentEntry
+      : undefined;
+  const rosterTitle =
+    typeof rosterEntry === "string" && rosterEntry.trim() !== ""
+      ? rosterEntry
+      : undefined;
 
-    const parsed = PlayerSchema.safeParse({
-      name,
-      position: positions,
-      number,
-    });
+  const parsed = PlayerSchema.safeParse({
+    name,
+    position: positions,
+    number,
+    tournament: tournamentName,
+    roster: rosterTitle,
+  });
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
@@ -56,8 +71,37 @@ export async function POST(req: Request) {
       imagePath = `/uploads/players/${fileName}`;
     }
 
-    const player = await createPlayer({ ...parsed.data, image: imagePath });
-    return NextResponse.json(player, { status: 201 });
+    let player;
+    let rosterInfo;
+    await prisma.$transaction(async (tx) => {
+      player = await createPlayer(
+        { name: parsed.data.name, position: parsed.data.position, number: parsed.data.number, image: imagePath },
+        undefined,
+        tx,
+      );
+      if (tournamentName && rosterTitle) {
+        rosterInfo = await upsertTournamentRosterPlayers(
+          tournamentName,
+          rosterTitle,
+          [
+            {
+              playerId: player.id,
+              number: parsed.data.number,
+              position: parsed.data.position,
+            },
+          ],
+          tx,
+        );
+      }
+    });
+
+    if (rosterInfo) {
+      rosterInfo = await prisma.roster.findUnique({
+        where: { id: rosterInfo.id },
+        include: { tournament: true },
+      });
+    }
+    return NextResponse.json({ player, roster: rosterInfo }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "選手の登録に失敗しました";
     return NextResponse.json({ error: message }, { status: 400 });
