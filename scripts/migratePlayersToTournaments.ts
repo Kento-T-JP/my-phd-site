@@ -13,7 +13,8 @@ async function main() {
   const today = new Date();
   for (const [name, ids] of groups) {
     const t = await upsertTournament(name);
-    const r = await upsertRoster(t.id, today);
+    const title = `${name} (${today.toISOString().slice(0, 10)})`;
+    const r = await upsertRoster(t.id, today, title);
     await addRosterPlayers(
       r.id,
       ids.map((id) => ({ playerId: id }))

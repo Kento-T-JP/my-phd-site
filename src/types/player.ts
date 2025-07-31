@@ -16,6 +16,7 @@ export interface Player {
 export interface Tournament {
   id: number;
   name: string;
+  slug: string;
   rosters?: Roster[];
 }
 
@@ -24,6 +25,7 @@ export interface Roster {
   date: Date;
   tournamentId: number;
   tournament?: Tournament;
+  title: string;
   players?: RosterPlayer[];
 }
 

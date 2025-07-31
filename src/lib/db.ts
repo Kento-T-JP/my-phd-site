@@ -2,6 +2,13 @@
 import { PrismaClient } from '@prisma/client';
 import type { Player } from '@/types/player';
 
+function slugify(str: string) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 const prisma = new PrismaClient();
 
 export default prisma;
@@ -101,16 +108,21 @@ export async function updatePlayer(
 
 /** Upsert a tournament by name. */
 export async function upsertTournament(name: string) {
-  const existing = await prisma.tournament.findFirst({ where: { name } });
+  const slug = slugify(name);
+  const existing = await prisma.tournament.findFirst({ where: { slug } });
   if (existing) return existing;
-  return prisma.tournament.create({ data: { name } });
+  return prisma.tournament.create({ data: { name, slug } });
 }
 
-/** Upsert a roster by (tournamentId, date). */
-export async function upsertRoster(tournamentId: number, date: Date) {
-  const existing = await prisma.roster.findFirst({ where: { tournamentId, date } });
+/** Upsert a roster by (tournamentId, title). */
+export async function upsertRoster(
+  tournamentId: number,
+  date: Date,
+  title: string
+) {
+  const existing = await prisma.roster.findFirst({ where: { tournamentId, title } });
   if (existing) return existing;
-  return prisma.roster.create({ data: { tournamentId, date } });
+  return prisma.roster.create({ data: { tournamentId, date, title } });
 }
 
 /** Link players to a roster, skipping duplicates. */

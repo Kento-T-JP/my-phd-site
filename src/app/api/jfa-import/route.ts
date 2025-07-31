@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
     const { players, tournament, rosterDate, title } = await scrapeJfaPlayers(url);
     const t = await upsertTournament(tournament);
-    const r = await upsertRoster(t.id, rosterDate ?? new Date());
+    const r = await upsertRoster(t.id, rosterDate ?? new Date(), title);
     const rosterEntries = await Promise.all(
       players.map(async (p) => {
         const player = await upsertPlayer({
