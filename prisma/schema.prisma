@@ -21,6 +21,7 @@ model Player {
 model Tournament {
   id      Int      @id @default(autoincrement())
   name    String
+  slug    String   @unique
   rosters Roster[]
 }
 
@@ -30,8 +31,9 @@ model Roster {
   tournamentId Int
   tournament   Tournament     @relation(fields: [tournamentId], references: [id])
   players      RosterPlayer[]
+  title        String
 
-  @@unique([tournamentId, date])
+  @@unique([tournamentId, title])
 }
 
 model RosterPlayer {
