@@ -11,6 +11,7 @@ describe('WikiLink', () => {
     expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/John_Doe');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByText('Open John_Doe on Wikipedia')).toBeInTheDocument();
   });
 
   it('supports english and button variant', () => {

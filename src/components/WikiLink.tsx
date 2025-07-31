@@ -16,7 +16,7 @@ export default function WikiLink({
 }: WikiLinkProps) {
   const href = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(name.trim())}`;
   const base =
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400';
+    'relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400';
   const chip =
     'inline-block px-2 py-0.5 border border-cyan-300 text-cyan-300 text-xs rounded';
   const button =
@@ -27,11 +27,16 @@ export default function WikiLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`Open ${name} on Wikipedia (new tab)`}
-      title={`Open ${name} on Wikipedia (new tab)`}
+      aria-label={`Open ${name} on Wikipedia`}
+      title={`Open ${name} on Wikipedia`}
       className={classes}
     >
       Wikipedia
+      <span
+        className="pointer-events-none whitespace-nowrap absolute z-10 -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        {`Open ${name} on Wikipedia`}
+      </span>
     </a>
   );
 }
