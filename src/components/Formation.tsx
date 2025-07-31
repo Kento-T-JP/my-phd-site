@@ -282,12 +282,12 @@ export default function Formation({
     async function fetchPlayers() {
       try {
         const res = await fetch('/api/players');
-        if (!res.ok) throw new Error('Failed to fetch players');
+        if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
         const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
         setPlayers(data);
       } catch (err) {
         console.error(err);
-        setError('Failed to load players');
+        setError('プレイヤーの読み込みに失敗しました');
       } finally {
         setLoading(false);
       }
@@ -499,24 +499,24 @@ export default function Formation({
         }),
       });
       if (res.ok) {
-        alert("Saved!");
+        alert("保存しました");
         onSaved?.();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to save");
+        alert(data.error || "保存に失敗しました");
       }
     } catch (err) {
-      alert("Failed to save");
+      alert("保存に失敗しました");
     }
   };
 
   const handleUpdate = async () => {
     if (!session || !initialFormation?.id) {
-      alert("No formation to update.");
+      alert("更新するフォーメーションがありません");
       return;
     }
     const name = alias.trim() || formation.name;
-    if (!window.confirm('Update formation "' + name + '"?')) {
+    if (!window.confirm('フォーメーション「' + name + '」を更新しますか?')) {
       return;
     }
     try {
@@ -529,14 +529,14 @@ export default function Formation({
         }),
       });
       if (res.ok) {
-        alert("Updated!");
+        alert("更新しました");
         onUpdated?.();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to update");
+        alert(data.error || "更新に失敗しました");
       }
     } catch (err) {
-      alert("Failed to update");
+      alert("更新に失敗しました");
     }
   };
 

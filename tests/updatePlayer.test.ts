@@ -15,7 +15,7 @@ describe('updatePlayer', () => {
     mockPrisma.player.findFirst.mockResolvedValue({ id: 2 });
     await expect(
       updatePlayer(1, { name: 'John', position: ['GK'] })
-    ).rejects.toThrow('already exists');
+    ).rejects.toThrow('同じ名前の選手が既に存在します');
   });
 
   it('updates when no duplicate', async () => {

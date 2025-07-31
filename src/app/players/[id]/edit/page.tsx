@@ -73,7 +73,7 @@ export default function EditPlayerPage() {
     setSuccessMessage("");
 
     if (res.ok) {
-      setSuccessMessage("Player updated successfully!");
+      setSuccessMessage("選手情報を更新しました！");
       setTimeout(() => {
         router.push("/");
       }, 1500);
@@ -97,7 +97,7 @@ export default function EditPlayerPage() {
         if (typeof err.error === "string" && err.error.includes("already exists")) {
           setErrors({ name: err.error });
         } else {
-          setMessage([err.error || "Failed to update player"]);
+          setMessage([err.error || "選手情報の更新に失敗しました"]);
         }
       }
     }
@@ -116,7 +116,7 @@ export default function EditPlayerPage() {
       <h1 className="text-xl font-bold mb-4">Edit Player</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1">Name</label>
+          <label className="block mb-1">名前</label>
           <input
             className="w-full p-2 border rounded"
             value={name}
@@ -128,7 +128,7 @@ export default function EditPlayerPage() {
           )}
         </div>
         <div>
-          <label className="block mb-1">Positions</label>
+          <label className="block mb-1">ポジション</label>
           <div className="flex flex-wrap gap-2">
             {positionOptions.map((pos) => (
               <label key={pos} className="flex items-center gap-1">
@@ -143,7 +143,7 @@ export default function EditPlayerPage() {
           </div>
           <input
             className="w-full p-2 border rounded mt-2"
-            placeholder="Other (optional)"
+            placeholder="その他（任意）"
             value={otherPosition}
             onChange={(e) => setOtherPosition(e.target.value)}
           />
@@ -152,7 +152,7 @@ export default function EditPlayerPage() {
           )}
         </div>
         <div>
-          <label className="block mb-1">Number</label>
+          <label className="block mb-1">背番号</label>
           <input
             type="number"
             min={1}
@@ -166,7 +166,7 @@ export default function EditPlayerPage() {
           )}
         </div>
         <div>
-          <label className="block mb-1">Image (optional)</label>
+          <label className="block mb-1">画像（任意）</label>
           <input
             type="file"
             accept="image/*"
@@ -192,14 +192,14 @@ export default function EditPlayerPage() {
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
           disabled={loading}
         >
-          Submit
+          送信
         </button>
         <button
           type="button"
           onClick={() => router.back()}
           className="px-4 py-2 bg-gray-300 text-black rounded"
         >
-          Back
+          戻る
         </button>
       </form>
     </main>
