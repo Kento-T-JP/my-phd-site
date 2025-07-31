@@ -27,4 +27,13 @@ describe('WikiLink', () => {
     expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/IconUser');
     expect(screen.getByText('View on Wikipedia →')).toBeInTheDocument();
   });
+
+  it('sanitizes and encodes multibyte names correctly', () => {
+    render(<WikiLink name="鈴木 彩艶" />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute(
+      'href',
+      'https://ja.wikipedia.org/wiki/%E9%88%B4%E6%9C%A8%E5%BD%A9%E8%89%B6'
+    );
+  });
 });
