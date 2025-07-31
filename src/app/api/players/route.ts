@@ -41,7 +41,6 @@ export async function POST(req: Request) {
     });
 
     if (!parsed.success) {
-      console.log("Zod validation errors:", parsed.error.issues);
       return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
     }
 
