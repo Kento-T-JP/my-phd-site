@@ -15,9 +15,9 @@ async function main() {
   const count = await prisma.player.count();
   if (count === 0) {
     if (validateJfaUrl(JFA_URL)) {
-      const { players, tournament, rosterDate, title } = await scrapeJfaPlayers(JFA_URL);
+      const { players, tournament, title } = await scrapeJfaPlayers(JFA_URL);
       const t = await upsertTournament(tournament);
-      const r = await upsertRoster(t.id, rosterDate ?? new Date(), title);
+      const r = await upsertRoster(t.id, title);
       const promises = players.map((p) =>
         upsertPlayer({
           name: p.name,

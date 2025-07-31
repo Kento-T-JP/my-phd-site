@@ -1,8 +1,8 @@
 // ESM 接続専用
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 import type { Player } from '@/types/player';
 
-function slugify(str: string) {
+export function normalizeSlug(str: string) {
   return str
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -107,32 +107,41 @@ export async function updatePlayer(
 }
 
 /** Upsert a tournament by name. */
-export async function upsertTournament(name: string) {
-  const slug = slugify(name);
-  const existing = await prisma.tournament.findFirst({ where: { slug } });
-  if (existing) return existing;
-  return prisma.tournament.create({ data: { name, slug } });
+export async function upsertTournament(
+  name: string,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  const slug = normalizeSlug(name);
+  return client.tournament.upsert({
+    where: { slug },
+    update: {},
+    create: { name, slug },
+  });
 }
 
 /** Upsert a roster by (tournamentId, title). */
 export async function upsertRoster(
   tournamentId: number,
-  date: Date,
-  title: string
+  title: string,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const existing = await prisma.roster.findFirst({ where: { tournamentId, title } });
-  if (existing) return existing;
-  return prisma.roster.create({ data: { tournamentId, date, title } });
+  const where = { tournamentId_title: { tournamentId, title } } as const;
+  return client.roster.upsert({
+    where,
+    update: {},
+    create: { tournamentId, title, date: new Date() },
+  });
 }
 
 /** Link players to a roster, skipping duplicates. */
 export async function addRosterPlayers(
   rosterId: number,
   players: { playerId: number; number?: number; position?: string[] }[],
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
   if (players.length === 0) return;
   const upserts = players.map((p) =>
-    prisma.rosterPlayer.upsert({
+    client.rosterPlayer.upsert({
       where: { rosterId_playerId: { rosterId, playerId: p.playerId } },
       update: {},
       create: {
@@ -143,7 +152,7 @@ export async function addRosterPlayers(
       },
     })
   );
-  await prisma.$transaction(upserts);
+  await client.$transaction(upserts);
 }
 
 /** Get all rosters ordered by date. */
