@@ -6,18 +6,18 @@ import { describe, it, expect, afterEach } from 'vitest';
 describe('WikiLink', () => {
   afterEach(() => cleanup());
   it('renders chip variant with correct href and attributes', () => {
-    render(<WikiLink name="John_Doe" />);
+    render(<WikiLink name="JohnDoe" />);
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/John_Doe');
+    expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/JohnDoe');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByText('Open John_Doe on Wikipedia')).toBeInTheDocument();
+    expect(screen.getByText('Open JohnDoe on Wikipedia')).toBeInTheDocument();
   });
 
   it('supports english and button variant', () => {
-    render(<WikiLink name="Jane_Doe" lang="en" variant="button" />);
+    render(<WikiLink name="JaneDoe" lang="en" variant="button" />);
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', 'https://en.wikipedia.org/wiki/Jane_Doe');
+    expect(link).toHaveAttribute('href', 'https://en.wikipedia.org/wiki/JaneDoe');
     expect(link.className).toMatch(/w-full/);
   });
 });
