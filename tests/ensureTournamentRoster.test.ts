@@ -3,7 +3,7 @@ import { ensureTournamentRoster } from '@/lib/db';
 
 interface MockClient {
   tournament: { upsert: any };
-  roster: { findFirst: any; create: any };
+  roster: { findFirst: any; create: any; upsert: any };
 }
 
 let client: MockClient;
@@ -48,6 +48,14 @@ describe('ensureTournamentRoster', () => {
       roster: {
         findFirst: vi.fn(findFirstImpl),
         create: vi.fn(createImpl),
+        upsert: vi.fn(({ create }: any) => {
+          const existing = rosters.find(
+            (r) =>
+              r.tournamentId === create.tournamentId && r.title === create.title
+          );
+          if (existing) return existing;
+          return createImpl({ data: create });
+        }),
       },
     };
   });
@@ -62,6 +70,6 @@ describe('ensureTournamentRoster', () => {
     expect(r1.id).not.toBe(r2.id);
     expect(r1.date).toEqual(d1);
     expect(r2.date).toEqual(d2);
-    expect(client.roster.create).toHaveBeenCalledTimes(2);
+    expect(client.roster.upsert).toHaveBeenCalledTimes(2);
   });
 });
