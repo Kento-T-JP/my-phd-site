@@ -9,14 +9,15 @@ datasource db {
 }
 
 model Player {
-  id             Int             @id @default(autoincrement())
-  name           String          @unique
-  position       String[]
-  number         Int?
-  image          String?
-  wikiUrl        String?
-  rosterPlayers  RosterPlayer[]
-  formationNodes FormationNode[]
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  position        String[]
+  number          Int?
+  image           String?
+  wikiUrl         String?
+  rosterPlayers   RosterPlayer[]
+  formationNodes  FormationNode[]
+  favoritePlayers FavoritePlayer[]
 }
 
 model Tournament {
@@ -49,10 +50,11 @@ model RosterPlayer {
 }
 
 model User {
-  id             Int         @id @default(autoincrement())
-  email          String      @unique
-  hashedPassword String
-  formations     Formation[]
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  hashedPassword  String
+  formations      Formation[]
+  favoritePlayers FavoritePlayer[]
 }
 
 model Formation {
@@ -74,4 +76,13 @@ model FormationNode {
   formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
   formationId Int
   player      Player    @relation(fields: [playerId], references: [id])
+}
+
+model FavoritePlayer {
+  userId   Int
+  playerId Int
+  user     User   @relation(fields: [userId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id])
+
+  @@unique([userId, playerId])
 }
