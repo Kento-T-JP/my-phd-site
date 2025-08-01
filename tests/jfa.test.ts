@@ -22,6 +22,10 @@ describe('scrapeJfaPlayers', () => {
     'tests/fixtures/fallback_jfa.html',
     'utf8'
   );
+  const htmlDateFixture = fs.readFileSync(
+    'tests/fixtures/html_date_jfa.html',
+    'utf8'
+  );
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -79,6 +83,31 @@ describe('scrapeJfaPlayers', () => {
     expect(result.tournamentName).toBe('SAMURAI BLUE');
     expect(result.tournamentSlug).toBe('20240720');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-07-20');
+    expect(result.players).toEqual([
+      {
+        name: 'John Doe',
+        number: 1,
+        image: 'https://www.jfa.jp/gk1.jpg',
+        position: ['Goalkeepers'],
+      },
+    ]);
+
+    spy.mockRestore();
+  });
+
+  it('extracts roster date from HTML when URL lacks one', async () => {
+    const spy = vi
+      .spyOn(axios, 'get')
+      .mockResolvedValue({ data: htmlDateFixture });
+
+    const result = await scrapeJfaPlayers(
+      'https://www.jfa.jp/samuraiblue/event/member.html'
+    );
+
+    expect(result.rosterTitle).toBe('SAMURAI BLUE - 2024/09/30');
+    expect(result.tournamentName).toBe('SAMURAI BLUE');
+    expect(result.tournamentSlug).toBe('event');
+    expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-09-30');
     expect(result.players).toEqual([
       {
         name: 'John Doe',

@@ -252,7 +252,7 @@ export default function EditPlayerPage() {
               value={tournamentName}
               onChange={setTournamentName}
             />
-            {rosters.length > 0 && (
+            {rosters.length > 1 && (
               <select
                 className="w-full p-2 border rounded mt-2"
                 value={rosterId}

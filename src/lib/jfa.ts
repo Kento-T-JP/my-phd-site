@@ -67,6 +67,13 @@ export async function scrapeJfaPlayers(url: string) {
       `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
     );
   }
+  if (!rosterDate) {
+    const m = data.match(/(\d{4}\/\d{2}\/\d{2})/);
+    if (m) {
+      const [yyyy, mm, dd] = m[1].split('/');
+      rosterDate = new Date(`${yyyy}-${mm}-${dd}`);
+    }
+  }
   title = tournament;
   if (rosterDate) {
     const yyyy = rosterDate.getFullYear();
