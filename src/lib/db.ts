@@ -283,3 +283,29 @@ export async function getRosterTitles(search?: string) {
     select: { id: true, title: true },
   });
 }
+
+/** Get all favorite players for a user. */
+export async function getFavoritePlayers(userId: number) {
+  const favs = await prisma.favoritePlayer.findMany({
+    where: { userId },
+    include: { player: true },
+    orderBy: { playerId: 'asc' },
+  });
+  return favs.map((f) => f.player);
+}
+
+/** Add a player to the user's favorites. */
+export async function addFavoritePlayer(userId: number, playerId: number) {
+  await prisma.favoritePlayer.upsert({
+    where: { userId_playerId: { userId, playerId } },
+    update: {},
+    create: { userId, playerId },
+  });
+}
+
+/** Remove a player from the user's favorites. */
+export async function removeFavoritePlayer(userId: number, playerId: number) {
+  await prisma.favoritePlayer.delete({
+    where: { userId_playerId: { userId, playerId } },
+  });
+}
