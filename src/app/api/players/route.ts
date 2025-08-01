@@ -19,6 +19,7 @@ export const PlayerSchema = z.object({
     .max(99, { message: "背番号は99以下で入力してください" })
     .optional(),
   tournament: z.string().optional(),
+  tournamentDate: z.string().optional(),
 });
 
 export async function GET() {
@@ -45,12 +46,18 @@ export async function POST(req: Request) {
     typeof tournamentEntry === "string" && tournamentEntry.trim() !== ""
       ? tournamentEntry
       : undefined;
+  const dateEntry = form.get("tournamentDate");
+  const tournamentDate =
+    typeof dateEntry === "string" && dateEntry.trim() !== ""
+      ? new Date(dateEntry)
+      : undefined;
 
   const parsed = PlayerSchema.safeParse({
     name,
     position: positions,
     number,
     tournament: tournamentName,
+    tournamentDate: dateEntry ?? undefined,
   });
 
     if (!parsed.success) {
@@ -78,7 +85,11 @@ export async function POST(req: Request) {
         tx,
       );
       if (tournamentName) {
-        rosterInfo = await ensureTournamentRoster(tournamentName, tx);
+        rosterInfo = await ensureTournamentRoster(
+          tournamentName,
+          tx,
+          tournamentDate,
+        );
         await addRosterPlayers(
           rosterInfo.id,
           [

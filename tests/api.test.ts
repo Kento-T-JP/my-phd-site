@@ -116,6 +116,7 @@ describe('player API routes', () => {
     form.append('name', 'C');
     form.append('position', 'GK');
     form.append('tournament', 'T');
+    form.append('tournamentDate', '2024-01-01');
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
@@ -135,6 +136,7 @@ describe('player API routes', () => {
     form.append('name', 'D');
     form.append('position', 'DF');
     form.append('tournament', 'T2');
+    form.append('tournamentDate', '2024-01-01');
     const req = new Request('http://test', { method: 'PUT', body: form });
     const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);

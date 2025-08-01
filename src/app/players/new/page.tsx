@@ -22,6 +22,7 @@ export default function NewPlayerPage() {
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [tournamentName, setTournamentName] = useState("");
+  const [tournamentDate, setTournamentDate] = useState("");
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
@@ -51,6 +52,8 @@ export default function NewPlayerPage() {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
     if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
+    if (tournamentDate.trim() !== "")
+      form.append("tournamentDate", tournamentDate);
 
     const res = await fetch("/api/players", {
       method: "POST",
@@ -168,6 +171,12 @@ export default function NewPlayerPage() {
             <TournamentSelect
               value={tournamentName}
               onChange={setTournamentName}
+            />
+            <input
+              type="date"
+              className="w-full p-2 border rounded mt-2"
+              value={tournamentDate}
+              onChange={(e) => setTournamentDate(e.target.value)}
             />
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>

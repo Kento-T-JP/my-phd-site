@@ -26,6 +26,7 @@ export default function EditPlayerPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
+  const [tournamentDate, setTournamentDate] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -71,6 +72,8 @@ export default function EditPlayerPage() {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
     if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
+    if (tournamentDate.trim() !== "")
+      form.append("tournamentDate", tournamentDate);
 
     const res = await fetch(`/api/players/${id}`, {
       method: "PUT",
@@ -196,6 +199,12 @@ export default function EditPlayerPage() {
             <TournamentSelect
               value={tournamentName}
               onChange={setTournamentName}
+            />
+            <input
+              type="date"
+              className="w-full p-2 border rounded mt-2"
+              value={tournamentDate}
+              onChange={(e) => setTournamentDate(e.target.value)}
             />
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>

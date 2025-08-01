@@ -159,6 +159,7 @@ export async function upsertRoster(
 export async function ensureTournamentRoster(
   name: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  rosterDate?: Date,
 ) {
   const tournament = await upsertTournament(name, client);
   let roster = await client.roster.findFirst({
@@ -166,9 +167,10 @@ export async function ensureTournamentRoster(
     orderBy: { date: 'desc' },
   });
   if (!roster) {
-    const title = `${tournament.name} (${new Date().toISOString().slice(0, 10)})`;
+    const date = rosterDate ?? new Date();
+    const title = `${tournament.name} (${date.toISOString().slice(0, 10)})`;
     roster = await client.roster.create({
-      data: { tournamentId: tournament.id, title, date: new Date() },
+      data: { tournamentId: tournament.id, title, date },
     });
   }
   return roster;
