@@ -110,18 +110,16 @@ describe('player API routes', () => {
   it('POST links player to roster', async () => {
     const { POST } = await import('../src/app/api/players/route');
     createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'] });
-    ensureSpy.mockResolvedValue({ id: 5, title: 'R', tournamentId: 2 });
     prisma.roster.findUnique.mockResolvedValue({ id: 5, title: 'R', tournament: { id: 2, name: 'T' } });
     const form = new FormData();
     form.append('name', 'C');
     form.append('position', 'GK');
-    form.append('tournament', 'T');
-    form.append('tournamentDate', '2024-01-01');
+    form.append('rosterId', '5');
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
     expect(createSpy).toHaveBeenCalled();
-    expect(ensureSpy).toHaveBeenCalled();
+    expect(ensureSpy).not.toHaveBeenCalled();
     expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(5);
@@ -130,18 +128,16 @@ describe('player API routes', () => {
   it('PUT links player to roster', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
     updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'] });
-    ensureSpy.mockResolvedValue({ id: 6, title: 'R2', tournamentId: 3 });
     prisma.roster.findUnique.mockResolvedValue({ id: 6, title: 'R2', tournament: { id: 3, name: 'T2' } });
     const form = new FormData();
     form.append('name', 'D');
     form.append('position', 'DF');
-    form.append('tournament', 'T2');
-    form.append('tournamentDate', '2024-01-01');
+    form.append('rosterId', '6');
     const req = new Request('http://test', { method: 'PUT', body: form });
     const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);
     expect(updateSpy).toHaveBeenCalled();
-    expect(ensureSpy).toHaveBeenCalled();
+    expect(ensureSpy).not.toHaveBeenCalled();
     expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(6);
@@ -183,6 +179,18 @@ describe('roster API routes', () => {
     expect(rosterSpy).toHaveBeenCalledWith('abc');
     const data = await res.json();
     expect(data[0].id).toBe(5);
+  });
+
+  it('POST creates roster', async () => {
+    const { POST } = await import('../src/app/api/rosters/route');
+    ensureSpy.mockResolvedValue({ id: 10, tournamentId: 8, title: 'New', date: new Date() });
+    prisma.roster.findUnique.mockResolvedValue({ id: 10, tournament: { id: 8, name: 'Cup' }, date: new Date(), title: 'New' });
+    const req = new Request('http://test', { method: 'POST', body: JSON.stringify({ tournament: 'Cup' }) });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(ensureSpy).toHaveBeenCalled();
+    const data = await res.json();
+    expect(data.id).toBe(10);
   });
 
   it('GET players by roster', async () => {

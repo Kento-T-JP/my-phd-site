@@ -6,6 +6,10 @@ import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 
+function slugify(str: string) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 const positionOptions: PositionKey[] = Array.from(
   new Set([
     ...formations.flatMap((f) => Object.keys(f.positions)),
@@ -27,7 +31,8 @@ export default function EditPlayerPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
-  const [tournamentDate, setTournamentDate] = useState("");
+  const [rosters, setRosters] = useState<{ id: number; date: string; tournament: { name: string } }[]>([]);
+  const [rosterId, setRosterId] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -48,12 +53,44 @@ export default function EditPlayerPage() {
         if (p.rosterPlayers?.length) {
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
+          setRosterId(String(rp.rosterId));
         }
       }
       setLoading(false);
     }
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (!tournamentName.trim()) {
+      setRosters([]);
+      setRosterId("");
+      return;
+    }
+    const slug = slugify(tournamentName.trim());
+    const controller = new AbortController();
+    fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : []))
+      .then(async (list) => {
+        if (list.length === 0) {
+          const res = await fetch(`/api/rosters`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tournament: tournamentName }),
+          });
+          if (res.ok) {
+            const r = await res.json();
+            setRosters([r]);
+            setRosterId(String(r.id));
+          }
+        } else {
+          setRosters(list);
+          if (!rosterId) setRosterId(String(list[list.length - 1].id));
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [tournamentName]);
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -74,9 +111,11 @@ export default function EditPlayerPage() {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
-    if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
-    if (tournamentDate.trim() !== "")
-      form.append("tournamentDate", tournamentDate);
+    if (rosterId) {
+      form.append("rosterId", rosterId);
+    } else if (tournamentName.trim() !== "") {
+      form.append("tournament", tournamentName);
+    }
 
     const res = await fetch(`/api/players/${id}`, {
       method: "PUT",
@@ -212,12 +251,19 @@ export default function EditPlayerPage() {
               value={tournamentName}
               onChange={setTournamentName}
             />
-            <input
-              type="date"
-              className="w-full p-2 border rounded mt-2"
-              value={tournamentDate}
-              onChange={(e) => setTournamentDate(e.target.value)}
-            />
+            {rosters.length > 0 && (
+              <select
+                className="w-full p-2 border rounded mt-2"
+                value={rosterId}
+                onChange={(e) => setRosterId(e.target.value)}
+              >
+                {rosters.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {`${r.tournament.name} - ${r.date.slice(0, 10).replace(/-/g, '/')}`}
+                  </option>
+                ))}
+              </select>
+            )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
             )}

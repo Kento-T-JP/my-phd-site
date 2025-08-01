@@ -52,6 +52,11 @@ export async function POST(req: Request) {
     typeof tournamentEntry === "string" && tournamentEntry.trim() !== ""
       ? tournamentEntry
       : undefined;
+  const rosterEntry = form.get("rosterId");
+  const rosterId =
+    typeof rosterEntry === "string" && rosterEntry.trim() !== ""
+      ? Number(rosterEntry)
+      : undefined;
   const dateEntry = form.get("tournamentDate");
   const tournamentDate =
     typeof dateEntry === "string" && dateEntry.trim() !== ""
@@ -97,7 +102,20 @@ export async function POST(req: Request) {
         undefined,
         tx,
       );
-      if (tournamentName) {
+      if (rosterId) {
+        await addRosterPlayers(
+          rosterId,
+          [
+            {
+              playerId: player.id,
+              number: parsed.data.number,
+              position: parsed.data.position,
+            },
+          ],
+          tx,
+        );
+        rosterInfo = { id: rosterId } as any;
+      } else if (tournamentName) {
         rosterInfo = await ensureTournamentRoster(
           tournamentName,
           tx,
