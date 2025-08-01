@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
-import type { Player, PositionKey } from "@/types/player";
+import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
@@ -19,8 +19,8 @@ const positionOptions: PositionKey[] = Array.from(
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rosters, setRosters] = useState<{ id: number; title: string }[]>([]);
-  const [tournaments, setTournaments] = useState<{ id: number; name: string }[]>([]);
+  const [rosters, setRosters] = useState<Roster[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -29,9 +29,9 @@ export default function PlayersPage() {
   const [selectedPosition, setSelectedPosition] = useState<string>("");
 
   const [searchInput, setSearchInput] = useState("");
-  const [rosterInput, setRosterInput] = useState("");
+  const [filterInput, setFilterInput] = useState("");
+  const [subRosterInput, setSubRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
-  const [tournamentInput, setTournamentInput] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -51,9 +51,9 @@ export default function PlayersPage() {
   useEffect(() => {
     async function fetchRosters() {
       try {
-        const res = await fetch("/api/rosters/titles");
+        const res = await fetch("/api/rosters");
         if (!res.ok) throw new Error("Failed to fetch rosters");
-        setRosters((await res.json()) as { id: number; title: string }[]);
+        setRosters((await res.json()) as Roster[]);
       } catch (err) {
         console.error(err);
       }
@@ -66,7 +66,7 @@ export default function PlayersPage() {
       try {
         const res = await fetch("/api/tournaments");
         if (!res.ok) throw new Error("Failed to fetch tournaments");
-        setTournaments((await res.json()) as { id: number; name: string }[]);
+        setTournaments((await res.json()) as Tournament[]);
       } catch (err) {
         console.error(err);
       }
@@ -77,16 +77,19 @@ export default function PlayersPage() {
     return () => window.removeEventListener("tournament-saved", handler);
   }, []);
 
-  const filteredPlayers = useMemo(
-    () =>
-      filterPlayers(players, {
-        name: search,
-        rosterId: selectedRoster ? Number(selectedRoster) : undefined,
-        tournamentId: selectedTournament ? Number(selectedTournament) : undefined,
-        position: selectedPosition,
-      }),
-    [players, search, selectedRoster, selectedTournament, selectedPosition]
-  );
+  const filteredPlayers = useMemo(() => {
+    const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
+    const tournamentId =
+      rosterId === undefined && selectedTournament
+        ? Number(selectedTournament)
+        : undefined;
+    return filterPlayers(players, {
+      name: search,
+      rosterId,
+      tournamentId,
+      position: selectedPosition,
+    });
+  }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
 
   if (loading) {
     return (
@@ -117,28 +120,40 @@ export default function PlayersPage() {
         />
         <select
           className="border p-1"
-          value={rosterInput}
-          onChange={(e) => setRosterInput(e.target.value)}
+          value={filterInput}
+          onChange={(e) => {
+            setFilterInput(e.target.value);
+            setSubRosterInput("");
+          }}
         >
-          <option value="">All rosters</option>
+          <option value="">All tournaments/rosters</option>
+          {tournaments.map((t) => (
+            <option key={`t-${t.id}`} value={`t:${t.id}`}>
+              {t.name}
+            </option>
+          ))}
           {rosters.map((r) => (
-            <option key={r.id} value={r.id}>
+            <option key={`r-${r.id}`} value={`r:${r.id}`}>
               {r.title}
             </option>
           ))}
         </select>
-        <select
-          className="border p-1"
-          value={tournamentInput}
-          onChange={(e) => setTournamentInput(e.target.value)}
-        >
-          <option value="">All tournaments</option>
-          {tournaments.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+        {filterInput.startsWith("t:") && (
+          <select
+            className="border p-1"
+            value={subRosterInput}
+            onChange={(e) => setSubRosterInput(e.target.value)}
+          >
+            <option value="">All rosters</option>
+            {rosters
+              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.title}
+                </option>
+              ))}
+          </select>
+        )}
         <select
           className="border p-1"
           value={positionInput}
@@ -155,9 +170,22 @@ export default function PlayersPage() {
           className="px-2 py-1 bg-blue-500 text-white rounded"
           onClick={() => {
             setSearch(searchInput);
-            setSelectedRoster(rosterInput);
-            setSelectedTournament(tournamentInput);
             setSelectedPosition(positionInput);
+            if (filterInput.startsWith("r:")) {
+              const rid = filterInput.slice(2);
+              const r = rosters.find((ro) => ro.id === Number(rid));
+              if (r) {
+                setSelectedTournament(String(r.tournamentId));
+              }
+              setSelectedRoster(rid);
+            } else if (filterInput.startsWith("t:")) {
+              const tid = filterInput.slice(2);
+              setSelectedTournament(tid);
+              setSelectedRoster(subRosterInput);
+            } else {
+              setSelectedTournament("");
+              setSelectedRoster("");
+            }
           }}
         >
           Apply Filters
