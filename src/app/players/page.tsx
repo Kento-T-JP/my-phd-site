@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import type { FavoritePlayer } from "@/types/favorite";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
+import { rosterDisplayTitle } from "@/lib/format";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -182,7 +183,7 @@ export default function PlayersPage() {
           ))}
           {rosters.map((r) => (
             <option key={`r-${r.id}`} value={`r:${r.id}`}>
-              {r.title}
+              {rosterDisplayTitle(r)}
             </option>
           ))}
         </select>
@@ -198,7 +199,7 @@ export default function PlayersPage() {
                 .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.title}
+                    {rosterDisplayTitle(r)}
                   </option>
                 ))}
             </select>
