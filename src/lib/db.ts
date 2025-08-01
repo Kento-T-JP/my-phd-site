@@ -174,10 +174,19 @@ export async function upsertTournamentRosterPlayers(
 }
 
 /** Get all rosters ordered by date. */
-export async function getRosters() {
+export async function getRosters(slug?: string) {
   return prisma.roster.findMany({
+    where: slug ? { tournament: { slug } } : undefined,
     orderBy: { date: 'asc' },
     include: { tournament: true },
+  });
+}
+
+/** Get all tournaments. */
+export async function getTournaments() {
+  return prisma.tournament.findMany({
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, slug: true },
   });
 }
 

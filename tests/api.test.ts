@@ -11,6 +11,7 @@ vi.mock('@/lib/db', () => {
     getRosters: vi.fn(),
     getPlayers: vi.fn(),
     getTournamentNames: vi.fn(),
+    getTournaments: vi.fn(),
     getRosterTitles: vi.fn(),
   };
 });
@@ -22,6 +23,7 @@ let linkSpy: ReturnType<typeof vi.fn>;
 let rosterSpy: ReturnType<typeof vi.fn>;
 let playersSpy: ReturnType<typeof vi.fn>;
 let tNamesSpy: ReturnType<typeof vi.fn>;
+let allTSpy: ReturnType<typeof vi.fn>;
 let rTitlesSpy: ReturnType<typeof vi.fn>;
 
 describe('player API routes', () => {
@@ -34,6 +36,7 @@ describe('player API routes', () => {
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
     tNamesSpy = mod.getTournamentNames as any;
+    allTSpy = mod.getTournaments as any;
     rTitlesSpy = mod.getRosterTitles as any;
     prisma.player.findUnique = vi.fn();
     prisma.roster.findUnique = vi.fn();
@@ -43,6 +46,7 @@ describe('player API routes', () => {
     rosterSpy.mockReset();
     playersSpy.mockReset();
     tNamesSpy.mockReset();
+    allTSpy.mockReset();
     rTitlesSpy.mockReset();
   });
 
@@ -125,21 +129,34 @@ describe('roster API routes', () => {
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
     tNamesSpy = mod.getTournamentNames as any;
+    allTSpy = mod.getTournaments as any;
     rTitlesSpy = mod.getRosterTitles as any;
     prisma.roster.findUnique = vi.fn();
     rosterSpy.mockReset();
     playersSpy.mockReset();
     tNamesSpy.mockReset();
+    allTSpy.mockReset();
     rTitlesSpy.mockReset();
   });
 
   it('GET returns rosters', async () => {
     const { GET } = await import('../src/app/api/rosters/route');
     rosterSpy.mockResolvedValue([{ id: 1 }]);
-    const res = await GET();
+    const res = await GET(new Request('http://test'));
     expect(res.status).toBe(200);
     const data = await res.json();
+    expect(rosterSpy).toHaveBeenCalledWith(undefined);
     expect(data[0].id).toBe(1);
+  });
+
+  it('GET rosters filtered by slug', async () => {
+    const { GET } = await import('../src/app/api/rosters/route');
+    rosterSpy.mockResolvedValue([{ id: 5 }]);
+    const res = await GET(new Request('http://test?slug=abc'));
+    expect(res.status).toBe(200);
+    expect(rosterSpy).toHaveBeenCalledWith('abc');
+    const data = await res.json();
+    expect(data[0].id).toBe(5);
   });
 
   it('GET players by roster', async () => {
@@ -159,8 +176,10 @@ describe('lookup API routes', () => {
   beforeEach(async () => {
     const mod = await import('@/lib/db');
     tNamesSpy = mod.getTournamentNames as any;
+    allTSpy = mod.getTournaments as any;
     rTitlesSpy = mod.getRosterTitles as any;
     tNamesSpy.mockReset();
+    allTSpy.mockReset();
     rTitlesSpy.mockReset();
   });
 
@@ -180,5 +199,15 @@ describe('lookup API routes', () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data[0].title).toBe('R');
+  });
+
+  it('GET tournaments', async () => {
+    const { GET } = await import('../src/app/api/tournaments/route');
+    allTSpy.mockResolvedValue([{ id: 3, name: 'Cup', slug: 'cup' }]);
+    const res = await GET(new Request('http://test'));
+    expect(res.status).toBe(200);
+    expect(allTSpy).toHaveBeenCalled();
+    const data = await res.json();
+    expect(data[0].slug).toBe('cup');
   });
 });
