@@ -34,6 +34,7 @@ describe('scrapeJfaPlayers', () => {
 
     expect(result.rosterTitle).toBe('AFC Asian Cup 2024');
     expect(result.tournamentName).toBe('AFC Asian Cup 2024');
+    expect(result.tournamentSlug).toBe('2024');
     expect(result.rosterDate).toBeUndefined();
     expect(result.players).toEqual([
       {
@@ -76,6 +77,7 @@ describe('scrapeJfaPlayers', () => {
 
     expect(result.rosterTitle).toBe('SAMURAI BLUE (2024-07-20)');
     expect(result.tournamentName).toBe('SAMURAI BLUE');
+    expect(result.tournamentSlug).toBe('20240720');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-07-20');
     expect(result.players).toEqual([
       {

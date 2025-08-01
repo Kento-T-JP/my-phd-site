@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, {
   upsertPlayer,
-  upsertTournamentRosterPlayers,
+  upsertTournamentRosterPlayersBySlug,
 } from '@/lib/db';
 import { validateJfaUrl, scrapeJfaPlayers } from '@/lib/jfa';
 
@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     const {
       players,
       tournamentName,
+      tournamentSlug,
       rosterTitle,
     } = await scrapeJfaPlayers(url);
     const rosterEntries = await Promise.all(
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
     );
 
     const roster = await prisma.$transaction(async (tx) => {
-      return upsertTournamentRosterPlayers(
+      return upsertTournamentRosterPlayersBySlug(
+        tournamentSlug,
         tournamentName,
         rosterTitle,
         rosterEntries,

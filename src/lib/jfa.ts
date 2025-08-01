@@ -17,9 +17,16 @@ export async function scrapeJfaPlayers(url: string) {
     return t.replace(/\s+/g, ' ').trim();
   }
   let tournament = '';
+  let tournamentSlug = '';
   let rosterDate: Date | undefined;
   let title = '';
   if (crumbSpans.length) {
+    const crumbLinks = $('.outer-block.pankz .pankz-list span a');
+    if (crumbLinks.length) {
+      const href = $(crumbLinks[crumbLinks.length - 1]).attr('href') || '';
+      const m = href.match(/samuraiblue\/(\w+)/);
+      if (m) tournamentSlug = m[1];
+    }
     const texts = crumbSpans
       .map((i, el) => norm($(el).find('a').text() || $(el).text()))
       .get()
@@ -44,6 +51,16 @@ export async function scrapeJfaPlayers(url: string) {
   }
   if (!tournament) {
     tournament = new Date().toISOString().slice(0, 10);
+  }
+  if (!tournamentSlug) {
+    const m = url.match(/samuraiblue\/(\w+)/);
+    if (m) tournamentSlug = m[1];
+  }
+  if (!tournamentSlug) {
+    tournamentSlug = tournament
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
   }
   const urlDateMatch = url.match(/\/(\d{8})\/?/);
   if (urlDateMatch) {
@@ -88,6 +105,7 @@ export async function scrapeJfaPlayers(url: string) {
   return {
     players,
     tournamentName: tournament,
+    tournamentSlug,
     rosterDate,
     rosterTitle: title,
   };
