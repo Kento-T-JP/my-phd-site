@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma, { updatePlayer, upsertTournamentRosterPlayers } from '@/lib/db';
+import prisma, { updatePlayer, upsertTournamentRosterPlayers, syncRosterPlayers } from '@/lib/db';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -87,6 +87,11 @@ async function handleUpdate(req: Request, id: number) {
     let player;
     let rosterInfo;
     await prisma.$transaction(async (tx) => {
+      const prev = await tx.rosterPlayer.findFirst({
+        where: { playerId: id },
+        orderBy: { rosterId: 'desc' },
+      });
+
       player = await updatePlayer(
         id,
         { name: parsed.data.name, position: parsed.data.position, number: parsed.data.number, image: imagePath },
@@ -106,6 +111,11 @@ async function handleUpdate(req: Request, id: number) {
           ],
           tx,
         );
+        if (prev && prev.rosterId !== rosterInfo.id) {
+          await syncRosterPlayers(player.id, prev.rosterId, tx);
+        }
+      } else if (prev) {
+        await syncRosterPlayers(player.id, prev.rosterId, tx);
       }
     });
 

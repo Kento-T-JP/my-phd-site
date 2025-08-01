@@ -159,6 +159,24 @@ export async function addRosterPlayers(
 }
 
 /**
+ * Toggle a player's association with a roster. If a record already exists,
+ * it will be removed; otherwise it will be created.
+ */
+export async function syncRosterPlayers(
+  playerId: number,
+  rosterId: number,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  const where = { rosterId_playerId: { rosterId, playerId } } as const;
+  const existing = await client.rosterPlayer.findUnique({ where });
+  if (existing) {
+    await client.rosterPlayer.delete({ where });
+  } else {
+    await client.rosterPlayer.create({ data: { rosterId, playerId } });
+  }
+}
+
+/**
  * Upsert tournament and roster then link players, all within a transaction.
  */
 export async function upsertTournamentRosterPlayers(
