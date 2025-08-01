@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       tournamentName,
       tournamentSlug,
       rosterTitle,
+      rosterDate,
     } = await scrapeJfaPlayers(url);
     const rosterEntries = await Promise.all(
       players.map(async (p) => {
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
         rosterTitle,
         rosterEntries,
         tx,
+        rosterDate,
       );
     });
 

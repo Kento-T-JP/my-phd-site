@@ -12,7 +12,9 @@ vi.mock('@/lib/db', () => {
     default: client,
     updatePlayer: vi.fn(),
     createPlayer: vi.fn(),
+    upsertPlayer: vi.fn(),
     upsertTournamentRosterPlayers: vi.fn(),
+    upsertTournamentRosterPlayersBySlug: vi.fn(),
     ensureTournamentRoster: vi.fn(),
     addRosterPlayers: vi.fn(),
     syncRosterPlayers: vi.fn(),
@@ -24,6 +26,12 @@ vi.mock('@/lib/db', () => {
   };
 });
 
+vi.mock('@/lib/jfa', () => ({
+  __esModule: true,
+  validateJfaUrl: vi.fn(),
+  scrapeJfaPlayers: vi.fn(),
+}));
+
 let prisma: {
   player: { findUnique: any };
   roster: { findUnique: any };
@@ -31,7 +39,9 @@ let prisma: {
 };
 let updateSpy: ReturnType<typeof vi.fn>;
 let createSpy: ReturnType<typeof vi.fn>;
+let upsertSpy: ReturnType<typeof vi.fn>;
 let linkSpy: ReturnType<typeof vi.fn>;
+let linkSlugSpy: ReturnType<typeof vi.fn>;
 let ensureSpy: ReturnType<typeof vi.fn>;
 let addSpy: ReturnType<typeof vi.fn>;
 let rosterSpy: ReturnType<typeof vi.fn>;
@@ -40,6 +50,8 @@ let tNamesSpy: ReturnType<typeof vi.fn>;
 let allTSpy: ReturnType<typeof vi.fn>;
 let rTitlesSpy: ReturnType<typeof vi.fn>;
 let syncSpy: ReturnType<typeof vi.fn>;
+let validateSpy: ReturnType<typeof vi.fn>;
+let scrapeSpy: ReturnType<typeof vi.fn>;
 
 describe('player API routes', () => {
   beforeEach(async () => {
@@ -47,7 +59,9 @@ describe('player API routes', () => {
     prisma = mod.default as any;
     updateSpy = mod.updatePlayer as any;
     createSpy = mod.createPlayer as any;
+    upsertSpy = mod.upsertPlayer as any;
     linkSpy = mod.upsertTournamentRosterPlayers as any;
+    linkSlugSpy = mod.upsertTournamentRosterPlayersBySlug as any;
     ensureSpy = mod.ensureTournamentRoster as any;
     addSpy = mod.addRosterPlayers as any;
     syncSpy = mod.syncRosterPlayers as any;
@@ -56,6 +70,9 @@ describe('player API routes', () => {
     tNamesSpy = mod.getTournamentNames as any;
     allTSpy = mod.getTournaments as any;
     rTitlesSpy = mod.getRosterTitles as any;
+    const jfa = await import('@/lib/jfa');
+    validateSpy = jfa.validateJfaUrl as any;
+    scrapeSpy = jfa.scrapeJfaPlayers as any;
     prisma.player.findUnique = vi.fn();
     prisma.roster.findUnique = vi.fn();
     prisma.rosterPlayer.findFirst = vi.fn();
@@ -63,7 +80,9 @@ describe('player API routes', () => {
     prisma.rosterPlayer.create = vi.fn();
     updateSpy.mockReset();
     createSpy.mockReset();
+    upsertSpy.mockReset();
     linkSpy.mockReset();
+    linkSlugSpy.mockReset();
     ensureSpy.mockReset();
     addSpy.mockReset();
     syncSpy.mockReset();
@@ -72,6 +91,8 @@ describe('player API routes', () => {
     tNamesSpy.mockReset();
     allTSpy.mockReset();
     rTitlesSpy.mockReset();
+    validateSpy.mockReset();
+    scrapeSpy.mockReset();
   });
 
   it('GET returns a player', async () => {
@@ -243,5 +264,55 @@ describe('lookup API routes', () => {
     expect(allTSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data[0].slug).toBe('cup');
+  });
+});
+
+describe('jfa import route', () => {
+  beforeEach(async () => {
+    const mod = await import('@/lib/db');
+    prisma = mod.default as any;
+    upsertSpy = mod.upsertPlayer as any;
+    linkSlugSpy = mod.upsertTournamentRosterPlayersBySlug as any;
+    const jfa = await import('@/lib/jfa');
+    validateSpy = jfa.validateJfaUrl as any;
+    scrapeSpy = jfa.scrapeJfaPlayers as any;
+    upsertSpy.mockReset();
+    linkSlugSpy.mockReset();
+    validateSpy.mockReset();
+    scrapeSpy.mockReset();
+  });
+
+  it('passes rosterDate through to roster creation', async () => {
+    const { POST } = await import('../src/app/api/jfa-import/route');
+    const date = new Date('2024-07-20');
+    validateSpy.mockReturnValue(true);
+    scrapeSpy.mockResolvedValue({
+      players: [
+        { name: 'John', number: 1, image: 'img', position: ['GK'] },
+      ],
+      tournamentName: 'Cup',
+      tournamentSlug: 'cup',
+      rosterTitle: 'Cup - 2024/07/20',
+      rosterDate: date,
+    });
+    upsertSpy.mockResolvedValue({ id: 10 });
+    linkSlugSpy.mockResolvedValue({ id: 5, title: 'Cup - 2024/07/20', date });
+
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ url: 'https://www.jfa.jp/samuraiblue/member.html' }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(linkSlugSpy).toHaveBeenCalledWith(
+      'cup',
+      'Cup',
+      'Cup - 2024/07/20',
+      [{ playerId: 10, number: 1, position: ['GK'] }],
+      expect.anything(),
+      date,
+    );
   });
 });

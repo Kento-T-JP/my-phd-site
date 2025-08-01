@@ -148,12 +148,13 @@ export async function upsertRoster(
   tournamentId: number,
   title: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  date?: Date,
 ) {
   const where = { tournamentId_title: { tournamentId, title } } as const;
   return client.roster.upsert({
     where,
     update: {},
-    create: { tournamentId, title, date: new Date() },
+    create: { tournamentId, title, date: date ?? new Date() },
   });
 }
 
@@ -178,9 +179,7 @@ export async function ensureTournamentRoster(
       },
     });
     if (!roster) {
-      roster = await client.roster.create({
-        data: { tournamentId: tournament.id, title, date: rosterDate },
-      });
+      roster = await upsertRoster(tournament.id, title, client, rosterDate);
     }
   } else {
     roster = await client.roster.findFirst({
@@ -193,9 +192,7 @@ export async function ensureTournamentRoster(
       const mm = String(date.getMonth() + 1).padStart(2, '0');
       const dd = String(date.getDate()).padStart(2, '0');
       const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
-      roster = await client.roster.create({
-        data: { tournamentId: tournament.id, title, date },
-      });
+      roster = await upsertRoster(tournament.id, title, client, date);
     }
   }
   return roster;
@@ -253,9 +250,10 @@ export async function upsertTournamentRosterPlayers(
   rosterTitle: string,
   players: { playerId: number; number?: number; position?: string[] }[],
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  date?: Date,
 ) {
   const t = await upsertTournament(tournament, client);
-  const r = await upsertRoster(t.id, rosterTitle, client);
+  const r = await upsertRoster(t.id, rosterTitle, client, date);
   await addRosterPlayers(r.id, players, client);
   return r;
 }
@@ -267,9 +265,10 @@ export async function upsertTournamentRosterPlayersBySlug(
   rosterTitle: string,
   players: { playerId: number; number?: number; position?: string[] }[],
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  date?: Date,
 ) {
   const t = await upsertTournamentBySlug(slug, tournament, client);
-  const r = await upsertRoster(t.id, rosterTitle, client);
+  const r = await upsertRoster(t.id, rosterTitle, client, date);
   await addRosterPlayers(r.id, players, client);
   return r;
 }
