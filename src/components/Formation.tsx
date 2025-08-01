@@ -6,6 +6,7 @@ import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
 import { useSession } from "next-auth/react";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
@@ -629,7 +630,7 @@ export default function Formation({
             <option key={`t-${t.id}`} value={`t:${t.id}`}> {t.name} </option>
           ))}
           {rosters.map((r) => (
-            <option key={`r-${r.id}`} value={`r:${r.id}`}> {r.title} </option>
+            <option key={`r-${r.id}`} value={`r:${r.id}`}> {rosterDisplayTitle(r)} </option>
           ))}
         </select>
         {filterInput.startsWith('t:') &&
@@ -644,7 +645,7 @@ export default function Formation({
                 .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.title}
+                    {rosterDisplayTitle(r)}
                   </option>
                 ))}
             </select>
