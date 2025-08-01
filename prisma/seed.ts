@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { scrapeJfaPlayers, validateJfaUrl } from '../src/lib/jfa';
 import {
   upsertPlayer,
-  upsertTournamentRosterPlayers,
+  upsertTournamentRosterPlayersBySlug,
 } from '../src/lib/db';
 
 const prisma = new PrismaClient();
@@ -13,7 +13,12 @@ async function main() {
   const count = await prisma.player.count();
   if (count === 0) {
     if (validateJfaUrl(JFA_URL)) {
-      const { players, tournamentName, rosterTitle } = await scrapeJfaPlayers(JFA_URL);
+      const {
+        players,
+        tournamentName,
+        tournamentSlug,
+        rosterTitle,
+      } = await scrapeJfaPlayers(JFA_URL);
       const promises = players.map((p) =>
         upsertPlayer({
           name: p.name,
@@ -28,7 +33,12 @@ async function main() {
         number: players[idx].number ?? undefined,
         position: players[idx].position,
       }));
-      await upsertTournamentRosterPlayers(tournamentName, rosterTitle, rosterEntries);
+      await upsertTournamentRosterPlayersBySlug(
+        tournamentSlug,
+        tournamentName,
+        rosterTitle,
+        rosterEntries,
+      );
       console.log(`✅ Seeded ${inserted.length} players from JFA`);
     } else {
       console.log('❌ Invalid or missing JFA_MEMBER_URL environment variable');

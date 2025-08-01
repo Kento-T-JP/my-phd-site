@@ -122,6 +122,19 @@ export async function upsertTournament(
   });
 }
 
+/** Upsert a tournament using an explicit slug. */
+export async function upsertTournamentBySlug(
+  slug: string,
+  name: string,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  return client.tournament.upsert({
+    where: { slug },
+    update: { name },
+    create: { name, slug },
+  });
+}
+
 /** Upsert a roster by (tournamentId, title). */
 export async function upsertRoster(
   tournamentId: number,
@@ -186,6 +199,20 @@ export async function upsertTournamentRosterPlayers(
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
   const t = await upsertTournament(tournament, client);
+  const r = await upsertRoster(t.id, rosterTitle, client);
+  await addRosterPlayers(r.id, players, client);
+  return r;
+}
+
+/** Upsert by slug then link players. */
+export async function upsertTournamentRosterPlayersBySlug(
+  slug: string,
+  tournament: string,
+  rosterTitle: string,
+  players: { playerId: number; number?: number; position?: string[] }[],
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  const t = await upsertTournamentBySlug(slug, tournament, client);
   const r = await upsertRoster(t.id, rosterTitle, client);
   await addRosterPlayers(r.id, players, client);
   return r;
