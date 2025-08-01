@@ -10,6 +10,8 @@ vi.mock('@/lib/db', () => {
     upsertTournamentRosterPlayers: vi.fn(),
     getRosters: vi.fn(),
     getPlayers: vi.fn(),
+    getTournamentNames: vi.fn(),
+    getRosterTitles: vi.fn(),
   };
 });
 
@@ -19,6 +21,8 @@ let createSpy: ReturnType<typeof vi.fn>;
 let linkSpy: ReturnType<typeof vi.fn>;
 let rosterSpy: ReturnType<typeof vi.fn>;
 let playersSpy: ReturnType<typeof vi.fn>;
+let tNamesSpy: ReturnType<typeof vi.fn>;
+let rTitlesSpy: ReturnType<typeof vi.fn>;
 
 describe('player API routes', () => {
   beforeEach(async () => {
@@ -29,6 +33,8 @@ describe('player API routes', () => {
     linkSpy = mod.upsertTournamentRosterPlayers as any;
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
+    tNamesSpy = mod.getTournamentNames as any;
+    rTitlesSpy = mod.getRosterTitles as any;
     prisma.player.findUnique = vi.fn();
     prisma.roster.findUnique = vi.fn();
     updateSpy.mockReset();
@@ -36,6 +42,8 @@ describe('player API routes', () => {
     linkSpy.mockReset();
     rosterSpy.mockReset();
     playersSpy.mockReset();
+    tNamesSpy.mockReset();
+    rTitlesSpy.mockReset();
   });
 
   it('GET returns a player', async () => {
@@ -116,9 +124,13 @@ describe('roster API routes', () => {
     prisma = mod.default as any;
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
+    tNamesSpy = mod.getTournamentNames as any;
+    rTitlesSpy = mod.getRosterTitles as any;
     prisma.roster.findUnique = vi.fn();
     rosterSpy.mockReset();
     playersSpy.mockReset();
+    tNamesSpy.mockReset();
+    rTitlesSpy.mockReset();
   });
 
   it('GET returns rosters', async () => {
@@ -140,5 +152,33 @@ describe('roster API routes', () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data[0].id).toBe(2);
+  });
+});
+
+describe('lookup API routes', () => {
+  beforeEach(async () => {
+    const mod = await import('@/lib/db');
+    tNamesSpy = mod.getTournamentNames as any;
+    rTitlesSpy = mod.getRosterTitles as any;
+    tNamesSpy.mockReset();
+    rTitlesSpy.mockReset();
+  });
+
+  it('GET tournament names', async () => {
+    const { GET } = await import('../src/app/api/tournaments/names/route');
+    tNamesSpy.mockResolvedValue([{ id: 1, name: 'T' }]);
+    const res = await GET(new Request('http://test'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data[0].name).toBe('T');
+  });
+
+  it('GET roster titles', async () => {
+    const { GET } = await import('../src/app/api/rosters/titles/route');
+    rTitlesSpy.mockResolvedValue([{ id: 2, title: 'R' }]);
+    const res = await GET(new Request('http://test'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data[0].title).toBe('R');
   });
 });

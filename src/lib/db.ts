@@ -180,3 +180,21 @@ export async function getRosters() {
     include: { tournament: true },
   });
 }
+
+/** Get tournament names for typeahead. */
+export async function getTournamentNames(search?: string) {
+  return prisma.tournament.findMany({
+    where: search ? { name: { contains: search } } : undefined,
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true },
+  });
+}
+
+/** Get roster titles for typeahead. */
+export async function getRosterTitles(search?: string) {
+  return prisma.roster.findMany({
+    where: search ? { title: { contains: search } } : undefined,
+    orderBy: { title: 'asc' },
+    select: { id: true, title: true },
+  });
+}
