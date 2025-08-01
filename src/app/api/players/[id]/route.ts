@@ -22,7 +22,16 @@ export async function GET(
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
   }
-  const player = await prisma.player.findUnique({ where: { id: num } });
+  const player = await prisma.player.findUnique({
+    where: { id: num },
+    include: {
+      rosterPlayers: {
+        orderBy: { rosterId: 'desc' },
+        take: 1,
+        include: { roster: { include: { tournament: true } } },
+      },
+    },
+  });
   if (!player) {
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }

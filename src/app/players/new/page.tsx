@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,10 @@ export default function NewPlayerPage() {
   const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [tournamentName, setTournamentName] = useState("");
+  const [rosterTitle, setRosterTitle] = useState("");
+  const [tournamentOpts, setTournamentOpts] = useState<{ id: number; name: string }[]>([]);
+  const [rosterOpts, setRosterOpts] = useState<{ id: number; title: string }[]>([]);
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
@@ -27,6 +31,8 @@ export default function NewPlayerPage() {
     position?: string;
     number?: string;
     image?: string;
+    tournament?: string;
+    roster?: string;
   }>({});
 
   const togglePosition = (pos: PositionKey) => {
@@ -34,6 +40,26 @@ export default function NewPlayerPage() {
       prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
     );
   };
+
+  useEffect(() => {
+    if (!tournamentName) return setTournamentOpts([]);
+    const controller = new AbortController();
+    fetch(`/api/tournaments/names?q=${encodeURIComponent(tournamentName)}`, { signal: controller.signal })
+      .then((res) => res.ok ? res.json() : [])
+      .then((d) => setTournamentOpts(d))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [tournamentName]);
+
+  useEffect(() => {
+    if (!rosterTitle) return setRosterOpts([]);
+    const controller = new AbortController();
+    fetch(`/api/rosters/titles?q=${encodeURIComponent(rosterTitle)}`, { signal: controller.signal })
+      .then((res) => res.ok ? res.json() : [])
+      .then((d) => setRosterOpts(d))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [rosterTitle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +72,8 @@ export default function NewPlayerPage() {
     allPositions.forEach((p) => form.append("position", p));
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
+    if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
+    if (rosterTitle.trim() !== "") form.append("roster", rosterTitle);
 
     const res = await fetch("/api/players", {
       method: "POST",
@@ -69,6 +97,8 @@ export default function NewPlayerPage() {
           position?: string;
           number?: string;
           image?: string;
+          tournament?: string;
+          roster?: string;
         } = {};
         err.error.forEach((e: { path: (string | number)[]; message: string }) => {
           const field = e.path[0] as keyof typeof fieldErrors;
@@ -153,6 +183,43 @@ export default function NewPlayerPage() {
             <p className="text-red-600 text-sm mt-1">{errors.image}</p>
           )}
         </div>
+        <fieldset>
+          <legend className="font-semibold mb-1">Tournament assignment</legend>
+          <div className="mb-2">
+            <input
+              list="tournament-list"
+              className="w-full p-2 border rounded"
+              placeholder="Tournament name"
+              value={tournamentName}
+              onChange={(e) => setTournamentName(e.target.value)}
+            />
+            <datalist id="tournament-list">
+              {tournamentOpts.map((t) => (
+                <option key={t.id} value={t.name} />
+              ))}
+            </datalist>
+            {errors.tournament && (
+              <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
+            )}
+          </div>
+          <div>
+            <input
+              list="roster-list"
+              className="w-full p-2 border rounded"
+              placeholder="Roster title"
+              value={rosterTitle}
+              onChange={(e) => setRosterTitle(e.target.value)}
+            />
+            <datalist id="roster-list">
+              {rosterOpts.map((r) => (
+                <option key={r.id} value={r.title} />
+              ))}
+            </datalist>
+            {errors.roster && (
+              <p className="text-red-600 text-sm mt-1">{errors.roster}</p>
+            )}
+          </div>
+        </fieldset>
       {successMessage && (
         <div className="text-green-600">{successMessage}</div>
       )}
