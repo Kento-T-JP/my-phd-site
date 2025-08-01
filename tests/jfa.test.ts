@@ -75,7 +75,7 @@ describe('scrapeJfaPlayers', () => {
       'https://www.jfa.jp/samuraiblue/20240720/member.html'
     );
 
-    expect(result.rosterTitle).toBe('SAMURAI BLUE (2024-07-20)');
+    expect(result.rosterTitle).toBe('SAMURAI BLUE - 2024/07/20');
     expect(result.tournamentName).toBe('SAMURAI BLUE');
     expect(result.tournamentSlug).toBe('20240720');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-07-20');
