@@ -14,6 +14,7 @@ model Player {
   position       String[]
   number         Int?
   image          String?
+  wikiUrl        String?
   rosterPlayers  RosterPlayer[]
   formationNodes FormationNode[]
 }

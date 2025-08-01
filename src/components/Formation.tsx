@@ -776,6 +776,7 @@ export default function Formation({
                   <span>{p.name}</span>
                   <WikiLink
                     name={p.name}
+                    wikiUrl={p.wikiUrl}
                     variant="icon"
                     className="ml-1"
                   />
@@ -853,7 +854,12 @@ export default function Formation({
                   title={p.number ? `背番号: ${p.number}` : ""}
                 >
                   <span>{p.name}</span>
-                  <WikiLink name={p.name} variant="icon" className="ml-1" />
+                  <WikiLink
+                    name={p.name}
+                    wikiUrl={p.wikiUrl}
+                    variant="icon"
+                    className="ml-1"
+                  />
                 </div>
                 {/* jersey number appears on hover */}
                 {p.number && (

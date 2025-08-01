@@ -21,6 +21,7 @@ export default function NewPlayerPage() {
   const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [wikiUrl, setWikiUrl] = useState("");
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentDate, setTournamentDate] = useState("");
   const [message, setMessage] = useState<string[]>([]);
@@ -51,6 +52,7 @@ export default function NewPlayerPage() {
     allPositions.forEach((p) => form.append("position", p));
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
+    if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
     if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
     if (tournamentDate.trim() !== "")
       form.append("tournamentDate", tournamentDate);
@@ -164,6 +166,15 @@ export default function NewPlayerPage() {
           {errors.image && (
             <p className="text-red-600 text-sm mt-1">{errors.image}</p>
           )}
+        </div>
+        <div>
+          <label className="block mb-1">Wikipediaリンク (任意)</label>
+          <input
+            type="url"
+            className="w-full p-2 border rounded"
+            value={wikiUrl}
+            onChange={(e) => setWikiUrl(e.target.value)}
+          />
         </div>
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>

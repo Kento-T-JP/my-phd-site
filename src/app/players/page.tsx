@@ -206,7 +206,7 @@ export default function PlayersPage() {
               <td className="px-2 py-1 text-white">
                 <span className="flex items-center">
                   {p.name}
-                  <WikiLink name={p.name} className="ml-1" />
+                  <WikiLink name={p.name} wikiUrl={p.wikiUrl} className="ml-1" />
                 </span>
               </td>
               <td className="px-2 py-1 text-right">

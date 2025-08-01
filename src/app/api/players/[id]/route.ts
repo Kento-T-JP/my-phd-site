@@ -54,6 +54,11 @@ async function handleUpdate(req: Request, id: number) {
       (typeof numberEntry === 'string' && numberEntry.trim() === '')
         ? undefined
         : numberEntry;
+    const wikiUrlEntry = form.get('wikiUrl');
+    const wikiUrl =
+      typeof wikiUrlEntry === 'string' && wikiUrlEntry.trim() !== ''
+        ? wikiUrlEntry
+        : undefined;
     const tournamentEntry = form.get('tournament');
     const tournamentName =
       typeof tournamentEntry === 'string' && tournamentEntry.trim() !== ''
@@ -69,6 +74,7 @@ async function handleUpdate(req: Request, id: number) {
       name,
       position: positions,
       number,
+      wikiUrl,
       tournament: tournamentName,
       tournamentDate: dateEntry ?? undefined,
     });
@@ -99,7 +105,13 @@ async function handleUpdate(req: Request, id: number) {
 
       player = await updatePlayer(
         id,
-        { name: parsed.data.name, position: parsed.data.position, number: parsed.data.number, image: imagePath },
+        {
+          name: parsed.data.name,
+          position: parsed.data.position,
+          number: parsed.data.number,
+          image: imagePath,
+          wikiUrl: parsed.data.wikiUrl,
+        },
         undefined,
         tx,
       );
