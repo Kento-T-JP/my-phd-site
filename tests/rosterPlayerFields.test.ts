@@ -48,4 +48,15 @@ describe('RosterPlayer fields', () => {
       { id: 2, name: 'John', number: 10, position: ['GK'] },
     ]);
   });
+
+  it('addRosterPlayers works without $transaction', async () => {
+    const client = {
+      rosterPlayer: { upsert: vi.fn().mockResolvedValue({}) },
+    } as any;
+    const spy = vi.spyOn(Promise, 'all');
+    await addRosterPlayers(1, [{ playerId: 3 }], client);
+    expect(client.rosterPlayer.upsert).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
 });
