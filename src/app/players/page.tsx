@@ -176,23 +176,22 @@ export default function PlayersPage() {
             </option>
           ))}
         </select>
-        {filterInput.startsWith("t:") &&
-          rosters.filter((r) => r.tournamentId === Number(filterInput.slice(2))).length > 1 && (
-            <select
-              className="border p-1"
-              value={subRosterInput}
-              onChange={(e) => setSubRosterInput(e.target.value)}
-            >
-              <option value="">All rosters</option>
-              {rosters
-                .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r)}
-                  </option>
-                ))}
-            </select>
-          )}
+        {filterInput.startsWith("t:") && (
+          <select
+            className="border p-1"
+            value={subRosterInput}
+            onChange={(e) => setSubRosterInput(e.target.value)}
+          >
+            <option value="">All rosters</option>
+            {rosters
+              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  {rosterDisplayTitle(r)}
+                </option>
+              ))}
+          </select>
+        )}
         <select
           className="border p-1"
           value={positionInput}

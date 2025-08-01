@@ -9,7 +9,6 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const rosters = [
   { id: 1, date: '2024-01-01', tournamentId: 1, tournament: { name: 'Cup' }, title: 'Old' },
-  { id: 2, date: '2024-02-01', tournamentId: 1, tournament: { name: 'Cup' }, title: 'Old2' },
 ];
 const tournaments = [{ id: 1, name: 'Cup', slug: 'cup' }];
 
@@ -39,7 +38,7 @@ describe('Roster filter UI', () => {
     });
   });
 
-  it('shows secondary roster select when tournament has multiple rosters', async () => {
+  it('shows secondary roster select when a tournament is selected', async () => {
     global.fetch = mockFetch();
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
