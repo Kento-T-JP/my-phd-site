@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
+import TournamentTypeahead from "@/components/TournamentTypeahead";
+import RosterTypeahead from "@/components/RosterTypeahead";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -25,9 +27,8 @@ export default function EditPlayerPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
+  const [tournamentSlug, setTournamentSlug] = useState<string | undefined>();
   const [rosterTitle, setRosterTitle] = useState("");
-  const [tournamentOpts, setTournamentOpts] = useState<{ id: number; name: string }[]>([]);
-  const [rosterOpts, setRosterOpts] = useState<{ id: number; title: string }[]>([]);
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -48,6 +49,7 @@ export default function EditPlayerPage() {
         if (p.rosterPlayers?.length) {
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
+          setTournamentSlug(rp.roster.tournament.slug);
           setRosterTitle(rp.roster.title);
         }
       }
@@ -62,25 +64,6 @@ export default function EditPlayerPage() {
     );
   };
 
-  useEffect(() => {
-    if (!tournamentName) return setTournamentOpts([]);
-    const controller = new AbortController();
-    fetch(`/api/tournaments/names?q=${encodeURIComponent(tournamentName)}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((d) => setTournamentOpts(d))
-      .catch(() => {});
-    return () => controller.abort();
-  }, [tournamentName]);
-
-  useEffect(() => {
-    if (!rosterTitle) return setRosterOpts([]);
-    const controller = new AbortController();
-    fetch(`/api/rosters/titles?q=${encodeURIComponent(rosterTitle)}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((d) => setRosterOpts(d))
-      .catch(() => {});
-    return () => controller.abort();
-  }, [rosterTitle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,35 +198,23 @@ export default function EditPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
-            <input
-              list="tournament-list"
-              className="w-full p-2 border rounded"
-              placeholder="Tournament name"
+            <TournamentTypeahead
               value={tournamentName}
-              onChange={(e) => setTournamentName(e.target.value)}
+              onChange={(name, slug) => {
+                setTournamentName(name);
+                setTournamentSlug(slug);
+              }}
             />
-            <datalist id="tournament-list">
-              {tournamentOpts.map((t) => (
-                <option key={t.id} value={t.name} />
-              ))}
-            </datalist>
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
             )}
           </div>
           <div>
-            <input
-              list="roster-list"
-              className="w-full p-2 border rounded"
-              placeholder="Roster title"
+            <RosterTypeahead
+              slug={tournamentSlug}
               value={rosterTitle}
-              onChange={(e) => setRosterTitle(e.target.value)}
+              onChange={setRosterTitle}
             />
-            <datalist id="roster-list">
-              {rosterOpts.map((r) => (
-                <option key={r.id} value={r.title} />
-              ))}
-            </datalist>
             {errors.roster && (
               <p className="text-red-600 text-sm mt-1">{errors.roster}</p>
             )}
