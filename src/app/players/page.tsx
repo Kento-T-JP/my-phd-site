@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { formations } from "@/data/formations";
@@ -17,6 +19,8 @@ const positionOptions: PositionKey[] = Array.from(
 ) as PositionKey[];
 
 export default function PlayersPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosters, setRosters] = useState<Roster[]>([]);
@@ -32,6 +36,26 @@ export default function PlayersPage() {
   const [filterInput, setFilterInput] = useState("");
   const [subRosterInput, setSubRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+
+  const toggleFavorite = async (id: number) => {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+    const isFav = favorites.has(id);
+    setFavorites((prev) => {
+      const s = new Set(prev);
+      if (isFav) s.delete(id);
+      else s.add(id);
+      return s;
+    });
+    await fetch("/api/favorites", {
+      method: isFav ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: id }),
+    });
+  };
 
   useEffect(() => {
     async function load() {
@@ -76,6 +100,22 @@ export default function PlayersPage() {
     window.addEventListener("tournament-saved", handler);
     return () => window.removeEventListener("tournament-saved", handler);
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    async function loadFavorites() {
+      try {
+        const res = await fetch("/api/favorites");
+        if (res.ok) {
+          const favs = (await res.json()) as Player[];
+          setFavorites(new Set(favs.map((f) => f.id)));
+        }
+      } catch {
+        // ignore errors
+      }
+    }
+    loadFavorites();
+  }, [session]);
 
   const filteredPlayers = useMemo(() => {
     const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
@@ -196,6 +236,7 @@ export default function PlayersPage() {
           <tr>
             <th className="border-b px-2 py-1 text-left">背番号</th>
             <th className="border-b px-2 py-1 text-left">名前</th>
+            <th className="border-b px-2 py-1 text-center">★</th>
             <th className="border-b px-2 py-1" />
           </tr>
         </thead>
@@ -208,6 +249,21 @@ export default function PlayersPage() {
                   {p.name}
                   <WikiLink name={p.name} wikiUrl={p.wikiUrl} className="ml-1" />
                 </span>
+              </td>
+              <td className="px-2 py-1 text-center">
+                {session ? (
+                  <button
+                    onClick={() => toggleFavorite(p.id)}
+                    className="text-yellow-300"
+                    aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    {favorites.has(p.id) ? "★" : "☆"}
+                  </button>
+                ) : (
+                  <Link href="/login" className="text-yellow-300" aria-label="Login to favorite">
+                    ☆
+                  </Link>
+                )}
               </td>
               <td className="px-2 py-1 text-right">
                 <Link href={`/players/${p.id}/edit`} className="text-yellow-300 underline">
