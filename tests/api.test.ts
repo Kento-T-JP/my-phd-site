@@ -13,6 +13,8 @@ vi.mock('@/lib/db', () => {
     updatePlayer: vi.fn(),
     createPlayer: vi.fn(),
     upsertTournamentRosterPlayers: vi.fn(),
+    ensureTournamentRoster: vi.fn(),
+    addRosterPlayers: vi.fn(),
     syncRosterPlayers: vi.fn(),
     getRosters: vi.fn(),
     getPlayers: vi.fn(),
@@ -30,6 +32,8 @@ let prisma: {
 let updateSpy: ReturnType<typeof vi.fn>;
 let createSpy: ReturnType<typeof vi.fn>;
 let linkSpy: ReturnType<typeof vi.fn>;
+let ensureSpy: ReturnType<typeof vi.fn>;
+let addSpy: ReturnType<typeof vi.fn>;
 let rosterSpy: ReturnType<typeof vi.fn>;
 let playersSpy: ReturnType<typeof vi.fn>;
 let tNamesSpy: ReturnType<typeof vi.fn>;
@@ -44,6 +48,8 @@ describe('player API routes', () => {
     updateSpy = mod.updatePlayer as any;
     createSpy = mod.createPlayer as any;
     linkSpy = mod.upsertTournamentRosterPlayers as any;
+    ensureSpy = mod.ensureTournamentRoster as any;
+    addSpy = mod.addRosterPlayers as any;
     syncSpy = mod.syncRosterPlayers as any;
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
@@ -58,6 +64,8 @@ describe('player API routes', () => {
     updateSpy.mockReset();
     createSpy.mockReset();
     linkSpy.mockReset();
+    ensureSpy.mockReset();
+    addSpy.mockReset();
     syncSpy.mockReset();
     rosterSpy.mockReset();
     playersSpy.mockReset();
@@ -102,18 +110,18 @@ describe('player API routes', () => {
   it('POST links player to roster', async () => {
     const { POST } = await import('../src/app/api/players/route');
     createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'] });
-    linkSpy.mockResolvedValue({ id: 5, title: 'R', tournamentId: 2 });
+    ensureSpy.mockResolvedValue({ id: 5, title: 'R', tournamentId: 2 });
     prisma.roster.findUnique.mockResolvedValue({ id: 5, title: 'R', tournament: { id: 2, name: 'T' } });
     const form = new FormData();
     form.append('name', 'C');
     form.append('position', 'GK');
     form.append('tournament', 'T');
-    form.append('roster', 'R');
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
     expect(createSpy).toHaveBeenCalled();
-    expect(linkSpy).toHaveBeenCalled();
+    expect(ensureSpy).toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(5);
   });
@@ -121,18 +129,18 @@ describe('player API routes', () => {
   it('PUT links player to roster', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
     updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'] });
-    linkSpy.mockResolvedValue({ id: 6, title: 'R2', tournamentId: 3 });
+    ensureSpy.mockResolvedValue({ id: 6, title: 'R2', tournamentId: 3 });
     prisma.roster.findUnique.mockResolvedValue({ id: 6, title: 'R2', tournament: { id: 3, name: 'T2' } });
     const form = new FormData();
     form.append('name', 'D');
     form.append('position', 'DF');
     form.append('tournament', 'T2');
-    form.append('roster', 'R2');
     const req = new Request('http://test', { method: 'PUT', body: form });
     const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);
     expect(updateSpy).toHaveBeenCalled();
-    expect(linkSpy).toHaveBeenCalled();
+    expect(ensureSpy).toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(6);
   });
