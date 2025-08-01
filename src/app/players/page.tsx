@@ -163,8 +163,15 @@ export default function PlayersPage() {
           className="border p-1"
           value={filterInput}
           onChange={(e) => {
-            setFilterInput(e.target.value);
-            setSubRosterInput("");
+            const val = e.target.value;
+            setFilterInput(val);
+            if (val.startsWith("t:")) {
+              const tid = Number(val.slice(2));
+              const related = rosters.filter((r) => r.tournamentId === tid);
+              setSubRosterInput(related.length === 1 ? String(related[0].id) : "");
+            } else {
+              setSubRosterInput("");
+            }
           }}
         >
           <option value="">All tournaments/rosters</option>
@@ -179,22 +186,23 @@ export default function PlayersPage() {
             </option>
           ))}
         </select>
-        {filterInput.startsWith("t:") && (
-          <select
-            className="border p-1"
-            value={subRosterInput}
-            onChange={(e) => setSubRosterInput(e.target.value)}
-          >
-            <option value="">All rosters</option>
-            {rosters
-              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title}
-                </option>
-              ))}
-          </select>
-        )}
+        {filterInput.startsWith("t:") &&
+          rosters.filter((r) => r.tournamentId === Number(filterInput.slice(2))).length > 1 && (
+            <select
+              className="border p-1"
+              value={subRosterInput}
+              onChange={(e) => setSubRosterInput(e.target.value)}
+            >
+              <option value="">All rosters</option>
+              {rosters
+                .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.title}
+                  </option>
+                ))}
+            </select>
+          )}
         <select
           className="border p-1"
           value={positionInput}
