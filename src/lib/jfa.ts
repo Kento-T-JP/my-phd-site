@@ -8,6 +8,7 @@ export function extractMatchDate(html: string): Date | undefined {
   const text =
     $('.textarea-match.disp_pc').text() ||
     $('.textarea-match.disp_sp').text() ||
+    $('.textarea-match').text() ||
     '';
   const m = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (m) {
@@ -94,6 +95,11 @@ export async function scrapeJfaPlayers(url: string) {
       const [yyyy, mm, dd] = m[1].split('/');
       rosterDate = new Date(`${yyyy}-${mm}-${dd}`);
     }
+  }
+  if (!rosterDate) {
+    console.warn(
+      'Match date not found; please confirm the date manually before saving.'
+    );
   }
   title = tournament;
   if (rosterDate) {
