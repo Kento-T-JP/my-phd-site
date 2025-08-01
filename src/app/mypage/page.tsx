@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import Link from "next/link";
 import type { SavedFormation } from "@/types/formation";
 import type { FavoritePlayer } from "@/types/favorite";
@@ -102,7 +103,20 @@ export default function MyPage() {
       ) : (
         <ul>
           {favorites.map((f) => (
-            <li key={f.player.id} className="mb-2">
+            <li key={f.player.id} className="mb-2 flex items-center">
+              {f.player.image ? (
+                <Image
+                  src={f.player.image}
+                  alt={f.player.name}
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 object-cover rounded-full mr-2"
+                />
+              ) : (
+                <div className="w-10 h-10 flex items-center justify-center bg-gray-300/40 rounded-full mr-2 text-center text-xs text-cyan-100">
+                  No image
+                </div>
+              )}
               <span className="mr-2">{f.player.number ?? "-"}</span>
               <span className="flex items-center">
                 {f.player.name}
