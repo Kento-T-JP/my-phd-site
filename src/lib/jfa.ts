@@ -85,5 +85,10 @@ export async function scrapeJfaPlayers(url: string) {
       });
   });
 
-  return { players, tournament, rosterDate, title };
+  return {
+    players,
+    tournamentName: tournament,
+    rosterDate,
+    rosterTitle: title,
+  };
 }

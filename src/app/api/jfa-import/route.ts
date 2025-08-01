@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, {
   upsertPlayer,
-  upsertTournament,
-  upsertRoster,
-  addRosterPlayers,
+  upsertTournamentRosterPlayers,
 } from '@/lib/db';
 import { validateJfaUrl, scrapeJfaPlayers } from '@/lib/jfa';
 
@@ -13,7 +11,11 @@ export async function POST(req: Request) {
     if (typeof url !== 'string' || !validateJfaUrl(url)) {
       return NextResponse.json({ error: '不正なJFAメンバーURLです' }, { status: 400 });
     }
-    const { players, tournament, title } = await scrapeJfaPlayers(url);
+    const {
+      players,
+      tournamentName,
+      rosterTitle,
+    } = await scrapeJfaPlayers(url);
     const rosterEntries = await Promise.all(
       players.map(async (p) => {
         const player = await upsertPlayer({
@@ -30,13 +32,16 @@ export async function POST(req: Request) {
       })
     );
 
-    await prisma.$transaction(async (tx) => {
-      const t = await upsertTournament(tournament, tx);
-      const r = await upsertRoster(t.id, title, tx);
-      await addRosterPlayers(r.id, rosterEntries, tx);
+    const roster = await prisma.$transaction(async (tx) => {
+      return upsertTournamentRosterPlayers(
+        tournamentName,
+        rosterTitle,
+        rosterEntries,
+        tx,
+      );
     });
 
-    return NextResponse.json({ count: rosterEntries.length, title });
+    return NextResponse.json({ count: rosterEntries.length, title: roster.title });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'インポートに失敗しました';
     return NextResponse.json({ error: msg }, { status: 500 });
