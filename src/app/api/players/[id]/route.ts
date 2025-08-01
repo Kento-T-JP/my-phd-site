@@ -64,6 +64,11 @@ async function handleUpdate(req: Request, id: number) {
       typeof tournamentEntry === 'string' && tournamentEntry.trim() !== ''
         ? tournamentEntry
         : undefined;
+    const rosterEntry = form.get('rosterId');
+    const rosterId =
+      typeof rosterEntry === 'string' && rosterEntry.trim() !== ''
+        ? Number(rosterEntry)
+        : undefined;
     const dateEntry = form.get('tournamentDate');
     const tournamentDate =
       typeof dateEntry === 'string' && dateEntry.trim() !== ''
@@ -115,7 +120,23 @@ async function handleUpdate(req: Request, id: number) {
         undefined,
         tx,
       );
-      if (tournamentName) {
+      if (rosterId) {
+        await addRosterPlayers(
+          rosterId,
+          [
+            {
+              playerId: player.id,
+              number: parsed.data.number,
+              position: parsed.data.position,
+            },
+          ],
+          tx,
+        );
+        if (prev && prev.rosterId !== rosterId) {
+          await syncRosterPlayers(player.id, prev.rosterId, tx);
+        }
+        rosterInfo = { id: rosterId } as any;
+      } else if (tournamentName) {
         rosterInfo = await ensureTournamentRoster(
           tournamentName,
           tx,
