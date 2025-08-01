@@ -36,4 +36,10 @@ describe('WikiLink', () => {
       'https://ja.wikipedia.org/wiki/%E9%88%B4%E6%9C%A8%E5%BD%A9%E8%89%B6'
     );
   });
+
+  it('uses custom wikiUrl when provided', () => {
+    render(<WikiLink name="Foo" wikiUrl="https://example.com" />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', 'https://example.com');
+  });
 });

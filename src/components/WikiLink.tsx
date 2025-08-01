@@ -7,6 +7,7 @@ export interface WikiLinkProps {
   lang?: 'ja' | 'en';
   variant?: 'chip' | 'button' | 'icon';
   className?: string;
+  wikiUrl?: string;
 }
 
 /** Link to the player's Wikipedia page */
@@ -15,9 +16,10 @@ export default function WikiLink({
   lang = 'ja',
   variant = 'chip',
   className = '',
+  wikiUrl,
 }: WikiLinkProps) {
   const sanitizedName = name.replace(/[_\s]/g, '');
-  const href = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sanitizedName)}`;
+  const href = wikiUrl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sanitizedName)}`;
   if (variant === 'icon') {
     return (
       <Tooltip content="View on Wikipedia →" className={`inline-block ${className}`.trim()}>
