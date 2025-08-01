@@ -2,6 +2,24 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { normalizeSlug } from './db';
 
+/** Extract a match date from JFA match detail markup. */
+export function extractMatchDate(html: string): Date | undefined {
+  const $ = cheerio.load(html);
+  const text =
+    $('.textarea-match.disp_pc').text() ||
+    $('.textarea-match.disp_sp').text() ||
+    '';
+  const m = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (m) {
+    const [, y, mth, d] = m;
+    const yyyy = y;
+    const mm = mth.padStart(2, '0');
+    const dd = d.padStart(2, '0');
+    return new Date(`${yyyy}-${mm}-${dd}`);
+  }
+  return undefined;
+}
+
 export function validateJfaUrl(url: string) {
   return url.startsWith('https://www.jfa.jp/samuraiblue/') && url.endsWith('member.html');
 }
@@ -66,6 +84,9 @@ export async function scrapeJfaPlayers(url: string) {
     rosterDate = new Date(
       `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
     );
+  }
+  if (!rosterDate) {
+    rosterDate = extractMatchDate(data);
   }
   if (!rosterDate) {
     const m = data.match(/(\d{4}\/\d{2}\/\d{2})/);
