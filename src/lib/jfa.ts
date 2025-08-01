@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { normalizeSlug } from './db';
 
 export function validateJfaUrl(url: string) {
   return url.startsWith('https://www.jfa.jp/samuraiblue/') && url.endsWith('member.html');
@@ -57,10 +58,7 @@ export async function scrapeJfaPlayers(url: string) {
     if (m) tournamentSlug = m[1];
   }
   if (!tournamentSlug) {
-    tournamentSlug = tournament
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+    tournamentSlug = normalizeSlug(tournament);
   }
   const urlDateMatch = url.match(/\/(\d{8})\/?/);
   if (urlDateMatch) {
