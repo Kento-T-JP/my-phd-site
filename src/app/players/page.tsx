@@ -20,15 +20,18 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosters, setRosters] = useState<{ id: number; title: string }[]>([]);
+  const [tournaments, setTournaments] = useState<{ id: number; name: string }[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
+  const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
 
   const [searchInput, setSearchInput] = useState("");
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
+  const [tournamentInput, setTournamentInput] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -58,14 +61,31 @@ export default function PlayersPage() {
     fetchRosters();
   }, []);
 
+  useEffect(() => {
+    async function fetchTournaments() {
+      try {
+        const res = await fetch("/api/tournaments");
+        if (!res.ok) throw new Error("Failed to fetch tournaments");
+        setTournaments((await res.json()) as { id: number; name: string }[]);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchTournaments();
+    const handler = () => fetchTournaments();
+    window.addEventListener("tournament-saved", handler);
+    return () => window.removeEventListener("tournament-saved", handler);
+  }, []);
+
   const filteredPlayers = useMemo(
     () =>
       filterPlayers(players, {
         name: search,
         rosterId: selectedRoster ? Number(selectedRoster) : undefined,
+        tournamentId: selectedTournament ? Number(selectedTournament) : undefined,
         position: selectedPosition,
       }),
-    [players, search, selectedRoster, selectedPosition]
+    [players, search, selectedRoster, selectedTournament, selectedPosition]
   );
 
   if (loading) {
@@ -109,6 +129,18 @@ export default function PlayersPage() {
         </select>
         <select
           className="border p-1"
+          value={tournamentInput}
+          onChange={(e) => setTournamentInput(e.target.value)}
+        >
+          <option value="">All tournaments</option>
+          {tournaments.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="border p-1"
           value={positionInput}
           onChange={(e) => setPositionInput(e.target.value)}
         >
@@ -124,6 +156,7 @@ export default function PlayersPage() {
           onClick={() => {
             setSearch(searchInput);
             setSelectedRoster(rosterInput);
+            setSelectedTournament(tournamentInput);
             setSelectedPosition(positionInput);
           }}
         >

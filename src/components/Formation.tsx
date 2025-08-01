@@ -48,11 +48,12 @@ const positionOptions: PositionKey[] = Array.from(
 export interface PlayerFilterOptions {
   name?: string;
   rosterId?: number;
+  tournamentId?: number;
   position?: string;
 }
 
 export function filterPlayers<
-  T extends Player & { rosterPlayers?: { rosterId: number }[] }
+  T extends Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] }
 >(list: T[], opts: PlayerFilterOptions = {}): T[] {
   const name = opts.name?.toLowerCase() ?? "";
   const pos = opts.position?.toLowerCase() ?? "";
@@ -61,9 +62,14 @@ export function filterPlayers<
     const matchRoster =
       opts.rosterId === undefined ||
       (p.rosterPlayers ?? []).some((rp) => rp.rosterId === opts.rosterId);
+    const matchTournament =
+      opts.tournamentId === undefined ||
+      (p.rosterPlayers ?? []).some(
+        (rp) => rp.roster?.tournamentId === opts.tournamentId
+      );
     const matchPos =
       !pos || p.position.some((pp) => pp.toLowerCase().includes(pos));
-    return matchName && matchRoster && matchPos;
+    return matchName && matchRoster && matchTournament && matchPos;
   });
 }
 
@@ -161,9 +167,10 @@ export default function Formation({
     Record<number, { top: number; left: number }>
   >(initialFormation?.positions.playerPositions ?? {});
   const [players, setPlayers] = useState<
-    (Player & { rosterPlayers?: { rosterId: number }[] })[]
+    (Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] })[]
   >([]);
   const [rosters, setRosters] = useState<{ id: number; title: string }[]>([]);
+  const [tournaments, setTournaments] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<Dragging | null>(null);
@@ -176,9 +183,11 @@ export default function Formation({
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
+  const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [searchInput, setSearchInput] = useState("");
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
+  const [tournamentInput, setTournamentInput] = useState("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
@@ -234,6 +243,24 @@ export default function Formation({
     fetchRosters();
   }, []);
 
+  // load tournament options once
+  useEffect(() => {
+    async function fetchTournaments() {
+      try {
+        const res = await fetch('/api/tournaments');
+        if (!res.ok) throw new Error('Failed to fetch tournaments');
+        const data: { id: number; name: string }[] = await res.json();
+        setTournaments(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchTournaments();
+    const handler = () => fetchTournaments();
+    window.addEventListener('tournament-saved', handler);
+    return () => window.removeEventListener('tournament-saved', handler);
+  }, []);
+
   // restore roster selection from localStorage once
   useEffect(() => {
     const saved = localStorage.getItem("selectedRoster");
@@ -265,14 +292,19 @@ export default function Formation({
     setPositionInput(selectedPosition);
   }, [selectedPosition]);
 
+  useEffect(() => {
+    setTournamentInput(selectedTournament);
+  }, [selectedTournament]);
+
   const filteredPlayers = useMemo(
     () =>
       filterPlayers(players, {
         name: search,
         rosterId: selectedRoster ? Number(selectedRoster) : undefined,
+        tournamentId: selectedTournament ? Number(selectedTournament) : undefined,
         position: selectedPosition,
       }),
-    [players, search, selectedRoster, selectedPosition]
+    [players, search, selectedRoster, selectedTournament, selectedPosition]
   );
 
   let orderIndex = 0; // そのまま利用（変更不要）
@@ -584,6 +616,18 @@ export default function Formation({
         </select>
         <select
           className="border p-1"
+          value={tournamentInput}
+          onChange={(e) => setTournamentInput(e.target.value)}
+        >
+          <option value="">All tournaments</option>
+          {tournaments.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="border p-1"
           value={positionInput}
           onChange={(e) => setPositionInput(e.target.value)}
         >
@@ -599,6 +643,7 @@ export default function Formation({
           onClick={() => {
             setSearch(searchInput);
             setSelectedRoster(rosterInput);
+            setSelectedTournament(tournamentInput);
             setSelectedPosition(positionInput);
           }}
         >

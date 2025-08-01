@@ -38,7 +38,13 @@ export async function getPlayers(rosterId?: number) {
   }
   return prisma.player.findMany({
     orderBy: { id: 'asc' },
-    include: { rosterPlayers: true },
+    include: {
+      rosterPlayers: {
+        include: {
+          roster: { select: { tournamentId: true } },
+        },
+      },
+    },
   });
 }
 

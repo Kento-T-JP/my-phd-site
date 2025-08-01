@@ -3,13 +3,28 @@ import { filterPlayers } from '@/components/Formation';
 import type { Player } from '@/types/player';
 
 interface PlayerWithRoster extends Player {
-  rosterPlayers?: { rosterId: number }[];
+  rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[];
 }
 
 const players: PlayerWithRoster[] = [
-  { id: 1, name: 'Alice', position: ['GK'], rosterPlayers: [{ rosterId: 1 }] },
-  { id: 2, name: 'Bob', position: ['DF'], rosterPlayers: [{ rosterId: 2 }] },
-  { id: 3, name: 'Charlie', position: ['FW'], rosterPlayers: [{ rosterId: 1 }] },
+  {
+    id: 1,
+    name: 'Alice',
+    position: ['GK'],
+    rosterPlayers: [{ rosterId: 1, roster: { tournamentId: 10 } }],
+  },
+  {
+    id: 2,
+    name: 'Bob',
+    position: ['DF'],
+    rosterPlayers: [{ rosterId: 2, roster: { tournamentId: 20 } }],
+  },
+  {
+    id: 3,
+    name: 'Charlie',
+    position: ['FW'],
+    rosterPlayers: [{ rosterId: 1, roster: { tournamentId: 10 } }],
+  },
 ];
 
 const mixedPlayers = [
@@ -34,6 +49,14 @@ describe('filterPlayers', () => {
       players[0],
       players[2],
     ]);
+  });
+
+  it('filters by tournament', () => {
+    expect(filterPlayers(players, { tournamentId: 10 })).toEqual([
+      players[0],
+      players[2],
+    ]);
+    expect(filterPlayers(players, { name: 'b', tournamentId: 10 })).toEqual([]);
   });
 
   it('filters by position', () => {
