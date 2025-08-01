@@ -4,8 +4,7 @@ import { useState } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
-import TournamentTypeahead from "@/components/TournamentTypeahead";
-import RosterTypeahead from "@/components/RosterTypeahead";
+import TournamentSelect from "@/components/TournamentSelect";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -23,8 +22,6 @@ export default function NewPlayerPage() {
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [tournamentName, setTournamentName] = useState("");
-  const [tournamentSlug, setTournamentSlug] = useState<string | undefined>();
-  const [rosterTitle, setRosterTitle] = useState("");
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
@@ -33,7 +30,6 @@ export default function NewPlayerPage() {
     number?: string;
     image?: string;
     tournament?: string;
-    roster?: string;
   }>({});
 
   const togglePosition = (pos: PositionKey) => {
@@ -55,7 +51,6 @@ export default function NewPlayerPage() {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
     if (tournamentName.trim() !== "") form.append("tournament", tournamentName);
-    if (rosterTitle.trim() !== "") form.append("roster", rosterTitle);
 
     const res = await fetch("/api/players", {
       method: "POST",
@@ -67,6 +62,9 @@ export default function NewPlayerPage() {
     setSuccessMessage("");
 
     if (res.ok) {
+      if (tournamentName.trim() !== "") {
+        window.dispatchEvent(new Event("tournament-saved"));
+      }
       setSuccessMessage("選手を登録しました！");
       setTimeout(() => {
         router.push("/");
@@ -80,7 +78,6 @@ export default function NewPlayerPage() {
           number?: string;
           image?: string;
           tournament?: string;
-          roster?: string;
         } = {};
         err.error.forEach((e: { path: (string | number)[]; message: string }) => {
           const field = e.path[0] as keyof typeof fieldErrors;
@@ -168,25 +165,12 @@ export default function NewPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
-            <TournamentTypeahead
+            <TournamentSelect
               value={tournamentName}
-              onChange={(name, slug) => {
-                setTournamentName(name);
-                setTournamentSlug(slug);
-              }}
+              onChange={setTournamentName}
             />
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
-            )}
-          </div>
-          <div>
-            <RosterTypeahead
-              slug={tournamentSlug}
-              value={rosterTitle}
-              onChange={setRosterTitle}
-            />
-            {errors.roster && (
-              <p className="text-red-600 text-sm mt-1">{errors.roster}</p>
             )}
           </div>
         </fieldset>
