@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import prisma, { updatePlayer, upsertTournamentRosterPlayers, syncRosterPlayers } from '@/lib/db';
+import prisma, {
+  updatePlayer,
+  ensureTournamentRoster,
+  addRosterPlayers,
+  syncRosterPlayers,
+} from '@/lib/db';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -50,14 +55,9 @@ async function handleUpdate(req: Request, id: number) {
         ? undefined
         : numberEntry;
     const tournamentEntry = form.get('tournament');
-    const rosterEntry = form.get('roster');
     const tournamentName =
       typeof tournamentEntry === 'string' && tournamentEntry.trim() !== ''
         ? tournamentEntry
-        : undefined;
-    const rosterTitle =
-      typeof rosterEntry === 'string' && rosterEntry.trim() !== ''
-        ? rosterEntry
         : undefined;
 
     const parsed = PlayerSchema.safeParse({
@@ -65,7 +65,6 @@ async function handleUpdate(req: Request, id: number) {
       position: positions,
       number,
       tournament: tournamentName,
-      roster: rosterTitle,
     });
 
     if (!parsed.success) {
@@ -98,10 +97,10 @@ async function handleUpdate(req: Request, id: number) {
         undefined,
         tx,
       );
-      if (tournamentName && rosterTitle) {
-        rosterInfo = await upsertTournamentRosterPlayers(
-          tournamentName,
-          rosterTitle,
+      if (tournamentName) {
+        rosterInfo = await ensureTournamentRoster(tournamentName, tx);
+        await addRosterPlayers(
+          rosterInfo.id,
           [
             {
               playerId: player.id,

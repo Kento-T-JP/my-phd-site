@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import prisma, { getPlayers, createPlayer, upsertTournamentRosterPlayers } from '@/lib/db';
+import prisma, {
+  getPlayers,
+  createPlayer,
+  ensureTournamentRoster,
+  addRosterPlayers,
+} from '@/lib/db';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -14,7 +19,6 @@ export const PlayerSchema = z.object({
     .max(99, { message: "背番号は99以下で入力してください" })
     .optional(),
   tournament: z.string().optional(),
-  roster: z.string().optional(),
 });
 
 export async function GET() {
@@ -37,14 +41,9 @@ export async function POST(req: Request) {
       ? undefined
       : numberEntry;
   const tournamentEntry = form.get("tournament");
-  const rosterEntry = form.get("roster");
   const tournamentName =
     typeof tournamentEntry === "string" && tournamentEntry.trim() !== ""
       ? tournamentEntry
-      : undefined;
-  const rosterTitle =
-    typeof rosterEntry === "string" && rosterEntry.trim() !== ""
-      ? rosterEntry
       : undefined;
 
   const parsed = PlayerSchema.safeParse({
@@ -52,7 +51,6 @@ export async function POST(req: Request) {
     position: positions,
     number,
     tournament: tournamentName,
-    roster: rosterTitle,
   });
 
     if (!parsed.success) {
@@ -79,10 +77,10 @@ export async function POST(req: Request) {
         undefined,
         tx,
       );
-      if (tournamentName && rosterTitle) {
-        rosterInfo = await upsertTournamentRosterPlayers(
-          tournamentName,
-          rosterTitle,
+      if (tournamentName) {
+        rosterInfo = await ensureTournamentRoster(tournamentName, tx);
+        await addRosterPlayers(
+          rosterInfo.id,
           [
             {
               playerId: player.id,

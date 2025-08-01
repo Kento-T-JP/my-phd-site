@@ -149,6 +149,25 @@ export async function upsertRoster(
   });
 }
 
+/** Ensure a tournament exists and return its latest roster, creating one if needed. */
+export async function ensureTournamentRoster(
+  name: string,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
+) {
+  const tournament = await upsertTournament(name, client);
+  let roster = await client.roster.findFirst({
+    where: { tournamentId: tournament.id },
+    orderBy: { date: 'desc' },
+  });
+  if (!roster) {
+    const title = `${tournament.name} (${new Date().toISOString().slice(0, 10)})`;
+    roster = await client.roster.create({
+      data: { tournamentId: tournament.id, title, date: new Date() },
+    });
+  }
+  return roster;
+}
+
 /** Link players to a roster, skipping duplicates. */
 export async function addRosterPlayers(
   rosterId: number,
