@@ -5,6 +5,7 @@ import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
+import { rosterDisplayTitle } from "@/lib/format";
 
 function slugify(str: string) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -259,7 +260,7 @@ export default function EditPlayerPage() {
               >
                 {rosters.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {`${r.tournament.name} - ${r.date.slice(0, 10).replace(/-/g, '/')}`}
+                    {rosterDisplayTitle(r, rosters)}
                   </option>
                 ))}
               </select>
