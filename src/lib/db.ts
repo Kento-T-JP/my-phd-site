@@ -164,19 +164,39 @@ export async function ensureTournamentRoster(
   rosterDate?: Date,
 ) {
   const tournament = await upsertTournament(name, client);
-  let roster = await client.roster.findFirst({
-    where: { tournamentId: tournament.id },
-    orderBy: { date: 'desc' },
-  });
-  if (!roster) {
-    const date = rosterDate ?? new Date();
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
+  let roster: Awaited<ReturnType<typeof client.roster.findFirst>> | null = null;
+
+  if (rosterDate) {
+    const yyyy = rosterDate.getFullYear();
+    const mm = String(rosterDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(rosterDate.getDate()).padStart(2, '0');
     const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
-    roster = await client.roster.create({
-      data: { tournamentId: tournament.id, title, date },
+    roster = await client.roster.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        OR: [{ date: rosterDate }, { title }],
+      },
     });
+    if (!roster) {
+      roster = await client.roster.create({
+        data: { tournamentId: tournament.id, title, date: rosterDate },
+      });
+    }
+  } else {
+    roster = await client.roster.findFirst({
+      where: { tournamentId: tournament.id },
+      orderBy: { date: 'desc' },
+    });
+    if (!roster) {
+      const date = new Date();
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
+      roster = await client.roster.create({
+        data: { tournamentId: tournament.id, title, date },
+      });
+    }
   }
   return roster;
 }
