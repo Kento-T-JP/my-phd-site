@@ -193,7 +193,11 @@ export async function addRosterPlayers(
       },
     })
   );
-  await client.$transaction(upserts);
+  if (typeof (client as any).$transaction === 'function') {
+    await (client as any).$transaction(upserts);
+  } else {
+    await Promise.all(upserts);
+  }
 }
 
 /**
