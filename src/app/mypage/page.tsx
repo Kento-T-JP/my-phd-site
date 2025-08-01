@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import type { SavedFormation } from "@/types/formation";
+import type { Player } from "@/types/player";
 import BackButton from "@/components/BackButton";
+import WikiLink from "@/components/WikiLink";
 
 interface FormationData {
   id: number;
@@ -15,6 +17,8 @@ export default function MyPage() {
   const { data: session, status } = useSession();
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<Player[]>([]);
+  const [favLoading, setFavLoading] = useState(true);
 
   useEffect(() => {
     if (!session) return;
@@ -26,6 +30,18 @@ export default function MyPage() {
       setLoading(false);
     }
     load();
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+    async function loadFavorites() {
+      const res = await fetch("/api/favorites");
+      if (res.ok) {
+        setFavorites((await res.json()) as Player[]);
+      }
+      setFavLoading(false);
+    }
+    loadFavorites();
   }, [session]);
 
   const handleDelete = async (id: number) => {
@@ -74,6 +90,24 @@ export default function MyPage() {
               >
                 Delete
               </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h2 className="text-lg font-bold mt-4 mb-2">Favorite Players</h2>
+      {favLoading ? (
+        <p>Loading...</p>
+      ) : favorites.length === 0 ? (
+        <p>No favorite players.</p>
+      ) : (
+        <ul>
+          {favorites.map((p) => (
+            <li key={p.id} className="mb-2">
+              <span className="mr-2">{p.number ?? "-"}</span>
+              <span className="flex items-center">
+                {p.name}
+                <WikiLink name={p.name} wikiUrl={p.wikiUrl} className="ml-1" />
+              </span>
             </li>
           ))}
         </ul>
