@@ -4,6 +4,8 @@ import type { Player } from '@/types/player';
 
 export function normalizeSlug(str: string) {
   return str
+    .normalize('NFKC')
+    .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
