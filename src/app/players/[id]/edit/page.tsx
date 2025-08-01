@@ -260,7 +260,7 @@ export default function EditPlayerPage() {
               >
                 {rosters.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r, rosters)}
+                    {rosterDisplayTitle(r)}
                   </option>
                 ))}
               </select>

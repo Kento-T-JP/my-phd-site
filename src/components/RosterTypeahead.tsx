@@ -25,7 +25,7 @@ export default function RosterTypeahead({ slug, value, onChange, listId = "roste
     fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : []))
       .then((d) =>
-        setOptions(d.map((r: any) => ({ id: r.id, title: rosterDisplayTitle(r, d) })))
+        setOptions(d.map((r: any) => ({ id: r.id, title: rosterDisplayTitle(r) })))
       )
       .catch(() => {});
     return () => controller.abort();
