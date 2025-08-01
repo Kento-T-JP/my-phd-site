@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import type { FavoritePlayer } from "@/types/favorite";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
@@ -107,8 +108,8 @@ export default function PlayersPage() {
       try {
         const res = await fetch("/api/favorites");
         if (res.ok) {
-          const favs = (await res.json()) as Player[];
-          setFavorites(new Set(favs.map((f) => f.id)));
+          const favs = (await res.json()) as FavoritePlayer[];
+          setFavorites(new Set(favs.map((f) => f.player.id)));
         }
       } catch {
         // ignore errors

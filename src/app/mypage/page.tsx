@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import type { SavedFormation } from "@/types/formation";
-import type { Player } from "@/types/player";
+import type { FavoritePlayer } from "@/types/favorite";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
 
@@ -17,7 +17,7 @@ export default function MyPage() {
   const { data: session, status } = useSession();
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState<Player[]>([]);
+  const [favorites, setFavorites] = useState<FavoritePlayer[]>([]);
   const [favLoading, setFavLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function MyPage() {
     async function loadFavorites() {
       const res = await fetch("/api/favorites");
       if (res.ok) {
-        setFavorites((await res.json()) as Player[]);
+        setFavorites((await res.json()) as FavoritePlayer[]);
       }
       setFavLoading(false);
     }
@@ -101,12 +101,16 @@ export default function MyPage() {
         <p>No favorite players.</p>
       ) : (
         <ul>
-          {favorites.map((p) => (
-            <li key={p.id} className="mb-2">
-              <span className="mr-2">{p.number ?? "-"}</span>
+          {favorites.map((f) => (
+            <li key={f.player.id} className="mb-2">
+              <span className="mr-2">{f.player.number ?? "-"}</span>
               <span className="flex items-center">
-                {p.name}
-                <WikiLink name={p.name} wikiUrl={p.wikiUrl} className="ml-1" />
+                {f.player.name}
+                <WikiLink
+                  name={f.player.name}
+                  wikiUrl={f.player.wikiUrl}
+                  className="ml-1"
+                />
               </span>
             </li>
           ))}
