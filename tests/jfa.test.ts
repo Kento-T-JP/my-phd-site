@@ -32,8 +32,8 @@ describe('scrapeJfaPlayers', () => {
 
     const result = await scrapeJfaPlayers('https://www.jfa.jp/samuraiblue/member.html');
 
-    expect(result.title).toBe('AFC Asian Cup 2024');
-    expect(result.tournament).toBe('AFC Asian Cup 2024');
+    expect(result.rosterTitle).toBe('AFC Asian Cup 2024');
+    expect(result.tournamentName).toBe('AFC Asian Cup 2024');
     expect(result.rosterDate).toBeUndefined();
     expect(result.players).toEqual([
       {
@@ -74,8 +74,8 @@ describe('scrapeJfaPlayers', () => {
       'https://www.jfa.jp/samuraiblue/20240720/member.html'
     );
 
-    expect(result.title).toBe('SAMURAI BLUE (2024-07-20)');
-    expect(result.tournament).toBe('SAMURAI BLUE');
+    expect(result.rosterTitle).toBe('SAMURAI BLUE (2024-07-20)');
+    expect(result.tournamentName).toBe('SAMURAI BLUE');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2024-07-20');
     expect(result.players).toEqual([
       {
