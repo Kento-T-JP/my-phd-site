@@ -166,24 +166,13 @@ export default function PlayersPage() {
           onChange={(e) => {
             const val = e.target.value;
             setFilterInput(val);
-            if (val.startsWith("t:")) {
-              const tid = Number(val.slice(2));
-              const related = rosters.filter((r) => r.tournamentId === tid);
-              setSubRosterInput(related.length === 1 ? String(related[0].id) : "");
-            } else {
-              setSubRosterInput("");
-            }
+            setSubRosterInput("");
           }}
         >
-          <option value="">All tournaments/rosters</option>
+          <option value="">All tournaments</option>
           {tournaments.map((t) => (
             <option key={`t-${t.id}`} value={`t:${t.id}`}>
               {t.name}
-            </option>
-          ))}
-          {rosters.map((r) => (
-            <option key={`r-${r.id}`} value={`r:${r.id}`}>
-              {rosterDisplayTitle(r, rosters)}
             </option>
           ))}
         </select>
@@ -199,7 +188,7 @@ export default function PlayersPage() {
                 .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r, rosters)}
+                    {rosterDisplayTitle(r)}
                   </option>
                 ))}
             </select>
@@ -221,14 +210,7 @@ export default function PlayersPage() {
           onClick={() => {
             setSearch(searchInput);
             setSelectedPosition(positionInput);
-            if (filterInput.startsWith("r:")) {
-              const rid = filterInput.slice(2);
-              const r = rosters.find((ro) => ro.id === Number(rid));
-              if (r) {
-                setSelectedTournament(String(r.tournamentId));
-              }
-              setSelectedRoster(rid);
-            } else if (filterInput.startsWith("t:")) {
+            if (filterInput.startsWith("t:")) {
               const tid = filterInput.slice(2);
               setSelectedTournament(tid);
               setSelectedRoster(subRosterInput);

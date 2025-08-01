@@ -230,7 +230,7 @@ export default function NewPlayerPage() {
               >
                 {rosters.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r, rosters)}
+                    {rosterDisplayTitle(r)}
                   </option>
                 ))}
               </select>
