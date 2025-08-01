@@ -1,13 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@/lib/db', () => {
-  const client = { player: {}, roster: {}, rosterPlayer: {}, $transaction: vi.fn(async (fn: any) => fn(client)) } as any;
+  const client = {
+    player: {},
+    roster: {},
+    rosterPlayer: {},
+    $transaction: vi.fn(async (fn: any) => fn(client)),
+  } as any;
   return {
     __esModule: true,
     default: client,
     updatePlayer: vi.fn(),
     createPlayer: vi.fn(),
     upsertTournamentRosterPlayers: vi.fn(),
+    syncRosterPlayers: vi.fn(),
     getRosters: vi.fn(),
     getPlayers: vi.fn(),
     getTournamentNames: vi.fn(),
@@ -16,7 +22,11 @@ vi.mock('@/lib/db', () => {
   };
 });
 
-let prisma: { player: { findUnique: any }; roster: { findUnique: any } };
+let prisma: {
+  player: { findUnique: any };
+  roster: { findUnique: any };
+  rosterPlayer: { findFirst: any; delete: any; create: any };
+};
 let updateSpy: ReturnType<typeof vi.fn>;
 let createSpy: ReturnType<typeof vi.fn>;
 let linkSpy: ReturnType<typeof vi.fn>;
@@ -25,6 +35,7 @@ let playersSpy: ReturnType<typeof vi.fn>;
 let tNamesSpy: ReturnType<typeof vi.fn>;
 let allTSpy: ReturnType<typeof vi.fn>;
 let rTitlesSpy: ReturnType<typeof vi.fn>;
+let syncSpy: ReturnType<typeof vi.fn>;
 
 describe('player API routes', () => {
   beforeEach(async () => {
@@ -33,6 +44,7 @@ describe('player API routes', () => {
     updateSpy = mod.updatePlayer as any;
     createSpy = mod.createPlayer as any;
     linkSpy = mod.upsertTournamentRosterPlayers as any;
+    syncSpy = mod.syncRosterPlayers as any;
     rosterSpy = mod.getRosters as any;
     playersSpy = mod.getPlayers as any;
     tNamesSpy = mod.getTournamentNames as any;
@@ -40,9 +52,13 @@ describe('player API routes', () => {
     rTitlesSpy = mod.getRosterTitles as any;
     prisma.player.findUnique = vi.fn();
     prisma.roster.findUnique = vi.fn();
+    prisma.rosterPlayer.findFirst = vi.fn();
+    prisma.rosterPlayer.delete = vi.fn();
+    prisma.rosterPlayer.create = vi.fn();
     updateSpy.mockReset();
     createSpy.mockReset();
     linkSpy.mockReset();
+    syncSpy.mockReset();
     rosterSpy.mockReset();
     playersSpy.mockReset();
     tNamesSpy.mockReset();
