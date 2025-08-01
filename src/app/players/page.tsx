@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
-import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import type { Player, PositionKey, Tournament } from "@/types/player";
 import type { FavoritePlayer } from "@/types/favorite";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
@@ -24,18 +24,15 @@ export default function PlayersPage() {
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rosters, setRosters] = useState<Roster[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [selectedRoster, setSelectedRoster] = useState<string>("");
   const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
 
   const [searchInput, setSearchInput] = useState("");
-  const [filterInput, setFilterInput] = useState("");
-  const [subRosterInput, setSubRosterInput] = useState("");
+  const [tournamentInput, setTournamentInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
@@ -73,18 +70,6 @@ export default function PlayersPage() {
     load();
   }, []);
 
-  useEffect(() => {
-    async function fetchRosters() {
-      try {
-        const res = await fetch("/api/rosters");
-        if (!res.ok) throw new Error("Failed to fetch rosters");
-        setRosters((await res.json()) as Roster[]);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    fetchRosters();
-  }, []);
 
   useEffect(() => {
     async function fetchTournaments() {
@@ -119,18 +104,13 @@ export default function PlayersPage() {
   }, [session]);
 
   const filteredPlayers = useMemo(() => {
-    const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
-    const tournamentId =
-      rosterId === undefined && selectedTournament
-        ? Number(selectedTournament)
-        : undefined;
+    const tournamentId = selectedTournament ? Number(selectedTournament) : undefined;
     return filterPlayers(players, {
       name: search,
-      rosterId,
       tournamentId,
       position: selectedPosition,
     });
-  }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
+  }, [players, search, selectedTournament, selectedPosition]);
 
   if (loading) {
     return (
@@ -161,40 +141,16 @@ export default function PlayersPage() {
         />
         <select
           className="border p-1"
-          value={filterInput}
-          onChange={(e) => {
-            setFilterInput(e.target.value);
-            setSubRosterInput("");
-          }}
+          value={tournamentInput}
+          onChange={(e) => setTournamentInput(e.target.value)}
         >
-          <option value="">All tournaments/rosters</option>
+          <option value="">All tournaments</option>
           {tournaments.map((t) => (
-            <option key={`t-${t.id}`} value={`t:${t.id}`}>
+            <option key={t.id} value={t.id}>
               {t.name}
             </option>
           ))}
-          {rosters.map((r) => (
-            <option key={`r-${r.id}`} value={`r:${r.id}`}>
-              {r.title}
-            </option>
-          ))}
         </select>
-        {filterInput.startsWith("t:") && (
-          <select
-            className="border p-1"
-            value={subRosterInput}
-            onChange={(e) => setSubRosterInput(e.target.value)}
-          >
-            <option value="">All rosters</option>
-            {rosters
-              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title}
-                </option>
-              ))}
-          </select>
-        )}
         <select
           className="border p-1"
           value={positionInput}
@@ -212,21 +168,7 @@ export default function PlayersPage() {
           onClick={() => {
             setSearch(searchInput);
             setSelectedPosition(positionInput);
-            if (filterInput.startsWith("r:")) {
-              const rid = filterInput.slice(2);
-              const r = rosters.find((ro) => ro.id === Number(rid));
-              if (r) {
-                setSelectedTournament(String(r.tournamentId));
-              }
-              setSelectedRoster(rid);
-            } else if (filterInput.startsWith("t:")) {
-              const tid = filterInput.slice(2);
-              setSelectedTournament(tid);
-              setSelectedRoster(subRosterInput);
-            } else {
-              setSelectedTournament("");
-              setSelectedRoster("");
-            }
+            setSelectedTournament(tournamentInput);
           }}
         >
           Apply Filters

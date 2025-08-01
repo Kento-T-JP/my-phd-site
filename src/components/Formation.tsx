@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
 import { useSession } from "next-auth/react";
-import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import type { Player, PositionKey, Tournament } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
 
@@ -169,7 +169,6 @@ export default function Formation({
   const [players, setPlayers] = useState<
     (Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] })[]
   >([]);
-  const [rosters, setRosters] = useState<Roster[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,12 +180,10 @@ export default function Formation({
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
-  const [selectedRoster, setSelectedRoster] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
   const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [searchInput, setSearchInput] = useState("");
-  const [filterInput, setFilterInput] = useState("");
-  const [subRosterInput, setSubRosterInput] = useState("");
+  const [tournamentInput, setTournamentInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
@@ -228,20 +225,6 @@ export default function Formation({
     setSelectedIsBench(null);
   }, [initialFormation]);
 
-  // load roster options once
-  useEffect(() => {
-    async function fetchRosters() {
-      try {
-        const res = await fetch('/api/rosters');
-        if (!res.ok) throw new Error('Failed to fetch rosters');
-        const data: Roster[] = await res.json();
-        setRosters(data);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    fetchRosters();
-  }, []);
 
   // load tournament options once
   useEffect(() => {
@@ -261,58 +244,24 @@ export default function Formation({
     return () => window.removeEventListener('tournament-saved', handler);
   }, []);
 
-  // restore roster selection from localStorage once
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedRoster");
-    if (saved) setSelectedRoster(saved);
-  }, []);
-
-  // ensure stored roster still exists
-  useEffect(() => {
-    if (!selectedRoster || rosters.length === 0) return;
-    const exists = rosters.some(r => r.id === Number(selectedRoster));
-    if (!exists) {
-      setSelectedRoster("");
-    }
-  }, [rosters, selectedRoster]);
-
-  useEffect(() => {
-    localStorage.setItem("selectedRoster", selectedRoster);
-  }, [selectedRoster]);
 
   useEffect(() => {
     setSearchInput(search);
   }, [search]);
 
-  useEffect(() => {
-    if (selectedRoster) {
-      setFilterInput(`r:${selectedRoster}`);
-      setSubRosterInput('');
-    } else if (selectedTournament) {
-      setFilterInput(`t:${selectedTournament}`);
-    } else {
-      setFilterInput('');
-      setSubRosterInput('');
-    }
-  }, [selectedRoster, selectedTournament]);
 
   useEffect(() => {
     setPositionInput(selectedPosition);
   }, [selectedPosition]);
 
   const filteredPlayers = useMemo(() => {
-    const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
-    const tournamentId =
-      rosterId === undefined && selectedTournament
-        ? Number(selectedTournament)
-        : undefined;
+    const tournamentId = selectedTournament ? Number(selectedTournament) : undefined;
     return filterPlayers(players, {
       name: search,
-      rosterId,
       tournamentId,
       position: selectedPosition,
     });
-  }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
+  }, [players, search, selectedTournament, selectedPosition]);
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
@@ -582,7 +531,7 @@ export default function Formation({
   useEffect(() => {
     handleReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedRoster, selectedPosition]);
+  }, [search, selectedPosition]);
 
   /* ───────── render helpers ───────── */
   // track which IDs have already been drawn this frame
@@ -611,36 +560,16 @@ export default function Formation({
         />
         <select
           className="border p-1"
-          value={filterInput}
-          onChange={(e) => {
-            setFilterInput(e.target.value);
-            setSubRosterInput('');
-          }}
+          value={tournamentInput}
+          onChange={(e) => setTournamentInput(e.target.value)}
         >
-          <option value="">All tournaments/rosters</option>
+          <option value="">All tournaments</option>
           {tournaments.map((t) => (
-            <option key={`t-${t.id}`} value={`t:${t.id}`}> {t.name} </option>
-          ))}
-          {rosters.map((r) => (
-            <option key={`r-${r.id}`} value={`r:${r.id}`}> {r.title} </option>
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
           ))}
         </select>
-        {filterInput.startsWith('t:') && (
-          <select
-            className="border p-1"
-            value={subRosterInput}
-            onChange={(e) => setSubRosterInput(e.target.value)}
-          >
-            <option value="">All rosters</option>
-            {rosters
-              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title}
-                </option>
-              ))}
-          </select>
-        )}
         <select
           className="border p-1"
           value={positionInput}
@@ -658,21 +587,7 @@ export default function Formation({
           onClick={() => {
             setSearch(searchInput);
             setSelectedPosition(positionInput);
-            if (filterInput.startsWith('r:')) {
-              const rid = filterInput.slice(2);
-              const r = rosters.find((ro) => ro.id === Number(rid));
-              if (r) {
-                setSelectedTournament(String(r.tournamentId));
-              }
-              setSelectedRoster(rid);
-            } else if (filterInput.startsWith('t:')) {
-              const tid = filterInput.slice(2);
-              setSelectedTournament(tid);
-              setSelectedRoster(subRosterInput);
-            } else {
-              setSelectedTournament('');
-              setSelectedRoster('');
-            }
+            setSelectedTournament(tournamentInput);
           }}
         >
           Apply Filters
