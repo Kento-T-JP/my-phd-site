@@ -183,7 +183,7 @@ export default function PlayersPage() {
           ))}
           {rosters.map((r) => (
             <option key={`r-${r.id}`} value={`r:${r.id}`}>
-              {rosterDisplayTitle(r)}
+              {rosterDisplayTitle(r, rosters)}
             </option>
           ))}
         </select>
@@ -199,7 +199,7 @@ export default function PlayersPage() {
                 .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r)}
+                    {rosterDisplayTitle(r, rosters)}
                   </option>
                 ))}
             </select>

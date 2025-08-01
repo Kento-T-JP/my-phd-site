@@ -630,7 +630,7 @@ export default function Formation({
             <option key={`t-${t.id}`} value={`t:${t.id}`}> {t.name} </option>
           ))}
           {rosters.map((r) => (
-            <option key={`r-${r.id}`} value={`r:${r.id}`}> {rosterDisplayTitle(r)} </option>
+            <option key={`r-${r.id}`} value={`r:${r.id}`}> {rosterDisplayTitle(r, rosters)} </option>
           ))}
         </select>
         {filterInput.startsWith('t:') &&
@@ -645,7 +645,7 @@ export default function Formation({
                 .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r)}
+                    {rosterDisplayTitle(r, rosters)}
                   </option>
                 ))}
             </select>
