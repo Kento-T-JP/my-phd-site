@@ -54,7 +54,7 @@ export default async function Home({
 
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">サッカー日本代表フォーメーション予想</h1>
+      <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
       <div className="mb-4 space-x-4">
         <Link href="/players/new" className="text-yellow-300 underline">
           新規選手登録
