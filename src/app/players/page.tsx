@@ -236,10 +236,14 @@ export default function PlayersPage() {
             <tr key={p.id} className="border-b">
               <td className="px-2 py-1">{p.number ?? "-"}</td>
               <td className="px-2 py-1 text-white">
-                <span className="flex items-center">
+                <div>
                   {p.name}
-                  <WikiLink name={p.name} wikiUrl={p.wikiUrl} className="ml-1" />
-                </span>
+                  <WikiLink
+                    name={p.name}
+                    wikiUrl={p.wikiUrl}
+                    className="block mt-1"
+                  />
+                </div>
               </td>
               <td className="px-2 py-1 text-center">
                 {session ? (
