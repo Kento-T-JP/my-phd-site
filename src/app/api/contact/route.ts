@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { ContactSchema } from '@/lib/schemas/contact';
-import type { ContactForm } from '@/lib/schemas/contact';
+import { ContactSchema } from '@/lib/validation/contact';
+import type { ContactForm } from '@/lib/validation/contact';
 import { randomInt } from 'crypto';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
   }
 
   // Honeypot check
-  if (payload.honeypot && payload.honeypot.trim() !== '') {
+  if (payload.honeypot) {
     return NextResponse.json({ id: 'ok' });
   }
 
