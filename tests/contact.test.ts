@@ -24,10 +24,8 @@ let prisma: any;
 beforeEach(async () => {
   vi.resetModules();
   sendMailMock = vi.fn();
-  process.env.SMTP_HOST = 'smtp.test';
-  process.env.SMTP_PORT = '587';
-  process.env.SMTP_USER = 'user@test';
-  process.env.SMTP_PASS = 'pass';
+  process.env.GMAIL_USER = 'user@test';
+  process.env.GMAIL_APP_PASSWORD = 'pass';
   process.env.CONTACT_RECIPIENT = 'recipient@test';
 
   const mod = await import('@/lib/db');
@@ -70,8 +68,9 @@ describe('contact API route', () => {
     });
     expect(sendMailMock).toHaveBeenCalledTimes(1);
     expect(sendMailMock.mock.calls[0][0]).toMatchObject({
-      from: process.env.SMTP_USER,
+      from: 'Bob <bob@example.com>',
       to: process.env.CONTACT_RECIPIENT,
+      replyTo: 'bob@example.com',
     });
   });
 
