@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
+import type { FavoritePlayer } from "@/types/favorite";
 
 export interface InitialFormation {
   id?: number;
@@ -206,6 +208,27 @@ export default function Formation({
   );
 
   const { data: session } = useSession();
+  const router = useRouter();
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+
+  const toggleFavorite = async (id: number) => {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+    const isFav = favorites.has(id);
+    setFavorites((prev) => {
+      const s = new Set(prev);
+      if (isFav) s.delete(id);
+      else s.add(id);
+      return s;
+    });
+    await fetch("/api/favorites", {
+      method: isFav ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: id }),
+    });
+  };
 
   // update when a different formation is supplied from props
   useEffect(() => {
@@ -263,6 +286,22 @@ export default function Formation({
     window.addEventListener('tournament-saved', handler);
     return () => window.removeEventListener('tournament-saved', handler);
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    async function loadFavorites() {
+      try {
+        const res = await fetch('/api/favorites');
+        if (res.ok) {
+          const favs = (await res.json()) as FavoritePlayer[];
+          setFavorites(new Set(favs.map((f) => f.player.id)));
+        }
+      } catch {
+        // ignore errors
+      }
+    }
+    loadFavorites();
+  }, [session]);
 
   // restore roster selection from localStorage once
   useEffect(() => {
@@ -637,7 +676,7 @@ export default function Formation({
           No image
         </div>
       )}
-      {/* player name (always visible) */}
+  {/* player name (always visible) */}
       <div
         className={`font-semibold whitespace-normal break-words text-cyan-100 ${
           isLongName(p.name) ? "text-xs leading-tight" : ""
@@ -651,6 +690,27 @@ export default function Formation({
           variant="icon"
           className="ml-1"
         />
+        {session ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(p.id);
+            }}
+            className="ml-1 text-yellow-300"
+            aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
+          >
+            {favorites.has(p.id) ? "★" : "☆"}
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="ml-1 text-yellow-300"
+            aria-label="Login to favorite"
+            onClick={(e) => e.stopPropagation()}
+          >
+            ☆
+          </Link>
+        )}
       </div>
       {/* jersey number appears on hover */}
       {p.number && (
@@ -838,6 +898,27 @@ export default function Formation({
                     variant="icon"
                     className="ml-1"
                   />
+                  {session ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(p.id);
+                      }}
+                      className="ml-1 text-yellow-300"
+                      aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      {favorites.has(p.id) ? "★" : "☆"}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="ml-1 text-yellow-300"
+                      aria-label="Login to favorite"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      ☆
+                    </Link>
+                  )}
                 </div>
                 {/* jersey number appears on hover, just like the position */}
                 {p.number && (
