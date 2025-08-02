@@ -115,12 +115,12 @@ export default function MyPage() {
                 </div>
               )}
               <span className="mr-2">{f.player.number ?? "-"}</span>
-              <span className="flex items-center">
+              <span className="flex flex-col">
                 {f.player.name}
                 <WikiLink
                   name={f.player.name}
                   wikiUrl={f.player.wikiUrl}
-                  className="ml-1"
+                  className="block mt-1"
                 />
               </span>
             </li>
