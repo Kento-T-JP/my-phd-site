@@ -1,0 +1,126 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('@/lib/db', () => {
+  return {
+    __esModule: true,
+    default: { contactSubmission: { create: vi.fn() } },
+  };
+});
+
+let prisma: any;
+
+beforeEach(async () => {
+  vi.resetModules();
+  const mod = await import('@/lib/db');
+  prisma = mod.default as any;
+  prisma.contactSubmission.create.mockReset();
+});
+
+describe('contact API route', () => {
+  it('returns id and saves to database on success', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    prisma.contactSubmission.create.mockResolvedValue({});
+    const req = new Request('http://test', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '1.1.1.1',
+        'user-agent': 'test-agent',
+      },
+      body: JSON.stringify({
+        name: 'Bob',
+        email: 'bob@example.com',
+        message: 'Hello',
+        consent: true,
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.id).toMatch(/^C-\d+$/);
+    expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(1);
+    expect(prisma.contactSubmission.create.mock.calls[0][0]).toMatchObject({
+      data: expect.objectContaining({
+        id: data.id,
+        name: 'Bob',
+        email: 'bob@example.com',
+        message: 'Hello',
+        ip: '1.1.1.1',
+        userAgent: 'test-agent',
+      }),
+    });
+  });
+
+  it('returns 400 for missing required fields', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    const req = new Request('http://test', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for invalid email', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    const req = new Request('http://test', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Bob',
+        email: 'invalid',
+        message: 'Hi',
+        consent: true,
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects submissions when honeypot field is filled', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    const req = new Request('http://test', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Bob',
+        email: 'bob@example.com',
+        message: 'Hi',
+        consent: true,
+        honeypot: 'spam',
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('enforces rate limiting by ip', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    prisma.contactSubmission.create.mockResolvedValue({});
+    const payload = {
+      name: 'Bob',
+      email: 'bob@example.com',
+      message: 'Hi',
+      consent: true,
+    };
+    for (let i = 0; i < 5; i++) {
+      const req = new Request('http://test', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': '9.9.9.9' },
+        body: JSON.stringify(payload),
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+    }
+    const blockedReq = new Request('http://test', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '9.9.9.9' },
+      body: JSON.stringify(payload),
+    });
+    const blockedRes = await POST(blockedReq);
+    expect(blockedRes.status).toBe(429);
+    expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(5);
+  });
+});
+
