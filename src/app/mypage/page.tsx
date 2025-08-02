@@ -8,12 +8,6 @@ import type { FavoritePlayer } from "@/types/favorite";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
 
-interface FormationData {
-  id: number;
-  name: string;
-  positions: any;
-}
-
 export default function MyPage() {
   const { data: session, status } = useSession();
   const [list, setList] = useState<SavedFormation[]>([]);
@@ -82,7 +76,10 @@ export default function MyPage() {
         <ul>
           {list.map((f) => (
             <li key={f.id} className="mb-2">
-              <Link href={`/?formationId=${f.id}`} className="underline mr-2">
+              <Link
+                href={`/formations?formationId=${f.id}`}
+                className="underline mr-2"
+              >
                 {f.name}
               </Link>
               <button

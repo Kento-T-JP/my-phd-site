@@ -1,34 +1,42 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
 import Formation from "@/components/Formation";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const formationId = searchParams.get("formationId");
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | "">("");
 
-  async function loadList() {
+  const loadList = useCallback(async () => {
     const res = await fetch("/api/formations");
     if (res.ok) {
       const data = (await res.json()) as SavedFormation[];
       setList(data);
       if (data.length > 0) {
-        setSelectedId((prev) =>
-          prev === "" ? data[0].id : prev
-        );
+        setSelectedId((prev) => {
+          if (prev !== "") return prev;
+          const paramId = formationId ? Number(formationId) : NaN;
+          if (!Number.isNaN(paramId) && data.some((f) => f.id === paramId)) {
+            return paramId;
+          }
+          return data[0].id;
+        });
       }
     }
     setLoading(false);
-  }
+  }, [formationId]);
 
   useEffect(() => {
     if (!session) return;
     loadList();
-  }, [session]);
+  }, [session, loadList]);
 
   const handleDelete = async (id: number) => {
     await fetch(`/api/formations/${id}`, { method: "DELETE" });
