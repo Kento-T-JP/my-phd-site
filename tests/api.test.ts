@@ -311,8 +311,8 @@ describe('jfa import route', () => {
       'Cup',
       'Cup - 2024/07/20',
       [{ playerId: 10, number: 1, position: ['GK'] }],
-      expect.anything(),
       date,
+      expect.anything(),
     );
   });
 });

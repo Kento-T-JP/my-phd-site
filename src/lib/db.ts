@@ -264,8 +264,8 @@ export async function upsertTournamentRosterPlayersBySlug(
   tournament: string,
   rosterTitle: string,
   players: { playerId: number; number?: number; position?: string[] }[],
-  client: Prisma.TransactionClient | PrismaClient = prisma,
   date?: Date,
+  client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
   const t = await upsertTournamentBySlug(slug, tournament, client);
   const r = await upsertRoster(t.id, rosterTitle, client, date);
