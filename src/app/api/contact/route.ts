@@ -10,11 +10,10 @@ const MAX_REQUESTS = 5;
 const ipHits = new Map<string, { count: number; expires: number }>();
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
+  service: 'gmail',
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
 
@@ -139,10 +138,11 @@ export async function POST(req: Request) {
   }
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `${payload.name} <${payload.email}>`,
       to: process.env.CONTACT_RECIPIENT,
       subject: `New contact submission from ${payload.name}`,
       text: `Name: ${payload.name}\nEmail: ${payload.email}\n\n${payload.message}`,
+      replyTo: payload.email,
     });
   } catch (err) {
     console.error('Failed to send email', err);
