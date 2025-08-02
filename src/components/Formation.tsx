@@ -708,16 +708,11 @@ export default function Formation({
           </Link>
         )}
       </div>
-      <WikiLink
-        name={p.name}
-        wikiUrl={p.wikiUrl}
-        variant="icon"
-        className="block mt-1"
-      />
-      {/* jersey number appears on hover */}
+      {/* jersey number and wiki link appear on hover */}
       {p.number && (
-        <div className="text-sm text-cyan-200 hidden group-hover:block">
-          背番号: {p.number}
+        <div className="text-sm text-cyan-200 hidden group-hover:flex items-center gap-1">
+          <span>背番号: {p.number}</span>
+          <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
         </div>
       )}
       {/* position info */}
@@ -921,15 +916,12 @@ export default function Formation({
                       </Link>
                     )}
                   </div>
-                  <WikiLink
-                    name={p.name}
-                    wikiUrl={p.wikiUrl}
-                    variant="icon"
-                    className="block mt-1"
-                  />
-                  {/* jersey number appears on hover, just like the position */}
+                  {/* jersey number and wiki link appear on hover, just like the position */}
                   {p.number && (
-                    <div className="text-sm text-cyan-200 hidden group-hover:block">背番号: {p.number}</div>
+                    <div className="text-sm text-cyan-200 hidden group-hover:flex items-center gap-1">
+                      <span>背番号: {p.number}</span>
+                      <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+                    </div>
                   )}
                   {/* position stays as‑is */}
                   <div className="text-sm text-cyan-200 hidden group-hover:block">
