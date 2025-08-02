@@ -120,10 +120,20 @@ export async function scrapeJfaPlayers(url: string) {
   }
   title = tournament;
   if (rosterDate) {
-    const yyyy = rosterDate.getFullYear();
-    const mm = String(rosterDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(rosterDate.getDate()).padStart(2, '0');
-    title = `${tournament} - ${yyyy}/${mm}/${dd}`;
+    const startStr = [
+      rosterDate.getFullYear(),
+      String(rosterDate.getMonth() + 1).padStart(2, '0'),
+      String(rosterDate.getDate()).padStart(2, '0'),
+    ].join('/');
+    title = `${tournament} - ${startStr}`;
+    if (rosterEndDate) {
+      const endStr = [
+        rosterEndDate.getFullYear(),
+        String(rosterEndDate.getMonth() + 1).padStart(2, '0'),
+        String(rosterEndDate.getDate()).padStart(2, '0'),
+      ].join('/');
+      title = `${tournament} - ${startStr}-${endStr}`;
+    }
   }
   // --- end tournament title extraction ---
 
