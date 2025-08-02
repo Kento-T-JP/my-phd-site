@@ -48,24 +48,17 @@ export default function NewPlayerPage() {
     }
     const slug = slugify(tournamentName.trim());
     const controller = new AbortController();
-    fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, { signal: controller.signal })
+    fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, {
+      signal: controller.signal,
+    })
       .then((res) => (res.ok ? res.json() : []))
-      .then(async (list) => {
-        if (list.length === 0) {
-          const res = await fetch(`/api/rosters`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tournament: tournamentName }),
-          });
-          if (res.ok) {
-            const r = await res.json();
-            setRosters([r]);
-            setRosterId(String(r.id));
-          }
-        } else {
-          setRosters(list);
-          setRosterId(String(list[list.length - 1].id));
-        }
+      .then((list) => {
+        setRosters(list);
+        setRosterId((current) =>
+          list.some((r: { id: number }) => String(r.id) === current)
+            ? current
+            : ""
+        );
       })
       .catch(() => {});
     return () => controller.abort();
