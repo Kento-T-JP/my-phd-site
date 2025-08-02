@@ -24,6 +24,7 @@ export interface Tournament {
 export interface Roster {
   id: number;
   date: Date;
+  endDate?: Date | null;
   tournamentId: number;
   tournament?: Tournament;
   title: string;

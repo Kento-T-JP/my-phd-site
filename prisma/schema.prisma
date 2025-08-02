@@ -30,6 +30,7 @@ model Tournament {
 model Roster {
   id           Int            @id @default(autoincrement())
   date         DateTime
+  endDate     DateTime?
   tournamentId Int
   tournament   Tournament     @relation(fields: [tournamentId], references: [id])
   players      RosterPlayer[]

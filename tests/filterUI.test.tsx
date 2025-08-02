@@ -8,7 +8,14 @@ vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const rosters = [
-  { id: 1, date: '2024-01-01', tournamentId: 1, tournament: { name: 'Cup' }, title: 'Old' },
+  {
+    id: 1,
+    date: '2024-01-01',
+    endDate: '2024-01-10',
+    tournamentId: 1,
+    tournament: { name: 'Cup' },
+    title: 'Cup - 2024/01/01-2024/01/10',
+  },
 ];
 const tournaments = [{ id: 1, name: 'Cup', slug: 'cup' }];
 
@@ -34,7 +41,9 @@ describe('Roster filter UI', () => {
       <RosterTypeahead slug="cup" value="" onChange={() => {}} />
     );
     await waitFor(() => {
-      expect(container.querySelector('option[value="Cup - 2024/01/01"]')).toBeTruthy();
+      expect(
+        container.querySelector('option[value="Cup - 2024/01/01-2024/01/10"]')
+      ).toBeTruthy();
     });
   });
 
@@ -47,6 +56,8 @@ describe('Roster filter UI', () => {
     const mainSelect = screen.getAllByRole('combobox')[0];
     fireEvent.change(mainSelect, { target: { value: 't:1' } });
     await waitFor(() => expect(screen.getAllByRole('combobox').length).toBe(3));
-    expect(screen.getAllByText('Cup - 2024/01/01').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Cup - 2024/01/01-2024/01/10').length
+    ).toBeGreaterThan(0);
   });
 });

@@ -32,7 +32,9 @@ export default function EditPlayerPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
-  const [rosters, setRosters] = useState<{ id: number; date: string; tournament: { name: string } }[]>([]);
+  const [rosters, setRosters] = useState<
+    { id: number; date: string; endDate?: string | null; title: string; tournament: { name: string } }[]
+  >([]);
   const [rosterId, setRosterId] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
