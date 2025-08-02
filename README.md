@@ -101,15 +101,42 @@ services are running you can seed the database again if needed:
 ```bash
 JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec app npm run seed
 ```
-## Contact email configuration
+## Contact form mailer
 
-The contact form uses Gmail for sending messages. Set the following variables
-in your `.env` file (sample values are provided in `.env.example`):
+The contact form sends mail through Gmail using [Nodemailer](https://nodemailer.com/).
+Define the following environment variables in your `.env` file (sample values
+are provided in `.env.example`):
 
-```dotenv
-GMAIL_USER=kentoh120901@gmail.com
-GMAIL_APP_PASSWORD=<app password>
-CONTACT_RECIPIENT=kentoh120901@gmail.com
+- `GMAIL_USER` – Gmail address used to send messages
+- `GMAIL_APP_PASSWORD` – 16‑character app password for the Gmail account
+- `CONTACT_RECIPIENT` – Address that receives submitted messages
+
+### Gmail app password
+
+When two‑factor authentication is enabled on the Gmail account, you must
+generate an app password. In your Google Account settings, navigate to
+**Security → App passwords**, create a password for "Mail" and paste the
+generated 16‑character value into `GMAIL_APP_PASSWORD`.
+
+### Rate limiting and captcha
+
+The API route applies a simple IP‑based rate limit and supports optional
+captcha verification (Google reCAPTCHA or Cloudflare Turnstile) to reduce spam.
+Gmail also enforces its own sending limits, so additional protections may be
+required for high‑traffic sites.
+
+### Nodemailer setup
+
+```ts
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 ```
 ## Testing
 
