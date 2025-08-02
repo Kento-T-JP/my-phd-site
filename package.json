@@ -22,6 +22,7 @@
     "cheerio": "^1.0.0-rc.12",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
+    "nodemailer": "^6.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.5.0",
