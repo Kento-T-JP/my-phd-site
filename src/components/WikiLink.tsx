@@ -28,9 +28,15 @@ export default function WikiLink({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open ${name} on Wikipedia`}
-          className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+          className="cursor-pointer w-4 h-4"
         >
-          <Image src="/wikipedia.svg" alt="Wikipedia logo" width={16} height={16} />
+          <Image
+            src="/wikipedia.svg"
+            alt="Wikipedia logo"
+            width={16}
+            height={16}
+            className="w-4 h-4"
+          />
         </a>
       </Tooltip>
     );
