@@ -11,6 +11,7 @@ export interface Player {
   number?: number;
   image?: string;
   wikiUrl?: string;
+  role: "player" | "staff"; // default is "player"
   rosterPlayers?: RosterPlayer[];
 }
 

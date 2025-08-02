@@ -45,7 +45,7 @@ describe('RosterPlayer fields', () => {
     });
     const players = await getPlayers(1);
     expect(players).toEqual([
-      { id: 2, name: 'John', number: 10, position: ['GK'] },
+      { id: 2, name: 'John', number: 10, position: ['GK'], role: 'player' },
     ]);
   });
 

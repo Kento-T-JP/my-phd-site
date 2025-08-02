@@ -26,6 +26,7 @@ async function main() {
           number: p.number,
           image: p.image,
           position: p.position,
+          role: 'player',
         })
       );
       const inserted = await Promise.all(promises);

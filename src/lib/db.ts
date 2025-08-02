@@ -35,10 +35,11 @@ export async function getPlayers(rosterId?: number) {
         ...rp.player,
         number: rp.number ?? rp.player.number,
         position: rp.position?.length ? rp.position : rp.player.position,
+        role: 'player',
       })) ?? []
     );
   }
-  return prisma.player.findMany({
+  const players = await prisma.player.findMany({
     orderBy: { id: 'asc' },
     include: {
       rosterPlayers: {
@@ -48,6 +49,7 @@ export async function getPlayers(rosterId?: number) {
       },
     },
   });
+  return players.map((p) => ({ ...p, role: 'player' }));
 }
 
 /**
@@ -63,11 +65,12 @@ export async function createPlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const player = await client.player.create({ data });
+  const { role: _role, ...rest } = data;
+  const player = await client.player.create({ data: rest });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
-  return player;
+  return { ...player, role: 'player' };
 }
 
 /**
@@ -81,14 +84,16 @@ export async function upsertPlayer(
   const existing = await client.player.findFirst({ where: { name: data.name } });
   let player;
   if (existing) {
-    player = await client.player.update({ where: { id: existing.id }, data });
+    const { role: _role, ...rest } = data;
+    player = await client.player.update({ where: { id: existing.id }, data: rest });
   } else {
-    player = await client.player.create({ data });
+    const { role: _role, ...rest } = data;
+    player = await client.player.create({ data: rest });
   }
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
-  return player;
+  return { ...player, role: 'player' };
 }
 
 /**
@@ -110,11 +115,12 @@ export async function updatePlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const player = await client.player.update({ where: { id }, data });
+  const { role: _role, ...rest } = data;
+  const player = await client.player.update({ where: { id }, data: rest });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
-  return player;
+  return { ...player, role: 'player' };
 }
 
 /** Upsert a tournament by name. */
@@ -322,7 +328,7 @@ export async function getFavoritePlayers(userId: number) {
     include: { player: true },
     orderBy: { playerId: 'asc' },
   });
-  return favs.map((f) => f.player);
+  return favs.map((f) => ({ ...f.player, role: 'player' }));
 }
 
 /** Add a player to the user's favorites. */

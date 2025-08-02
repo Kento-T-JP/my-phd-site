@@ -54,7 +54,7 @@ describe('favorite players API routes', () => {
     const { GET } = await import('../src/app/api/favorites/route');
     sessionSpy.mockResolvedValue({ user: { email: 'a@test.com' } });
     prisma.user.findUnique.mockResolvedValue({ id: 1 });
-    getFavSpy.mockResolvedValue([{ id: 2, name: 'Fav' }]);
+    getFavSpy.mockResolvedValue([{ id: 2, name: 'Fav', position: [], role: 'player' }]);
 
     const res = await GET(new Request('http://test'));
     expect(res.status).toBe(200);

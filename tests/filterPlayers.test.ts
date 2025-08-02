@@ -11,25 +11,28 @@ const players: PlayerWithRoster[] = [
     id: 1,
     name: 'Alice',
     position: ['GK'],
+    role: 'player',
     rosterPlayers: [{ rosterId: 1, roster: { tournamentId: 10 } }],
   },
   {
     id: 2,
     name: 'Bob',
     position: ['DF'],
+    role: 'player',
     rosterPlayers: [{ rosterId: 2, roster: { tournamentId: 20 } }],
   },
   {
     id: 3,
     name: 'Charlie',
     position: ['FW'],
+    role: 'player',
     rosterPlayers: [{ rosterId: 1, roster: { tournamentId: 10 } }],
   },
 ];
 
 const mixedPlayers = [
   ...players,
-  { id: 4, name: 'Dave', position: ['MF'] },
+  { id: 4, name: 'Dave', position: ['MF'], role: 'player' },
 ];
 
 describe('filterPlayers', () => {
