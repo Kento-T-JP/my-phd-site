@@ -30,7 +30,7 @@ export default function WikiLink({
           aria-label={`Open ${name} on Wikipedia`}
           className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
         >
-          <Image src="/globe.svg" alt="View on Wikipedia" width={16} height={16} />
+          <Image src="/wikipedia.svg" alt="Wikipedia logo" width={16} height={16} />
         </a>
       </Tooltip>
     );
