@@ -103,15 +103,13 @@ JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec ap
 ```
 ## Contact email configuration
 
-The contact form sends messages using SMTP. Set the following variables in your
-`.env` file (sample values are provided in `.env.example`):
+The contact form uses Gmail for sending messages. Set the following variables
+in your `.env` file (sample values are provided in `.env.example`):
 
 ```dotenv
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=username
-SMTP_PASS=password
-CONTACT_RECIPIENT=recipient@example.com
+GMAIL_USER=kentoh120901@gmail.com
+GMAIL_APP_PASSWORD=<app password>
+CONTACT_RECIPIENT=kentoh120901@gmail.com
 ```
 ## Testing
 
