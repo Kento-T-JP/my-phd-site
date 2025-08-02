@@ -7,10 +7,9 @@ import { useSession, signOut } from "next-auth/react";
 export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const isMyPage = pathname === "/mypage";
   const showHome = pathname !== "/";
-  const homeHref = isMyPage ? "/formations" : "/";
-  const homeLabel = isMyPage ? "Formations" : "Home";
+  const homeHref = "/";
+  const homeLabel = "Home";
   return (
     <header className="bg-[#002D62] text-white flex items-center p-4">
       <Image
