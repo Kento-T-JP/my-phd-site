@@ -10,7 +10,6 @@ import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
-import type { FavoritePlayer } from "@/types/favorite";
 
 export interface InitialFormation {
   id?: number;
@@ -293,8 +292,8 @@ export default function Formation({
       try {
         const res = await fetch('/api/favorites');
         if (res.ok) {
-          const favs = (await res.json()) as FavoritePlayer[];
-          setFavorites(new Set(favs.map((f) => f.player.id)));
+          const favs = (await res.json()) as Player[];
+          setFavorites(new Set(favs.map((f) => f.id)));
         }
       } catch {
         // ignore errors
