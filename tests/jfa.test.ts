@@ -34,6 +34,10 @@ describe('scrapeJfaPlayers', () => {
     'tests/fixtures/textarea_only_jfa.html',
     'utf8'
   );
+  const rangeDateFixture = fs.readFileSync(
+    'tests/fixtures/range_date_jfa.html',
+    'utf8'
+  );
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -166,6 +170,32 @@ describe('scrapeJfaPlayers', () => {
     expect(result.tournamentName).toBe('SAMURAI BLUE');
     expect(result.tournamentSlug).toBe('event');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2025-06-10');
+    expect(result.players).toEqual([
+      {
+        name: 'John Doe',
+        number: 1,
+        image: 'https://www.jfa.jp/gk1.jpg',
+        position: ['Goalkeepers'],
+      },
+    ]);
+
+    spy.mockRestore();
+  });
+
+  it('parses start and end dates from range block', async () => {
+    const spy = vi
+      .spyOn(axios, 'get')
+      .mockResolvedValue({ data: rangeDateFixture });
+
+    const result = await scrapeJfaPlayers(
+      'https://www.jfa.jp/samuraiblue/member.html'
+    );
+
+    expect(result.rosterTitle).toBe('SAMURAI BLUE - 2025/07/07');
+    expect(result.tournamentName).toBe('SAMURAI BLUE');
+    expect(result.tournamentSlug).toBe('event');
+    expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2025-07-07');
+    expect(result.rosterEndDate?.toISOString().slice(0,10)).toBe('2025-07-16');
     expect(result.players).toEqual([
       {
         name: 'John Doe',

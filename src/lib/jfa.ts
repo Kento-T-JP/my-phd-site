@@ -3,22 +3,34 @@ import * as cheerio from 'cheerio';
 import { normalizeSlug } from './db';
 
 /** Extract a match date from JFA match detail markup. */
-export function extractMatchDate(html: string): Date | undefined {
+export interface MatchDateRange {
+  start?: Date;
+  end?: Date;
+}
+
+export function extractMatchDate(html: string): MatchDateRange {
   const $ = cheerio.load(html);
   const text =
     $('.textarea-match.disp_pc').text() ||
     $('.textarea-match.disp_sp').text() ||
     $('.textarea-match').text() ||
     '';
-  const m = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if (m) {
-    const [, y, mth, d] = m;
-    const yyyy = y;
+  const matches = [...text.matchAll(/(\d{4})\/(\d{1,2})\/(\d{1,2})/g)];
+  let start: Date | undefined;
+  let end: Date | undefined;
+  if (matches[0]) {
+    const [, y, mth, d] = matches[0];
     const mm = mth.padStart(2, '0');
     const dd = d.padStart(2, '0');
-    return new Date(`${yyyy}-${mm}-${dd}`);
+    start = new Date(`${y}-${mm}-${dd}`);
   }
-  return undefined;
+  if (matches[1]) {
+    const [, y2, mth2, d2] = matches[1];
+    const mm2 = mth2.padStart(2, '0');
+    const dd2 = d2.padStart(2, '0');
+    end = new Date(`${y2}-${mm2}-${dd2}`);
+  }
+  return { start, end };
 }
 
 export function validateJfaUrl(url: string) {
@@ -39,6 +51,7 @@ export async function scrapeJfaPlayers(url: string) {
   let tournament = '';
   let tournamentSlug = '';
   let rosterDate: Date | undefined;
+  let rosterEndDate: Date | undefined;
   let title = '';
   if (crumbSpans.length) {
     const crumbLinks = $('.outer-block.pankz .pankz-list span a');
@@ -87,7 +100,9 @@ export async function scrapeJfaPlayers(url: string) {
     );
   }
   if (!rosterDate) {
-    rosterDate = extractMatchDate(data);
+    const range = extractMatchDate(data);
+    rosterDate = range.start;
+    rosterEndDate = range.end;
   }
   if (!rosterDate) {
     const m = data.match(/(\d{4}\/\d{2}\/\d{2})/);
@@ -143,6 +158,7 @@ export async function scrapeJfaPlayers(url: string) {
     tournamentName: tournament,
     tournamentSlug,
     rosterDate,
+    rosterEndDate,
     rosterTitle: title,
   };
 }
