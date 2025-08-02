@@ -87,3 +87,14 @@ model FavoritePlayer {
 
   @@unique([userId, playerId])
 }
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  category  String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+  status    String   @default("received")
+}
