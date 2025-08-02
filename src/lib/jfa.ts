@@ -105,9 +105,11 @@ export async function scrapeJfaPlayers(url: string) {
     rosterEndDate = range.end;
   }
   if (!rosterDate) {
-    const m = data.match(/(\d{4}\/\d{2}\/\d{2})/);
+    const m = data.match(/(\d{4}\/\d{1,2}\/\d{1,2})/);
     if (m) {
-      const [yyyy, mm, dd] = m[1].split('/');
+      const [yyyy, mth, d] = m[1].split('/');
+      const mm = mth.padStart(2, '0');
+      const dd = d.padStart(2, '0');
       rosterDate = new Date(`${yyyy}-${mm}-${dd}`);
     }
   }
