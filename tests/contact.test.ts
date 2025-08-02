@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+let sendMailMock: any;
+
+vi.mock('nodemailer', () => {
+  sendMailMock = vi.fn();
+  return {
+    __esModule: true,
+    default: {
+      createTransport: vi.fn(() => ({ sendMail: sendMailMock })),
+    },
+  };
+});
+
 vi.mock('@/lib/db', () => {
   return {
     __esModule: true,
@@ -11,6 +23,13 @@ let prisma: any;
 
 beforeEach(async () => {
   vi.resetModules();
+  sendMailMock = vi.fn();
+  process.env.SMTP_HOST = 'smtp.test';
+  process.env.SMTP_PORT = '587';
+  process.env.SMTP_USER = 'user@test';
+  process.env.SMTP_PASS = 'pass';
+  process.env.CONTACT_RECIPIENT = 'recipient@test';
+
   const mod = await import('@/lib/db');
   prisma = mod.default as any;
   prisma.contactSubmission.create.mockReset();
@@ -49,6 +68,11 @@ describe('contact API route', () => {
         userAgent: 'test-agent',
       }),
     });
+    expect(sendMailMock).toHaveBeenCalledTimes(1);
+    expect(sendMailMock.mock.calls[0][0]).toMatchObject({
+      from: process.env.SMTP_USER,
+      to: process.env.CONTACT_RECIPIENT,
+    });
   });
 
   it('returns 400 for missing required fields', async () => {
@@ -60,6 +84,7 @@ describe('contact API route', () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+    expect(sendMailMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 for invalid email', async () => {
@@ -76,6 +101,7 @@ describe('contact API route', () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+     expect(sendMailMock).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when honeypot field is filled', async () => {
@@ -93,6 +119,7 @@ describe('contact API route', () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+    expect(sendMailMock).not.toHaveBeenCalled();
   });
 
   it('enforces rate limiting by ip', async () => {
@@ -121,6 +148,7 @@ describe('contact API route', () => {
     const blockedRes = await POST(blockedReq);
     expect(blockedRes.status).toBe(429);
     expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(5);
+    expect(sendMailMock).toHaveBeenCalledTimes(5);
   });
 });
 

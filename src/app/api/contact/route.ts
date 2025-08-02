@@ -3,10 +3,20 @@ import prisma from '@/lib/db';
 import { ContactSchema } from '@/lib/validation/contact';
 import type { ContactForm } from '@/lib/validation/contact';
 import { randomInt } from 'crypto';
+import nodemailer from 'nodemailer';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
 const ipHits = new Map<string, { count: number; expires: number }>();
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -95,7 +105,7 @@ export async function POST(req: Request) {
 
   // Honeypot check
   if (payload.honeypot) {
-    return NextResponse.json({ id: 'ok' });
+    return NextResponse.json({ error: 'Invalid submission' }, { status: 400 });
   }
 
   // Verify captcha if provided
@@ -126,6 +136,16 @@ export async function POST(req: Request) {
       { error: 'Failed to save message' },
       { status: 500 },
     );
+  }
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: process.env.CONTACT_RECIPIENT,
+      subject: `New contact submission from ${payload.name}`,
+      text: `Name: ${payload.name}\nEmail: ${payload.email}\n\n${payload.message}`,
+    });
+  } catch (err) {
+    console.error('Failed to send email', err);
   }
 
   console.log('contact submission', { id, ip, userAgent });
