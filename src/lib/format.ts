@@ -1,7 +1,9 @@
 export interface RosterForDisplay {
   id: number;
   date: string;
+  endDate?: string | null;
   tournamentId: number;
+  title?: string;
   tournament: { name: string };
 }
 
@@ -10,5 +12,10 @@ export interface RosterForDisplay {
  * the provided list, the date portion is omitted.
  */
 export function rosterDisplayTitle(r: RosterForDisplay): string {
-  return `${r.tournament.name} - ${r.date.slice(0, 10).replace(/-/g, '/')}`;
+  if (r.title) {
+    return r.title;
+  }
+  const start = r.date.slice(0, 10).replace(/-/g, '/');
+  const end = r.endDate ? `-${r.endDate.slice(0, 10).replace(/-/g, '/')}` : '';
+  return `${r.tournament.name} - ${start}${end}`;
 }

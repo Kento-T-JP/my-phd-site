@@ -278,7 +278,14 @@ export async function getRosters(slug?: string) {
   return prisma.roster.findMany({
     where: slug ? { tournament: { slug } } : undefined,
     orderBy: { date: 'asc' },
-    include: { tournament: true },
+    select: {
+      id: true,
+      date: true,
+      endDate: true,
+      title: true,
+      tournamentId: true,
+      tournament: { select: { name: true } },
+    },
   });
 }
 
