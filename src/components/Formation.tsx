@@ -677,12 +677,6 @@ export default function Formation({
             No image
           </div>
         )}
-        <WikiLink
-          name={p.name}
-          wikiUrl={p.wikiUrl}
-          variant="icon"
-          className="absolute top-0 right-0 w-4 h-4"
-        />
       </div>
       {/* player name (always visible) */}
       <div
@@ -714,6 +708,12 @@ export default function Formation({
           </Link>
         )}
       </div>
+      <WikiLink
+        name={p.name}
+        wikiUrl={p.wikiUrl}
+        variant="icon"
+        className="block mt-1"
+      />
       {/* jersey number appears on hover */}
       {p.number && (
         <div className="text-sm text-cyan-200 hidden group-hover:block">
@@ -890,12 +890,6 @@ export default function Formation({
                         No image
                       </div>
                     )}
-                    <WikiLink
-                      name={p.name}
-                      wikiUrl={p.wikiUrl}
-                      variant="icon"
-                      className="absolute top-0 right-0 w-4 h-4"
-                    />
                   </div>
                   {/* player name (always visible) */}
                   <div
@@ -927,6 +921,12 @@ export default function Formation({
                       </Link>
                     )}
                   </div>
+                  <WikiLink
+                    name={p.name}
+                    wikiUrl={p.wikiUrl}
+                    variant="icon"
+                    className="block mt-1"
+                  />
                   {/* jersey number appears on hover, just like the position */}
                   {p.number && (
                     <div className="text-sm text-cyan-200 hidden group-hover:block">背番号: {p.number}</div>
