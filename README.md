@@ -101,6 +101,18 @@ services are running you can seed the database again if needed:
 ```bash
 JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec app npm run seed
 ```
+## Contact email configuration
+
+The contact form sends messages using SMTP. Set the following variables in your
+`.env` file (sample values are provided in `.env.example`):
+
+```dotenv
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=username
+SMTP_PASS=password
+CONTACT_RECIPIENT=recipient@example.com
+```
 ## Testing
 
 Before running the test suite, ensure you have Node.js 20 or later installed and install project dependencies:
