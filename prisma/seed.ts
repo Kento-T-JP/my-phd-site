@@ -18,6 +18,7 @@ async function main() {
         tournamentName,
         tournamentSlug,
         rosterTitle,
+        rosterDate,
       } = await scrapeJfaPlayers(JFA_URL);
       const promises = players.map((p) =>
         upsertPlayer({
@@ -38,6 +39,7 @@ async function main() {
         tournamentName,
         rosterTitle,
         rosterEntries,
+        rosterDate,
       );
       console.log(`✅ Seeded ${inserted.length} players from JFA`);
     } else {

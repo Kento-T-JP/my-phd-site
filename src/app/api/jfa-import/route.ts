@@ -34,16 +34,16 @@ export async function POST(req: Request) {
       })
     );
 
-    const roster = await prisma.$transaction(async (tx) => {
-      return upsertTournamentRosterPlayersBySlug(
-        tournamentSlug,
-        tournamentName,
-        rosterTitle,
-        rosterEntries,
-        tx,
-        rosterDate,
-      );
-    });
+      const roster = await prisma.$transaction(async (tx) => {
+        return upsertTournamentRosterPlayersBySlug(
+          tournamentSlug,
+          tournamentName,
+          rosterTitle,
+          rosterEntries,
+          rosterDate,
+          tx,
+        );
+      });
 
     return NextResponse.json({ count: rosterEntries.length, title: roster.title });
   } catch (err) {
