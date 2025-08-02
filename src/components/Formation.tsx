@@ -708,16 +708,16 @@ export default function Formation({
           </Link>
         )}
       </div>
-      {/* jersey number and wiki link appear on hover */}
+      {/* jersey number */}
       {p.number && (
-        <div className="text-sm text-cyan-200 hidden group-hover:flex items-center gap-1">
-          <span>背番号: {p.number}</span>
-          <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+        <div className="text-sm text-cyan-200 hidden group-hover:block">
+          背番号: {p.number}
         </div>
       )}
-      {/* position info */}
-      <div className="text-sm text-cyan-200 hidden group-hover:block">
-        {p.position.join(", ")}
+      {/* position info with wiki link */}
+      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+        <span>{p.position.join(", ")}</span>
+        <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
       </div>
     </div>
   );
@@ -916,16 +916,16 @@ export default function Formation({
                       </Link>
                     )}
                   </div>
-                  {/* jersey number and wiki link appear on hover, just like the position */}
+                  {/* jersey number */}
                   {p.number && (
-                    <div className="text-sm text-cyan-200 hidden group-hover:flex items-center gap-1">
-                      <span>背番号: {p.number}</span>
-                      <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+                    <div className="text-sm text-cyan-200 hidden group-hover:block">
+                      背番号: {p.number}
                     </div>
                   )}
-                  {/* position stays as‑is */}
-                  <div className="text-sm text-cyan-200 hidden group-hover:block">
-                    {p.position.join(", ")}
+                  {/* position info with wiki link */}
+                  <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+                    <span>{p.position.join(", ")}</span>
+                    <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
                   </div>
                 </div>
               </div>
