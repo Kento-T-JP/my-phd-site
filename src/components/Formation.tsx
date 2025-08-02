@@ -663,25 +663,27 @@ export default function Formation({
       }`}
       onClick={() => handleClick(p.id, true)}
     >
-      {p.image ? (
-        <Image
-          src={p.image}
-          alt={p.name}
-          width={48}
-          height={48}
-          className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
+      <div className="relative w-12 h-12 mx-auto">
+        {p.image ? (
+          <Image
+            src={p.image}
+            alt={p.name}
+            width={48}
+            height={48}
+            className="w-12 h-12 object-cover rounded-full pointer-events-none"
+          />
+        ) : (
+          <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+            No image
+          </div>
+        )}
+        <WikiLink
+          name={p.name}
+          wikiUrl={p.wikiUrl}
+          variant="icon"
+          className="absolute top-0 right-0 w-4 h-4"
         />
-      ) : (
-        <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
-          No image
-        </div>
-      )}
-      <WikiLink
-        name={p.name}
-        wikiUrl={p.wikiUrl}
-        variant="icon"
-        className="absolute top-1 right-1 w-4 h-4 cursor-pointer"
-      />
+      </div>
       {/* player name (always visible) */}
       <div
         className={`font-semibold whitespace-normal break-words text-cyan-100 ${
@@ -874,25 +876,27 @@ export default function Formation({
                     selectedId === p.id ? "ring-2 ring-cyan-300" : ""
                   }`}
                 >
-                  {p.image ? (
-                    <Image
-                      src={p.image}
-                      alt={p.name}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
+                  <div className="relative w-12 h-12 mx-auto">
+                    {p.image ? (
+                      <Image
+                        src={p.image}
+                        alt={p.name}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 object-cover rounded-full pointer-events-none"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+                        No image
+                      </div>
+                    )}
+                    <WikiLink
+                      name={p.name}
+                      wikiUrl={p.wikiUrl}
+                      variant="icon"
+                      className="absolute top-0 right-0 w-4 h-4"
                     />
-                  ) : (
-                    <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
-                      No image
-                    </div>
-                  )}
-                  <WikiLink
-                    name={p.name}
-                    wikiUrl={p.wikiUrl}
-                    variant="icon"
-                    className="absolute top-1 right-1 w-4 h-4 cursor-pointer"
-                  />
+                  </div>
                   {/* player name (always visible) */}
                   <div
                     className={`font-semibold whitespace-normal break-words text-cyan-100 ${
