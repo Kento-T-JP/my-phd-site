@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import type { SavedFormation } from "@/types/formation";
-import type { FavoritePlayer } from "@/types/favorite";
+import type { Player } from "@/types/player";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
 
@@ -12,7 +12,7 @@ export default function MyPage() {
   const { data: session, status } = useSession();
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState<FavoritePlayer[]>([]);
+  const [favorites, setFavorites] = useState<Player[]>([]);
   const [favLoading, setFavLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function MyPage() {
     async function loadFavorites() {
       const res = await fetch("/api/favorites");
       if (res.ok) {
-        setFavorites((await res.json()) as FavoritePlayer[]);
+        setFavorites((await res.json()) as Player[]);
       }
       setFavLoading(false);
     }
@@ -100,11 +100,11 @@ export default function MyPage() {
       ) : (
         <ul>
           {favorites.map((f) => (
-            <li key={f.player.id} className="mb-2 flex items-center">
-              {f.player.image ? (
+            <li key={f.id} className="mb-2 flex items-center">
+              {f.image ? (
                 <Image
-                  src={f.player.image}
-                  alt={f.player.name}
+                  src={f.image}
+                  alt={f.name}
                   width={40}
                   height={40}
                   className="w-10 h-10 object-cover rounded-full mr-2"
@@ -114,12 +114,12 @@ export default function MyPage() {
                   No image
                 </div>
               )}
-              <span className="mr-2">{f.player.number ?? "-"}</span>
+              <span className="mr-2">{f.number ?? "-"}</span>
               <span className="flex flex-col">
-                {f.player.name}
+                {f.name}
                 <WikiLink
-                  name={f.player.name}
-                  wikiUrl={f.player.wikiUrl}
+                  name={f.name}
+                  wikiUrl={f.wikiUrl}
                   className="block mt-1"
                 />
               </span>

@@ -37,7 +37,7 @@ describe('favorites on home page', () => {
       }
       if (urlStr.includes('/api/favorites')) {
         if (!opts || !opts.method) {
-          return Promise.resolve({ ok: true, json: async () => (favState ? [{ player: { id: 1 } }] : []) });
+          return Promise.resolve({ ok: true, json: async () => (favState ? players : []) });
         }
         if (opts.method === 'DELETE') favState = false;
         if (opts.method === 'POST') favState = true;
