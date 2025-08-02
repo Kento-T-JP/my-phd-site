@@ -98,6 +98,7 @@ export async function POST(req: Request) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
+          role: 'player',
         },
         undefined,
         tx,

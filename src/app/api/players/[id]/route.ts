@@ -40,7 +40,7 @@ export async function GET(
   if (!player) {
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
-  return NextResponse.json(player);
+  return NextResponse.json({ ...player, role: 'player' });
 }
 
 async function handleUpdate(req: Request, id: number) {
@@ -116,6 +116,7 @@ async function handleUpdate(req: Request, id: number) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
+          role: 'player',
         },
         undefined,
         tx,

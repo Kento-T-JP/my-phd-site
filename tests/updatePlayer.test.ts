@@ -14,14 +14,14 @@ describe('updatePlayer', () => {
   it('throws on duplicate name', async () => {
     mockPrisma.player.findFirst.mockResolvedValue({ id: 2 });
     await expect(
-      updatePlayer(1, { name: 'John', position: ['GK'] })
+      updatePlayer(1, { name: 'John', position: ['GK'], role: 'player' })
     ).rejects.toThrow('同じ名前の選手が既に存在します');
   });
 
   it('updates when no duplicate', async () => {
     mockPrisma.player.findFirst.mockResolvedValue(null);
     mockPrisma.player.update.mockResolvedValue({ id: 1, name: 'John', position: ['GK'] });
-    const res = await updatePlayer(1, { name: 'John', position: ['GK'] });
+    const res = await updatePlayer(1, { name: 'John', position: ['GK'], role: 'player' });
     expect(mockPrisma.player.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { name: 'John', position: ['GK'] } });
     expect(res.id).toBe(1);
   });

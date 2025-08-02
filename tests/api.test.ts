@@ -130,7 +130,7 @@ describe('player API routes', () => {
 
   it('POST links player to roster', async () => {
     const { POST } = await import('../src/app/api/players/route');
-    createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'] });
+    createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'], role: 'player' });
     prisma.roster.findUnique.mockResolvedValue({ id: 5, title: 'R', tournament: { id: 2, name: 'T' } });
     const form = new FormData();
     form.append('name', 'C');
@@ -148,7 +148,7 @@ describe('player API routes', () => {
 
   it('PUT links player to roster', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
-    updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'] });
+    updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'], role: 'player' });
     prisma.roster.findUnique.mockResolvedValue({ id: 6, title: 'R2', tournament: { id: 3, name: 'T2' } });
     const form = new FormData();
     form.append('name', 'D');
@@ -217,7 +217,7 @@ describe('roster API routes', () => {
   it('GET players by roster', async () => {
     const { GET } = await import('../src/app/api/rosters/[id]/players/route');
     prisma.roster.findUnique.mockResolvedValue({ id: 1 });
-    playersSpy.mockResolvedValue([{ id: 2 }]);
+    playersSpy.mockResolvedValue([{ id: 2, name: 'P', position: [], role: 'player' }]);
     const res = await GET(new Request('http://test'), {
       params: Promise.resolve({ id: '1' }),
     });

@@ -46,6 +46,8 @@ const positionOptions: PositionKey[] = Array.from(
   ])
 ) as PositionKey[];
 
+const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "FW"];
+
 export interface PlayerFilterOptions {
   name?: string;
   rosterId?: number;
@@ -599,6 +601,70 @@ export default function Formation({
     return <div>Loading...</div>;
   }
 
+  const benchList = benchOrder.map((id) => players.find((p) => p.id === id));
+  const benchPlayers = benchList
+    .filter((p): p is Player => p?.role === "player")
+    .sort((a, b) => {
+      const posA = a.position[0] ?? "";
+      const posB = b.position[0] ?? "";
+      const idxA = BENCH_POSITION_ORDER.indexOf(posA as any);
+      const idxB = BENCH_POSITION_ORDER.indexOf(posB as any);
+      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+  const staff = benchList.filter((p): p is Player => p?.role === "staff");
+
+  const renderBenchCard = (p: Player) => (
+    <div
+      key={p.id}
+      className={`w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+        selectedId === p.id ? "ring-2 ring-cyan-300" : ""
+      }`}
+      onClick={() => handleClick(p.id, true)}
+    >
+      {p.image ? (
+        <Image
+          src={p.image}
+          alt={p.name}
+          width={48}
+          height={48}
+          className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
+        />
+      ) : (
+        <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
+          No image
+        </div>
+      )}
+      {/* player name (always visible) */}
+      <div
+        className={`font-semibold whitespace-normal break-words text-cyan-100 ${
+          isLongName(p.name) ? "text-xs leading-tight" : ""
+        } flex items-center justify-center`}
+        title={p.number ? `背番号: ${p.number}` : ""}
+      >
+        <span>{p.name}</span>
+        <WikiLink
+          name={p.name}
+          wikiUrl={p.wikiUrl}
+          variant="icon"
+          className="ml-1"
+        />
+      </div>
+      {/* jersey number appears on hover */}
+      {p.number && (
+        <div className="text-sm text-cyan-200 hidden group-hover:block">
+          背番号: {p.number}
+        </div>
+      )}
+      {/* position info */}
+      <div className="text-sm text-cyan-200 hidden group-hover:block">
+        {p.position.join(", ")}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
@@ -814,56 +880,8 @@ export default function Formation({
       <div className="mt-8">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
         <div className="flex flex-wrap gap-2">
-          {benchOrder.map((bid) => {
-            const p = players.find((pl) => pl.id === bid);
-            if (!p) return null;
-            return (
-              <div
-                key={p.id}
-                className={`w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
-                  selectedId === p.id ? "ring-2 ring-cyan-300" : ""
-                }`}
-                onClick={() => handleClick(p.id, true)}
-              >
-                {p.image ? (
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12 object-cover rounded-full mx-auto pointer-events-none"
-                  />
-                ) : (
-                  <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full mx-auto pointer-events-none text-center text-xs text-cyan-100">
-                    No image
-                  </div>
-                )}
-                {/* player name (always visible) */}
-                <div
-                  className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-                    isLongName(p.name) ? "text-xs leading-tight" : ""
-                  } flex items-center justify-center`}
-                  title={p.number ? `背番号: ${p.number}` : ""}
-                >
-                  <span>{p.name}</span>
-                  <WikiLink
-                    name={p.name}
-                    wikiUrl={p.wikiUrl}
-                    variant="icon"
-                    className="ml-1"
-                  />
-                </div>
-                {/* jersey number appears on hover */}
-                {p.number && (
-                  <div className="text-sm text-cyan-200 hidden group-hover:block">背番号: {p.number}</div>
-                )}
-                {/* position info */}
-                <div className="text-sm text-cyan-200 hidden group-hover:block">
-                  {p.position.join(", ")}
-                </div>
-              </div>
-            );
-          })}
+          {benchPlayers.map(renderBenchCard)}
+          {staff.map(renderBenchCard)}
         </div>
       </div>
 
