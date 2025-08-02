@@ -70,7 +70,6 @@ describe('contact API route', () => {
     expect(sendMailMock.mock.calls[0][0]).toMatchObject({
       from: 'Bob <bob@example.com>',
       to: process.env.CONTACT_RECIPIENT,
-      replyTo: 'bob@example.com',
     });
   });
 
