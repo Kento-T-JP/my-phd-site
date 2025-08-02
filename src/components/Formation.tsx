@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
@@ -178,6 +178,9 @@ export default function Formation({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<Dragging | null>(null);
+  const [flippedPlayerId, setFlippedPlayerId] = useState<number | null>(null);
+  const flipTimer = useRef<NodeJS.Timeout | null>(null);
+  const wasFlipped = useRef(false);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIsBench, setSelectedIsBench] = useState<boolean | null>(null);
@@ -228,6 +231,36 @@ export default function Formation({
       body: JSON.stringify({ playerId: id }),
     });
   };
+
+  const startFlipTimer = (id: number) => {
+    if (flipTimer.current) clearTimeout(flipTimer.current);
+    flipTimer.current = setTimeout(() => {
+      setFlippedPlayerId(id);
+    }, 500);
+  };
+
+  const cancelFlipTimer = () => {
+    if (flipTimer.current) {
+      clearTimeout(flipTimer.current);
+      flipTimer.current = null;
+    }
+  };
+
+  const handlePointerUp = (id: number) => {
+    if (flippedPlayerId === id) {
+      wasFlipped.current = true;
+      setFlippedPlayerId(null);
+    } else {
+      wasFlipped.current = false;
+    }
+    cancelFlipTimer();
+  };
+
+  useEffect(() => {
+    const up = () => setFlippedPlayerId(null);
+    window.addEventListener("pointerup", up);
+    return () => window.removeEventListener("pointerup", up);
+  }, []);
 
   // update when a different formation is supplied from props
   useEffect(() => {
@@ -657,66 +690,96 @@ export default function Formation({
   const renderBenchCard = (p: Player) => (
     <div
       key={p.id}
-      className={`relative w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+      className={`group relative w-32 max-w-32 max-h-32 cursor-pointer transition-transform duration-200 hover:scale-105 rounded ${
         selectedId === p.id ? "ring-2 ring-cyan-300" : ""
       }`}
-      onClick={() => handleClick(p.id, true)}
+      tabIndex={0}
+      role="button"
+      onPointerDown={() => startFlipTimer(p.id)}
+      onPointerUp={() => handlePointerUp(p.id)}
+      onPointerLeave={cancelFlipTimer}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setFlippedPlayerId((prev) => (prev === p.id ? null : p.id));
+        }
+      }}
+      onClick={() => {
+        if (wasFlipped.current) {
+          wasFlipped.current = false;
+          return;
+        }
+        handleClick(p.id, true);
+      }}
     >
-      <div className="relative w-12 h-12 mx-auto">
-        {p.image ? (
-          <Image
-            src={p.image}
-            alt={p.name}
-            width={48}
-            height={48}
-            className="w-12 h-12 object-cover rounded-full pointer-events-none"
-          />
-        ) : (
-          <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
-            No image
-          </div>
-        )}
-      </div>
-      {/* player name (always visible) */}
       <div
-        className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-          isLongName(p.name) ? "text-xs leading-tight" : ""
-        } flex items-center justify-center`}
-        title={p.number ? `背番号: ${p.number}` : ""}
+        className={`w-full h-full [transition:transform_0.6s] [transform-style:preserve-3d] ${
+          flippedPlayerId === p.id
+            ? "[transform:rotateY(180deg)] shadow-lg shadow-cyan-500/50"
+            : ""
+        }`}
       >
-        <span>{p.name}</span>
-        {session ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleFavorite(p.id);
-            }}
-            className="ml-1 text-yellow-300"
-            aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
+        <div className="absolute inset-0 p-2 border rounded backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 [backface-visibility:hidden]">
+          <div className="relative w-12 h-12 mx-auto">
+            {p.image ? (
+              <Image
+                src={p.image}
+                alt={p.name}
+                width={48}
+                height={48}
+                className="w-12 h-12 object-cover rounded-full pointer-events-none"
+              />
+            ) : (
+              <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+                No image
+              </div>
+            )}
+          </div>
+          {/* player name (always visible) */}
+          <div
+            className={`font-semibold whitespace-normal break-words text-cyan-100 ${
+              isLongName(p.name) ? "text-xs leading-tight" : ""
+            } flex items-center justify-center`}
+            title={p.number ? `背番号: ${p.number}` : ""}
           >
-            {favorites.has(p.id) ? "★" : "☆"}
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="ml-1 text-yellow-300"
-            aria-label="Login to favorite"
-            onClick={(e) => e.stopPropagation()}
-          >
-            ☆
-          </Link>
-        )}
-      </div>
-      {/* jersey number */}
-      {p.number && (
-        <div className="text-sm text-cyan-200 hidden group-hover:block">
-          背番号: {p.number}
+            <span>{p.name}</span>
+            {session ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(p.id);
+                }}
+                className="ml-1 text-yellow-300"
+                aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
+              >
+                {favorites.has(p.id) ? "★" : "☆"}
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="ml-1 text-yellow-300"
+                aria-label="Login to favorite"
+                onClick={(e) => e.stopPropagation()}
+              >
+                ☆
+              </Link>
+            )}
+          </div>
+          {/* jersey number */}
+          {p.number && (
+            <div className="text-sm text-cyan-200 hidden group-hover:block">
+              背番号: {p.number}
+            </div>
+          )}
+          {/* position info with wiki link */}
+          <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+            <span>{p.position.join(", ")}</span>
+            <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+          </div>
         </div>
-      )}
-      {/* position info with wiki link */}
-      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
-        <span>{p.position.join(", ")}</span>
-        <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+        <div className="absolute inset-0 p-2 border rounded backdrop-blur-sm border-cyan-400/10 bg-slate-800/50 flex items-center justify-center [transform:rotateY(180deg)] [backface-visibility:hidden]">
+          <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="cta" />
+        </div>
       </div>
     </div>
   );
@@ -844,87 +907,123 @@ export default function Formation({
             return (
               <div
                 key={p.id}
-                className="absolute"
+                className={`absolute group w-32 max-w-32 max-h-32 cursor-pointer transition-transform duration-200 hover:scale-105 rounded ${
+                  selectedId === p.id ? "ring-2 ring-cyan-300" : ""
+                }`}
                 style={{
                   top: `${pos.top}%`,
                   left: `${pos.left}%`,
                   transform: "translate(-50%, -50%)",
                 }}
-                onMouseDown={(e) => {
+                tabIndex={0}
+                role="button"
+                onPointerDown={(e) => {
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setDragging({
                     id: p.id,
                     offsetX: e.clientX - r.left - r.width / 2,
                     offsetY: e.clientY - r.top - r.height / 2,
                   });
-                  if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
+                  if (!customMode)
+                    freezeDefaults(
+                      defaultsFrozen,
+                      setDefaultsFrozen,
+                      lineupOrder,
+                      formation,
+                      playerPositions,
+                      setPlayerPositions
+                    );
                   setCustomMode(true);
+                  startFlipTimer(p.id);
                 }}
+                onPointerUp={() => handlePointerUp(p.id)}
+                onPointerLeave={cancelFlipTimer}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (wasFlipped.current) {
+                    wasFlipped.current = false;
+                    return;
+                  }
                   handleClick(p.id, false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setFlippedPlayerId((prev) => (prev === p.id ? null : p.id));
+                  }
                 }}
               >
                 <div
-                  className={`group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 relative ${
-                    selectedId === p.id ? "ring-2 ring-cyan-300" : ""
+                  className={`w-full h-full p-2 text-center backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 rounded [transition:transform_0.6s] [transform-style:preserve-3d] ${
+                    flippedPlayerId === p.id
+                      ? "[transform:rotateY(180deg)] shadow-lg shadow-cyan-500/50"
+                      : ""
                   }`}
                 >
-                  <div className="relative w-12 h-12 mx-auto">
-                    {p.image ? (
-                      <Image
-                        src={p.image}
-                        alt={p.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 object-cover rounded-full pointer-events-none"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
-                        No image
+                  <div className="absolute inset-0 [backface-visibility:hidden]">
+                    <div className="relative w-12 h-12 mx-auto">
+                      {p.image ? (
+                        <Image
+                          src={p.image}
+                          alt={p.name}
+                          width={48}
+                          height={48}
+                          className="w-12 h-12 object-cover rounded-full pointer-events-none"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    {/* player name (always visible) */}
+                    <div
+                      className={`font-semibold whitespace-normal break-words text-cyan-100 ${
+                        isLongName(p.name) ? "text-xs leading-tight" : ""
+                      } flex items-center justify-center`}
+                      title={p.number ? `背番号: ${p.number}` : ""}
+                    >
+                      <span>{p.name}</span>
+                      {session ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(p.id);
+                          }}
+                          className="ml-1 text-yellow-300"
+                          aria-label={
+                            favorites.has(p.id)
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                        >
+                          {favorites.has(p.id) ? "★" : "☆"}
+                        </button>
+                      ) : (
+                        <Link
+                          href="/login"
+                          className="ml-1 text-yellow-300"
+                          aria-label="Login to favorite"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ☆
+                        </Link>
+                      )}
+                    </div>
+                    {/* jersey number */}
+                    {p.number && (
+                      <div className="text-sm text-cyan-200 hidden group-hover:block">
+                        背番号: {p.number}
                       </div>
                     )}
-                  </div>
-                  {/* player name (always visible) */}
-                  <div
-                    className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-                      isLongName(p.name) ? "text-xs leading-tight" : ""
-                    } flex items-center justify-center`}
-                    title={p.number ? `背番号: ${p.number}` : ""}
-                  >
-                    <span>{p.name}</span>
-                    {session ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(p.id);
-                        }}
-                        className="ml-1 text-yellow-300"
-                        aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        {favorites.has(p.id) ? "★" : "☆"}
-                      </button>
-                    ) : (
-                      <Link
-                        href="/login"
-                        className="ml-1 text-yellow-300"
-                        aria-label="Login to favorite"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        ☆
-                      </Link>
-                    )}
-                  </div>
-                  {/* jersey number */}
-                  {p.number && (
-                    <div className="text-sm text-cyan-200 hidden group-hover:block">
-                      背番号: {p.number}
+                    {/* position info with wiki link */}
+                    <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+                      <span>{p.position.join(", ")}</span>
+                      <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
                     </div>
-                  )}
-                  {/* position info with wiki link */}
-                  <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
-                    <span>{p.position.join(", ")}</span>
-                    <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
+                  </div>
+                  <div className="absolute inset-0 p-2 border rounded backdrop-blur-sm border-cyan-400/10 bg-slate-800/50 flex items-center justify-center [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                    <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="cta" />
                   </div>
                 </div>
               </div>

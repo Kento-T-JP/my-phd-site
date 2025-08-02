@@ -5,7 +5,7 @@ import Tooltip from '@/components/Tooltip';
 export interface WikiLinkProps {
   name: string;
   lang?: 'ja' | 'en';
-  variant?: 'chip' | 'button' | 'icon';
+  variant?: 'chip' | 'button' | 'icon' | 'cta';
   className?: string;
   wikiUrl?: string;
 }
@@ -48,7 +48,7 @@ export default function WikiLink({
     'inline-block px-2 py-0.5 border border-cyan-300 text-cyan-300 text-xs rounded';
   const button =
     'block w-full text-center px-4 py-2 min-h-[44px] border border-cyan-300 text-cyan-300 rounded';
-  const classes = `${base} ${variant === 'button' ? button : chip} ${className}`;
+  const classes = `${base} ${variant === 'chip' ? chip : button} ${className}`;
   return (
     <a
       href={href}
@@ -58,7 +58,7 @@ export default function WikiLink({
       title={`Open ${name} on Wikipedia`}
       className={classes}
     >
-      Wikipedia
+      {variant === 'cta' ? 'View on Wikipedia →' : 'Wikipedia'}
       <span className="pointer-events-none whitespace-nowrap absolute z-10 -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">
         {`Open ${name} on Wikipedia`}
       </span>
