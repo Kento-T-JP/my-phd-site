@@ -11,7 +11,7 @@ describe('WikiLink', () => {
     expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/JohnDoe');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByText('Open JohnDoe on Wikipedia')).toBeInTheDocument();
+    expect(screen.getByLabelText('Open JohnDoe on Wikipedia')).toBeInTheDocument();
   });
 
   it('supports english and button variant', () => {
@@ -25,7 +25,7 @@ describe('WikiLink', () => {
     render(<WikiLink name="IconUser" variant="icon" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', 'https://ja.wikipedia.org/wiki/IconUser');
-    expect(screen.getByText('View on Wikipedia →')).toBeInTheDocument();
+    expect(screen.getByLabelText('Open IconUser on Wikipedia')).toBeInTheDocument();
   });
 
   it('sanitizes and encodes multibyte names correctly', () => {
