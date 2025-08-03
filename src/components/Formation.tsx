@@ -36,8 +36,14 @@ interface Dragging {
 /** horizontal spacing between players in the same line (percentage points) */
 const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
 
-/** 5 文字以上を “長い名前” とみなしてフォント縮小 */
-const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
+
+/** 名前の長さに応じてクラスを返す */
+const getNameClass = (name: string) => {
+  const plainName = name.replace(/\s+/g, "");
+  if (plainName.length >= 10) return "text-[10px] leading-tight";
+  if (plainName.length >= 5) return "text-xs";
+  return "";
+};
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -679,12 +685,10 @@ export default function Formation({
       </div>
       {/* player name (always visible) */}
       <div
-        className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-          isLongName(p.name) ? "text-xs leading-tight" : ""
-        } flex items-center justify-center`}
+        className={`font-semibold whitespace-normal break-words text-cyan-100 flex items-center justify-center`}
         title={p.number ? `背番号: ${p.number}` : ""}
       >
-        <span>{p.name}</span>
+        <span className={getNameClass(p.name)}>{p.name}</span>
         {session ? (
           <button
             onClick={(e) => {
@@ -714,7 +718,7 @@ export default function Formation({
         </div>
       )}
       {/* position info with wiki link */}
-      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-start gap-1">
         <span>{p.position.join(", ")}</span>
         <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
       </div>
@@ -887,12 +891,10 @@ export default function Formation({
                   </div>
                   {/* player name (always visible) */}
                   <div
-                    className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-                      isLongName(p.name) ? "text-xs leading-tight" : ""
-                    } flex items-center justify-center`}
+                    className={`font-semibold whitespace-normal break-words text-cyan-100 flex items-center justify-center`}
                     title={p.number ? `背番号: ${p.number}` : ""}
                   >
-                    <span>{p.name}</span>
+                    <span className={getNameClass(p.name)}>{p.name}</span>
                     {session ? (
                       <button
                         onClick={(e) => {
