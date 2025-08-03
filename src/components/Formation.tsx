@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import WikiLink from "@/components/WikiLink";
+import PlayerCard from "@/components/PlayerCard";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
@@ -35,9 +34,6 @@ interface Dragging {
 
 /** horizontal spacing between players in the same line (percentage points) */
 const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
-
-/** 5 文字以上を “長い名前” とみなしてフォント縮小 */
-const isLongName = (name: string) => name.replace(/\s+/g, "").length >= 5;
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -655,70 +651,15 @@ export default function Formation({
   const staff = benchList.filter((p): p is Player => p?.role === "staff");
 
   const renderBenchCard = (p: Player) => (
-    <div
+    <PlayerCard
       key={p.id}
-      className={`relative w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
-        selectedId === p.id ? "ring-2 ring-cyan-300" : ""
-      }`}
+      player={p}
+      isSelected={selectedId === p.id}
       onClick={() => handleClick(p.id, true)}
-    >
-      <div className="relative w-12 h-12 mx-auto">
-        {p.image ? (
-          <Image
-            src={p.image}
-            alt={p.name}
-            width={48}
-            height={48}
-            className="w-12 h-12 object-cover rounded-full pointer-events-none"
-          />
-        ) : (
-          <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
-            No image
-          </div>
-        )}
-      </div>
-      {/* player name (always visible) */}
-      <div
-        className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-          isLongName(p.name) ? "text-xs leading-tight" : ""
-        } flex items-center justify-center`}
-        title={p.number ? `背番号: ${p.number}` : ""}
-      >
-        <span>{p.name}</span>
-        {session ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleFavorite(p.id);
-            }}
-            className="ml-1 text-yellow-300"
-            aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
-          >
-            {favorites.has(p.id) ? "★" : "☆"}
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="ml-1 text-yellow-300"
-            aria-label="Login to favorite"
-            onClick={(e) => e.stopPropagation()}
-          >
-            ☆
-          </Link>
-        )}
-      </div>
-      {/* jersey number */}
-      {p.number && (
-        <div className="text-sm text-cyan-200 hidden group-hover:block">
-          背番号: {p.number}
-        </div>
-      )}
-      {/* position info with wiki link */}
-      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
-        <span>{p.position.join(", ")}</span>
-        <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
-      </div>
-    </div>
+      session={session}
+      favorites={favorites}
+      toggleFavorite={toggleFavorite}
+    />
   );
 
   return (
@@ -865,68 +806,13 @@ export default function Formation({
                   handleClick(p.id, false);
                 }}
               >
-                <div
-                  className={`group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 relative ${
-                    selectedId === p.id ? "ring-2 ring-cyan-300" : ""
-                  }`}
-                >
-                  <div className="relative w-12 h-12 mx-auto">
-                    {p.image ? (
-                      <Image
-                        src={p.image}
-                        alt={p.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 object-cover rounded-full pointer-events-none"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
-                        No image
-                      </div>
-                    )}
-                  </div>
-                  {/* player name (always visible) */}
-                  <div
-                    className={`font-semibold whitespace-normal break-words text-cyan-100 ${
-                      isLongName(p.name) ? "text-xs leading-tight" : ""
-                    } flex items-center justify-center`}
-                    title={p.number ? `背番号: ${p.number}` : ""}
-                  >
-                    <span>{p.name}</span>
-                    {session ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(p.id);
-                        }}
-                        className="ml-1 text-yellow-300"
-                        aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        {favorites.has(p.id) ? "★" : "☆"}
-                      </button>
-                    ) : (
-                      <Link
-                        href="/login"
-                        className="ml-1 text-yellow-300"
-                        aria-label="Login to favorite"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        ☆
-                      </Link>
-                    )}
-                  </div>
-                  {/* jersey number */}
-                  {p.number && (
-                    <div className="text-sm text-cyan-200 hidden group-hover:block">
-                      背番号: {p.number}
-                    </div>
-                  )}
-                  {/* position info with wiki link */}
-                  <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
-                    <span>{p.position.join(", ")}</span>
-                    <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
-                  </div>
-                </div>
+                <PlayerCard
+                  player={p}
+                  isSelected={selectedId === p.id}
+                  session={session}
+                  favorites={favorites}
+                  toggleFavorite={toggleFavorite}
+                />
               </div>
             );
           });
