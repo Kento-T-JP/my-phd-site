@@ -136,12 +136,43 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+
+  const details = {
+    id,
+    name: payload.name,
+    email: payload.email,
+    category: payload.category ?? 'N/A',
+    message: payload.message,
+    ip,
+    userAgent: userAgent ?? 'unknown',
+  };
+
+  const text = `New contact submission\n\n` +
+    `ID: ${details.id}\n` +
+    `Name: ${details.name}\n` +
+    `Email: ${details.email}\n` +
+    `Category: ${details.category}\n` +
+    `Message: ${details.message}\n` +
+    `IP: ${details.ip}\n` +
+    `User Agent: ${details.userAgent}`;
+
+  const html = `<!DOCTYPE html>` +
+    `<html><body>` +
+    `<p><strong>ID:</strong> ${details.id}</p>` +
+    `<p><strong>Name:</strong> ${details.name}</p>` +
+    `<p><strong>Email:</strong> ${details.email}</p>` +
+    `<p><strong>Category:</strong> ${details.category}</p>` +
+    `<p><strong>Message:</strong> ${details.message}</p>` +
+    `<p><strong>IP:</strong> ${details.ip}</p>` +
+    `<p><strong>User Agent:</strong> ${details.userAgent}</p>` +
+    `</body></html>`;
   try {
     await transporter.sendMail({
       from: `${payload.name} <${payload.email}>`,
       to: process.env.CONTACT_RECIPIENT,
       subject: `New contact submission from ${payload.name}`,
-      text: `Name: ${payload.name}\nEmail: ${payload.email}\n\n${payload.message}`,
+      text,
+      html,
       replyTo: payload.email,
     });
   } catch (err) {

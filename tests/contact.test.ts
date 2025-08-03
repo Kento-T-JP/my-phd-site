@@ -48,6 +48,7 @@ describe('contact API route', () => {
         name: 'Bob',
         email: 'bob@example.com',
         message: 'Hello',
+        category: 'General',
         consent: true,
       }),
     });
@@ -67,10 +68,21 @@ describe('contact API route', () => {
       }),
     });
     expect(sendMailMock).toHaveBeenCalledTimes(1);
-    expect(sendMailMock.mock.calls[0][0]).toMatchObject({
+    const mailPayload = sendMailMock.mock.calls[0][0];
+    expect(mailPayload).toMatchObject({
       from: 'Bob <bob@example.com>',
       to: process.env.CONTACT_RECIPIENT,
+      replyTo: 'bob@example.com',
+      text: expect.any(String),
+      html: expect.any(String),
     });
+    expect(mailPayload.text).toContain(`ID: ${data.id}`);
+    expect(mailPayload.text).toContain('Name: Bob');
+    expect(mailPayload.text).toContain('Email: bob@example.com');
+    expect(mailPayload.text).toContain('Category: General');
+    expect(mailPayload.text).toContain('Message: Hello');
+    expect(mailPayload.text).toContain('IP: 1.1.1.1');
+    expect(mailPayload.text).toContain('User Agent: test-agent');
   });
 
   it('returns 400 for missing required fields', async () => {
