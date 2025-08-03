@@ -103,13 +103,31 @@ JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec ap
 ```
 ## Contact form mailer
 
-The contact form sends mail through Gmail using [Nodemailer](https://nodemailer.com/).
+The contact form sends mail through Gmail using [Nodemailer](https://nodemailer.com/) and dispatches confirmation emails via [Resend](https://resend.com/) or [SendGrid](https://sendgrid.com/). Gmail delivers the notification to your inbox while Resend/SendGrid handles user confirmations.
+
+Install the appropriate mail service client:
+
+```bash
+npm install resend
+# or
+npm install @sendgrid/mail
+```
+
 Define the following environment variables in your `.env` file (sample values
 are provided in `.env.example`):
 
 - `GMAIL_USER` – Gmail address used to send messages
 - `GMAIL_APP_PASSWORD` – 16‑character app password for the Gmail account
 - `CONTACT_RECIPIENT` – Address that receives submitted messages
+- `RESEND_API_KEY` – API key for Resend (use `SENDGRID_API_KEY` for SendGrid)
+- `CONFIRM_FROM_ADDRESS` – Verified sender address for confirmation messages
+
+### Resend/SendGrid setup
+
+1. Create an account and verify a sending domain with Resend or SendGrid.
+2. Generate an API key and set `RESEND_API_KEY` or `SENDGRID_API_KEY` in your `.env`.
+3. Set `CONFIRM_FROM_ADDRESS` to a verified address from the provider.
+4. The application uses Gmail to notify you and Resend/SendGrid to send confirmation messages.
 
 ### Gmail app password
 
