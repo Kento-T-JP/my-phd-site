@@ -170,7 +170,7 @@ export async function POST(req: Request) {
     await transporter.sendMail({
       from: `${payload.name} <${payload.email}>`,
       to: process.env.CONTACT_RECIPIENT,
-      subject: `New contact submission from ${payload.name}`,
+      subject: `SAMURAI BLUE New Contact Submission From ${payload.name}`,
       text,
       html,
       replyTo: payload.email,
