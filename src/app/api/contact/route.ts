@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       );
     }
     payload = parsed.data;
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -121,24 +121,6 @@ export async function POST(req: Request) {
 
   const id = `C-${randomInt(1000, 10000)}`;
   const userAgent = req.headers.get('user-agent');
-
-  try {
-    await (prisma as any).contactSubmission.create({
-      data: {
-        id,
-        name: payload.name,
-        email: payload.email,
-        message: payload.message,
-        ip,
-        userAgent,
-      },
-    });
-  } catch (err) {
-    return NextResponse.json(
-      { error: 'Failed to save message' },
-      { status: 500 },
-    );
-  }
 
   const details = {
     id,
@@ -169,20 +151,7 @@ export async function POST(req: Request) {
     `<p><strong>IP:</strong> ${details.ip}</p>` +
     `<p><strong>User Agent:</strong> ${details.userAgent}</p>` +
     `</body></html>`;
-  try {
-    await transporter.sendMail({
-      from: `${payload.name} <${payload.email}>`,
-      to: process.env.CONTACT_RECIPIENT,
-      subject: `SAMURAI BLUE New Contact Submission From ${payload.name}`,
-      text,
-      html,
-      replyTo: payload.email,
-    });
-  } catch (err) {
-    console.error('Failed to send email', err);
-  }
 
-  // Send confirmation to the user. Errors here should not affect the API response.
   const confirmFrom =
     process.env.CONFIRM_FROM_ADDRESS ||
     process.env.GMAIL_USER ||
@@ -199,16 +168,83 @@ export async function POST(req: Request) {
     `<p><strong>Message:</strong> ${details.message}</p>` +
     `<p><strong>Reference ID:</strong> ${details.id}</p>` +
     `</body></html>`;
+
+  const savePromise = (async () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).contactSubmission.create({
+        data: {
+          id: details.id,
+          name: details.name,
+          email: details.email,
+          message: details.message,
+          ip,
+          userAgent,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to save message', err);
+      throw new Error('save');
+    }
+  })();
+
+  const ownerMailPromise = (async () => {
+    try {
+      await transporter.sendMail({
+        from: `${payload.name} <${payload.email}>`,
+        to: process.env.CONTACT_RECIPIENT,
+        subject: `SAMURAI BLUE New Contact Submission From ${payload.name}`,
+        text,
+        html,
+        replyTo: payload.email,
+      });
+    } catch (err) {
+      console.error('Failed to send notification email', err);
+      throw new Error('owner');
+    }
+  })();
+
+  const confirmMailPromise = (async () => {
+    try {
+      await resend.emails.send({
+        to: payload.email,
+        from: confirmFrom ?? '',
+        subject: 'We received your message',
+        text: confirmText,
+        html: confirmHtml,
+      });
+    } catch (err) {
+      console.error('Failed to send confirmation email', err);
+      throw new Error('confirm');
+    }
+  })();
+
   try {
-    await resend.emails.send({
-      to: payload.email,
-      from: confirmFrom ?? '',
-      subject: 'We received your message',
-      text: confirmText,
-      html: confirmHtml,
-    });
+    await Promise.all([savePromise, ownerMailPromise, confirmMailPromise]);
   } catch (err) {
-    console.error('Failed to send confirmation email', err);
+    if (err instanceof Error) {
+      switch (err.message) {
+        case 'save':
+          return NextResponse.json(
+            { error: 'Failed to save message' },
+            { status: 500 },
+          );
+        case 'owner':
+          return NextResponse.json(
+            { error: 'Failed to send notification email' },
+            { status: 500 },
+          );
+        case 'confirm':
+          return NextResponse.json(
+            { error: 'Failed to send confirmation email' },
+            { status: 500 },
+          );
+      }
+    }
+    return NextResponse.json(
+      { error: 'Failed to process submission' },
+      { status: 500 },
+    );
   }
 
   console.log('contact submission', { id, ip, userAgent });
