@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 let sendMailMock: any;
 let resendSendMock: any;
+let sendGridSendMock: any;
 
 vi.mock('nodemailer', () => {
-  sendMailMock = vi.fn();
+  sendMailMock = vi.fn().mockResolvedValue({});
   return {
     __esModule: true,
     default: {
@@ -14,10 +15,18 @@ vi.mock('nodemailer', () => {
 });
 
 vi.mock('resend', () => {
-  resendSendMock = vi.fn();
+  resendSendMock = vi.fn().mockResolvedValue({});
   return {
     __esModule: true,
     Resend: vi.fn(() => ({ emails: { send: resendSendMock } })),
+  };
+});
+
+vi.mock('@sendgrid/mail', () => {
+  sendGridSendMock = vi.fn().mockResolvedValue({});
+  return {
+    __esModule: true,
+    default: { setApiKey: vi.fn(), send: sendGridSendMock },
   };
 });
 
@@ -32,12 +41,14 @@ let prisma: any;
 
 beforeEach(async () => {
   vi.resetModules();
-  sendMailMock = vi.fn();
+  sendMailMock = vi.fn().mockResolvedValue({});
   resendSendMock = vi.fn().mockResolvedValue({});
+  sendGridSendMock = vi.fn().mockResolvedValue({});
   process.env.GMAIL_USER = 'user@test';
   process.env.GMAIL_APP_PASSWORD = 'pass';
   process.env.CONTACT_RECIPIENT = 'recipient@test';
   process.env.RESEND_API_KEY = 'test';
+  delete process.env.SENDGRID_API_KEY;
   process.env.CONFIRM_FROM_ADDRESS = 'no-reply@test';
 
   const mod = await import('@/lib/db');
@@ -97,6 +108,7 @@ describe('contact API route', () => {
     expect(ownerPayload.text).toContain('User Agent: test-agent');
 
     expect(resendSendMock).toHaveBeenCalledTimes(1);
+    expect(sendGridSendMock).not.toHaveBeenCalled();
     const userPayload = resendSendMock.mock.calls[0][0];
     expect(userPayload).toMatchObject({
       to: 'bob@example.com',
@@ -121,6 +133,7 @@ describe('contact API route', () => {
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
+    expect(sendGridSendMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 for invalid email', async () => {
@@ -139,6 +152,7 @@ describe('contact API route', () => {
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
+    expect(sendGridSendMock).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when honeypot field is filled', async () => {
@@ -158,6 +172,7 @@ describe('contact API route', () => {
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
+    expect(sendGridSendMock).not.toHaveBeenCalled();
   });
 
   it('enforces rate limiting by ip', async () => {
@@ -188,6 +203,7 @@ describe('contact API route', () => {
     expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(5);
     expect(sendMailMock).toHaveBeenCalledTimes(5);
     expect(resendSendMock).toHaveBeenCalledTimes(5);
+    expect(sendGridSendMock).not.toHaveBeenCalled();
   });
 });
 
