@@ -179,6 +179,32 @@ export async function POST(req: Request) {
     console.error('Failed to send email', err);
   }
 
+  // Send confirmation to the user. Errors here should not affect the API response.
+  const confirmFrom = process.env.GMAIL_USER || process.env.CONTACT_RECIPIENT;
+  const confirmText =
+    `We received your message.\n\n` +
+    `Category: ${details.category}\n` +
+    `Message: ${details.message}\n\n` +
+    `Reference ID: ${details.id}`;
+  const confirmHtml = `<!DOCTYPE html>` +
+    `<html><body>` +
+    `<p>We received your message.</p>` +
+    `<p><strong>Category:</strong> ${details.category}</p>` +
+    `<p><strong>Message:</strong> ${details.message}</p>` +
+    `<p><strong>Reference ID:</strong> ${details.id}</p>` +
+    `</body></html>`;
+  try {
+    await transporter.sendMail({
+      to: payload.email,
+      from: confirmFrom,
+      subject: 'We received your message',
+      text: confirmText,
+      html: confirmHtml,
+    });
+  } catch (err) {
+    console.error('Failed to send confirmation email', err);
+  }
+
   console.log('contact submission', { id, ip, userAgent });
   return NextResponse.json({ id });
 }

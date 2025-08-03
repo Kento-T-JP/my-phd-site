@@ -67,22 +67,34 @@ describe('contact API route', () => {
         userAgent: 'test-agent',
       }),
     });
-    expect(sendMailMock).toHaveBeenCalledTimes(1);
-    const mailPayload = sendMailMock.mock.calls[0][0];
-    expect(mailPayload).toMatchObject({
+    expect(sendMailMock).toHaveBeenCalledTimes(2);
+    const ownerPayload = sendMailMock.mock.calls[0][0];
+    expect(ownerPayload).toMatchObject({
       from: 'Bob <bob@example.com>',
       to: process.env.CONTACT_RECIPIENT,
       replyTo: 'bob@example.com',
       text: expect.any(String),
       html: expect.any(String),
     });
-    expect(mailPayload.text).toContain(`ID: ${data.id}`);
-    expect(mailPayload.text).toContain('Name: Bob');
-    expect(mailPayload.text).toContain('Email: bob@example.com');
-    expect(mailPayload.text).toContain('Category: General');
-    expect(mailPayload.text).toContain('Message: Hello');
-    expect(mailPayload.text).toContain('IP: 1.1.1.1');
-    expect(mailPayload.text).toContain('User Agent: test-agent');
+    expect(ownerPayload.text).toContain(`ID: ${data.id}`);
+    expect(ownerPayload.text).toContain('Name: Bob');
+    expect(ownerPayload.text).toContain('Email: bob@example.com');
+    expect(ownerPayload.text).toContain('Category: General');
+    expect(ownerPayload.text).toContain('Message: Hello');
+    expect(ownerPayload.text).toContain('IP: 1.1.1.1');
+    expect(ownerPayload.text).toContain('User Agent: test-agent');
+
+    const userPayload = sendMailMock.mock.calls[1][0];
+    expect(userPayload).toMatchObject({
+      to: 'bob@example.com',
+      from: process.env.GMAIL_USER,
+      subject: expect.stringContaining('We received your message'),
+      text: expect.any(String),
+      html: expect.any(String),
+    });
+    expect(userPayload.text).toContain(`Category: General`);
+    expect(userPayload.text).toContain(`Message: Hello`);
+    expect(userPayload.text).toContain(`Reference ID: ${data.id}`);
   });
 
   it('returns 400 for missing required fields', async () => {
@@ -111,7 +123,7 @@ describe('contact API route', () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
-     expect(sendMailMock).not.toHaveBeenCalled();
+    expect(sendMailMock).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when honeypot field is filled', async () => {
@@ -158,7 +170,7 @@ describe('contact API route', () => {
     const blockedRes = await POST(blockedReq);
     expect(blockedRes.status).toBe(429);
     expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(5);
-    expect(sendMailMock).toHaveBeenCalledTimes(5);
+    expect(sendMailMock).toHaveBeenCalledTimes(10);
   });
 });
 
