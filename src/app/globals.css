@@ -82,7 +82,7 @@ body {
 }
 
 /* ───── Player card selection glow ───── */
-@keyframes glow-spin {
+@keyframes glow-orbit {
   from {
     transform: rotate(0deg);
   }
@@ -101,13 +101,11 @@ body {
   inset: -2px;
   padding: 2px;
   border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    rgba(103,232,249,0.5) 0deg,
-    rgba(103,232,249,0.5) 350deg,
-    rgba(103,232,249,1) 360deg
-  );
-  animation: glow-spin 2s linear infinite;
+  background:
+    radial-gradient(circle at 50% 0, rgba(103,232,249,1) 0 4px, rgba(103,232,249,0) 5px),
+    conic-gradient(rgba(103,232,249,0.3) 0deg 360deg);
+  animation: glow-orbit 2s linear infinite;
+  opacity: 0.8;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
