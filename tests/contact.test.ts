@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 let sendMailMock: any;
+let resendSendMock: any;
 
 vi.mock('nodemailer', () => {
   sendMailMock = vi.fn();
@@ -9,6 +10,14 @@ vi.mock('nodemailer', () => {
     default: {
       createTransport: vi.fn(() => ({ sendMail: sendMailMock })),
     },
+  };
+});
+
+vi.mock('resend', () => {
+  resendSendMock = vi.fn();
+  return {
+    __esModule: true,
+    Resend: vi.fn(() => ({ emails: { send: resendSendMock } })),
   };
 });
 
@@ -24,9 +33,12 @@ let prisma: any;
 beforeEach(async () => {
   vi.resetModules();
   sendMailMock = vi.fn();
+  resendSendMock = vi.fn().mockResolvedValue({});
   process.env.GMAIL_USER = 'user@test';
   process.env.GMAIL_APP_PASSWORD = 'pass';
   process.env.CONTACT_RECIPIENT = 'recipient@test';
+  process.env.RESEND_API_KEY = 'test';
+  process.env.CONFIRM_FROM_ADDRESS = 'no-reply@test';
 
   const mod = await import('@/lib/db');
   prisma = mod.default as any;
@@ -67,7 +79,7 @@ describe('contact API route', () => {
         userAgent: 'test-agent',
       }),
     });
-    expect(sendMailMock).toHaveBeenCalledTimes(2);
+    expect(sendMailMock).toHaveBeenCalledTimes(1);
     const ownerPayload = sendMailMock.mock.calls[0][0];
     expect(ownerPayload).toMatchObject({
       from: 'Bob <bob@example.com>',
@@ -84,10 +96,11 @@ describe('contact API route', () => {
     expect(ownerPayload.text).toContain('IP: 1.1.1.1');
     expect(ownerPayload.text).toContain('User Agent: test-agent');
 
-    const userPayload = sendMailMock.mock.calls[1][0];
+    expect(resendSendMock).toHaveBeenCalledTimes(1);
+    const userPayload = resendSendMock.mock.calls[0][0];
     expect(userPayload).toMatchObject({
       to: 'bob@example.com',
-      from: process.env.GMAIL_USER,
+      from: process.env.CONFIRM_FROM_ADDRESS,
       subject: expect.stringContaining('We received your message'),
       text: expect.any(String),
       html: expect.any(String),
@@ -107,6 +120,7 @@ describe('contact API route', () => {
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
+    expect(resendSendMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 for invalid email', async () => {
@@ -124,6 +138,7 @@ describe('contact API route', () => {
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
+    expect(resendSendMock).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when honeypot field is filled', async () => {
@@ -142,6 +157,7 @@ describe('contact API route', () => {
     expect(res.status).toBe(400);
     expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
+    expect(resendSendMock).not.toHaveBeenCalled();
   });
 
   it('enforces rate limiting by ip', async () => {
@@ -170,7 +186,8 @@ describe('contact API route', () => {
     const blockedRes = await POST(blockedReq);
     expect(blockedRes.status).toBe(429);
     expect(prisma.contactSubmission.create).toHaveBeenCalledTimes(5);
-    expect(sendMailMock).toHaveBeenCalledTimes(10);
+    expect(sendMailMock).toHaveBeenCalledTimes(5);
+    expect(resendSendMock).toHaveBeenCalledTimes(5);
   });
 });
 

@@ -4,6 +4,7 @@ import { ContactSchema } from '@/lib/validation/contact';
 import type { ContactForm } from '@/lib/validation/contact';
 import { randomInt } from 'crypto';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
@@ -16,6 +17,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -180,7 +183,10 @@ export async function POST(req: Request) {
   }
 
   // Send confirmation to the user. Errors here should not affect the API response.
-  const confirmFrom = process.env.GMAIL_USER || process.env.CONTACT_RECIPIENT;
+  const confirmFrom =
+    process.env.CONFIRM_FROM_ADDRESS ||
+    process.env.GMAIL_USER ||
+    process.env.CONTACT_RECIPIENT;
   const confirmText =
     `We received your message.\n\n` +
     `Category: ${details.category}\n` +
@@ -194,9 +200,9 @@ export async function POST(req: Request) {
     `<p><strong>Reference ID:</strong> ${details.id}</p>` +
     `</body></html>`;
   try {
-    await transporter.sendMail({
+    await resend.emails.send({
       to: payload.email,
-      from: confirmFrom,
+      from: confirmFrom ?? '',
       subject: 'We received your message',
       text: confirmText,
       html: confirmHtml,
