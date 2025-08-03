@@ -663,8 +663,8 @@ export default function Formation({
   const renderBenchCard = (p: Player) => (
     <div
       key={p.id}
-      className={`relative w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
-        selectedId === p.id ? "ring-2 ring-cyan-300" : ""
+      className={`player-card w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+        selectedId === p.id ? "selected" : ""
       }`}
       onClick={() => handleClick(p.id, true)}
     >
@@ -870,8 +870,8 @@ export default function Formation({
                 }}
               >
                 <div
-                  className={`group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 relative ${
-                    selectedId === p.id ? "ring-2 ring-cyan-300" : ""
+                  className={`player-card group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
+                    selectedId === p.id ? "selected" : ""
                   }`}
                 >
                   <div className="relative w-12 h-12 mx-auto">
