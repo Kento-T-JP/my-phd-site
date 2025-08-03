@@ -27,6 +27,7 @@
     "react-dom": "^19.0.0",
     "react-draggable": "^4.5.0",
     "react-hook-form": "^7.62.0",
+    "resend": "^4.7.0",
     "zod": "^4.0.5"
   },
   "devDependencies": {
