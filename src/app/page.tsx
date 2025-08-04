@@ -65,6 +65,9 @@ export default async function Home({
         <Link href="/admin/jfa-import" className="text-yellow-300 underline">
           JFAメンバーインポート
         </Link>
+        <Link href="/admin/contact" className="text-yellow-300 underline">
+          お問い合わせ一覧
+        </Link>
         <Link href="/contact" className="text-yellow-300 underline">
           お問い合わせ
         </Link>
