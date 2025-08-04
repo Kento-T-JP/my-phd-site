@@ -41,26 +41,25 @@ export default function AdminInquiriesPage() {
   }, [status]);
 
   const markHandled = async (id: string) => {
-    setError(null);
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, { method: "PATCH" });
       if (!res.ok) throw new Error();
-      const updated = (await res.json()) as Inquiry;
-      setInquiries((prev) => prev.map((q) => (q.id === id ? updated : q)));
+      alert("更新しました");
+      await load();
     } catch (e) {
-      setError("更新に失敗しました");
+      alert("更新に失敗しました");
     }
   };
 
   const removeInquiry = async (id: string) => {
     if (!confirm("削除してもよろしいですか？")) return;
-    setError(null);
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      setInquiries((prev) => prev.filter((q) => q.id !== id));
+      alert("削除しました");
+      await load();
     } catch (e) {
-      setError("削除に失敗しました");
+      alert("削除に失敗しました");
     }
   };
 
