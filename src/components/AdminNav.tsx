@@ -9,7 +9,6 @@ const links = [
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/formations", label: "Formations" },
   { href: "/admin/stats", label: "Stats" },
-  { href: "/admin/contact", label: "Contact" },
   { href: "/admin/jfa-import", label: "JFA Import" },
 ];
 

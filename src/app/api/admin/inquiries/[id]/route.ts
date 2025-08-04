@@ -30,6 +30,7 @@ export async function PATCH(
       id: true,
       name: true,
       email: true,
+      category: true,
       message: true,
       status: true,
       createdAt: true,
