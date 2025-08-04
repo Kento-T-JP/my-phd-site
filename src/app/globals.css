@@ -81,8 +81,8 @@ body {
   }
 }
 
-/* ───── Player card selection glow ───── */
-@keyframes glow-rect {
+/* ───── Player card orbiting dot ───── */
+@keyframes orbit {
   0% {
     background-position: top center;
   }
@@ -104,23 +104,9 @@ body {
   position: relative;
 }
 
-/* orbiting glow dot */
-.player-card.selected::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  padding: 2px;
-  border-radius: inherit;
-  background: radial-gradient(circle, rgba(103,232,249,1) 0 4px, rgba(103,232,249,0) 5px);
-  background-position: top center;
+.orbit-dot {
+  background-image: radial-gradient(circle, #00ffff 0 3px, transparent 4px);
   background-repeat: no-repeat;
-  box-shadow: 0 0 6px rgba(103,232,249,0.7);
-  animation: glow-rect 2s linear infinite;
-  opacity: 0.8;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 1;
+  background-size: 6px 6px;
+  animation: orbit 1.5s linear infinite;
 }

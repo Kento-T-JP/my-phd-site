@@ -663,11 +663,12 @@ export default function Formation({
   const renderBenchCard = (p: Player) => (
     <div
       key={p.id}
-      className={`player-card w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
-        selectedId === p.id ? "selected" : ""
-      }`}
+      className={`player-card relative w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50`}
       onClick={() => handleClick(p.id, true)}
     >
+      {selectedId === p.id && (
+        <span className="orbit-dot absolute inset-0 pointer-events-none" />
+      )}
       <div className="relative w-12 h-12 mx-auto">
         {p.image ? (
           <Image
@@ -870,10 +871,11 @@ export default function Formation({
                 }}
               >
                 <div
-                  className={`player-card group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50 ${
-                    selectedId === p.id ? "selected" : ""
-                  }`}
+                  className={`player-card relative group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50`}
                 >
+                  {selectedId === p.id && (
+                    <span className="orbit-dot absolute inset-0 pointer-events-none" />
+                  )}
                   <div className="relative w-12 h-12 mx-auto">
                     {p.image ? (
                       <Image
