@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,23 +12,24 @@ type Formation = {
   createdAt: string;
 };
 
-type Props = { params: { id: string } };
+type Props = { params: Promise<{ id: string }> };
 
 export default function FormationDetailPage({ params }: Props) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [formation, setFormation] = useState<Formation | null>(null);
-  const id = Number(params.id);
+  const { id } = use(params);
+  const formationId = Number(id);
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch(`/api/admin/formations/${id}`).then(async (res) => {
+      fetch(`/api/admin/formations/${formationId}`).then(async (res) => {
         if (res.ok) {
           setFormation(await res.json());
         }
       });
     }
-  }, [status, id]);
+  }, [status, formationId]);
 
   if (status === "loading") {
     return (
@@ -58,7 +59,7 @@ export default function FormationDetailPage({ params }: Props) {
 
   const handleDelete = async () => {
     if (!confirm("削除してもよろしいですか？")) return;
-    await fetch(`/api/admin/formations/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/formations/${formationId}`, { method: "DELETE" });
     router.push("/admin/formations");
   };
 
