@@ -18,9 +18,6 @@ export default function AdminPage() {
           <Link href="/admin/stats">Stats</Link>
         </li>
         <li>
-          <Link href="/admin/contact">Contact</Link>
-        </li>
-        <li>
           <Link href="/admin/jfa-import">JFA Import</Link>
         </li>
       </ul>

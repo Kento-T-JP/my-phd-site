@@ -10,6 +10,7 @@ interface Inquiry {
   id: string;
   name: string;
   email: string;
+  category: string | null;
   message: string;
   status: string;
   createdAt: string;
@@ -102,6 +103,7 @@ export default function AdminInquiriesPage() {
             <tr>
               <th className="border px-2 py-1">Name</th>
               <th className="border px-2 py-1">Email</th>
+              <th className="border px-2 py-1">Category</th>
               <th className="border px-2 py-1">Message</th>
               <th className="border px-2 py-1">Timestamp</th>
               <th className="border px-2 py-1">Status</th>
@@ -113,6 +115,7 @@ export default function AdminInquiriesPage() {
               <tr key={q.id}>
                 <td className="border px-2 py-1">{q.name}</td>
                 <td className="border px-2 py-1">{q.email}</td>
+                <td className="border px-2 py-1">{q.category ?? ""}</td>
                 <td className="border px-2 py-1">
                   <MessageCell message={q.message} className="max-w-xs" />
                 </td>
