@@ -59,6 +59,7 @@ model User {
   createdAt      DateTime         @default(now())
   favoritePlayers FavoritePlayer[]
   formations      Formation[]
+  verificationTokens EmailVerificationToken[]
 }
 
 model Formation {
@@ -101,4 +102,11 @@ model ContactSubmission {
   ip        String?
   userAgent String?
   status    String   @default("received")
+}
+
+model EmailVerificationToken {
+  token   String   @id
+  userId  Int
+  expires DateTime
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

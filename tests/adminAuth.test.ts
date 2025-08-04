@@ -22,12 +22,13 @@ describe("admin authentication", () => {
   });
 
   it("injects isAdmin into token and session", async () => {
-    prisma.user.findUnique.mockResolvedValue({
-      id: 1,
-      email: "admin@test.com",
-      hashedPassword: "hashed",
-      isAdmin: true,
-    });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        email: "admin@test.com",
+        hashedPassword: "hashed",
+        isAdmin: true,
+        emailVerified: new Date(),
+      });
     compareSpy.mockResolvedValue(true);
 
     const mod = await import("../src/pages/api/auth/[...nextauth]");

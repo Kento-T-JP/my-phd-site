@@ -7,6 +7,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +17,9 @@ export default function RegisterPage() {
       body: JSON.stringify({ email, password }),
     });
     if (res.ok) {
-      router.push("/login");
+      setSuccess("確認メールを送信しました。メールボックスを確認してください。");
+      setEmail("");
+      setPassword("");
     } else {
       const data = await res.json();
       setError(data.error || "登録に失敗しました");
@@ -48,6 +51,7 @@ export default function RegisterPage() {
           />
         </div>
         {error && <p className="text-red-600">{error}</p>}
+        {success && <p className="text-green-600">{success}</p>}
         <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
           Sign Up
         </button>
