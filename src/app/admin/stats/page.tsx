@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import Spinner from "@/components/Spinner";
 
 type Stats = {
   totalUsers: number;
@@ -15,18 +16,33 @@ type Stats = {
 export default function StatsPage() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/stats");
+      if (!res.ok) throw new Error();
+      setStats(await res.json());
+    } catch (e) {
+      setError("統計情報の取得に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch("/api/admin/stats")
-        .then((res) => res.ok && res.json().then(setStats));
+      load();
     }
   }, [status]);
 
   if (status === "loading") {
     return (
       <main className="p-8">
-        <p>Loading...</p>
+        <Spinner />
       </main>
     );
   }
@@ -52,16 +68,21 @@ export default function StatsPage() {
   return (
     <main className="p-8">
       <h1 className="text-xl font-bold mb-4">Stats</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        <Card title="Total Users" value={stats?.totalUsers} />
-        <Card title="Verified Users" value={stats?.verifiedUsers} />
-        <Card title="Total Formations" value={stats?.totalFormations} />
-        <Card title="Contact Inquiries" value={stats?.totalContactInquiries} />
-        <Card
-          title="Registrations (7 days)"
-          value={stats?.registrationsLast7Days}
-        />
-      </div>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <Card title="Total Users" value={stats?.totalUsers} />
+          <Card title="Verified Users" value={stats?.verifiedUsers} />
+          <Card title="Total Formations" value={stats?.totalFormations} />
+          <Card title="Contact Inquiries" value={stats?.totalContactInquiries} />
+          <Card
+            title="Registrations (7 days)"
+            value={stats?.registrationsLast7Days}
+          />
+        </div>
+      )}
       <div className="mt-4">
         <BackButton />
       </div>

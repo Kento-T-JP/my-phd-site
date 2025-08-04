@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import Spinner from "@/components/Spinner";
 
 type User = {
   id: number;
@@ -14,11 +15,20 @@ type User = {
 export default function UsersPage() {
   const { data: session, status } = useSession();
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const res = await fetch("/api/admin/users");
-    if (res.ok) {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/users");
+      if (!res.ok) throw new Error("Failed to fetch users");
       setUsers(await res.json());
+    } catch (e) {
+      setError("ユーザーの取得に失敗しました");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -31,7 +41,7 @@ export default function UsersPage() {
   if (status === "loading") {
     return (
       <main className="p-8">
-        <p>Loading...</p>
+        <Spinner />
       </main>
     );
   }
@@ -55,58 +65,75 @@ export default function UsersPage() {
   }
 
   async function updateAdmin(id: number, isAdmin: boolean) {
-    await fetch(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isAdmin }),
-    });
-    await load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isAdmin }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch (e) {
+      setError("更新に失敗しました");
+    }
   }
 
   async function deleteUser(id: number) {
     if (!confirm("削除してもよろしいですか？")) return;
-    await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-    await load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch (e) {
+      setError("削除に失敗しました");
+    }
   }
 
   return (
     <main className="p-8">
       <h1 className="text-xl font-bold mb-4">ユーザー一覧</h1>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr>
-            <th className="border px-2 py-1">Email</th>
-            <th className="border px-2 py-1">Verified</th>
-            <th className="border px-2 py-1">Admin</th>
-            <th className="border px-2 py-1">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.id}>
-              <td className="border px-2 py-1">{u.email}</td>
-              <td className="border px-2 py-1">
-                {u.emailVerified ? new Date(u.emailVerified).toLocaleDateString() : ""}
-              </td>
-              <td className="border px-2 py-1">{u.isAdmin ? "Yes" : "No"}</td>
-              <td className="border px-2 py-1 space-x-2">
-                <button
-                  onClick={() => updateAdmin(u.id, !u.isAdmin)}
-                  className="underline text-blue-600"
-                >
-                  {u.isAdmin ? "Demote" : "Promote"}
-                </button>
-                <button
-                  onClick={() => deleteUser(u.id)}
-                  className="underline text-red-600"
-                >
-                  Delete
-                </button>
-              </td>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <table className="min-w-full border text-sm">
+          <thead>
+            <tr>
+              <th className="border px-2 py-1">Email</th>
+              <th className="border px-2 py-1">Verified</th>
+              <th className="border px-2 py-1">Admin</th>
+              <th className="border px-2 py-1">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td className="border px-2 py-1">{u.email}</td>
+                <td className="border px-2 py-1">
+                  {u.emailVerified ? new Date(u.emailVerified).toLocaleDateString() : ""}
+                </td>
+                <td className="border px-2 py-1">{u.isAdmin ? "Yes" : "No"}</td>
+                <td className="border px-2 py-1 space-x-2">
+                  <button
+                    onClick={() => updateAdmin(u.id, !u.isAdmin)}
+                    className="underline text-blue-600"
+                  >
+                    {u.isAdmin ? "Demote" : "Promote"}
+                  </button>
+                  <button
+                    onClick={() => deleteUser(u.id)}
+                    className="underline text-red-600"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       <div className="mt-4">
         <BackButton />
       </div>
