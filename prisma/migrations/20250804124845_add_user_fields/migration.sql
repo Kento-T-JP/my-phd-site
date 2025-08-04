@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "public"."User" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "emailVerified" TIMESTAMP(3),
+ADD COLUMN     "isAdmin" BOOLEAN NOT NULL DEFAULT false;
