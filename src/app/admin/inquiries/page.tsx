@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
+import MessageCell from "@/components/MessageCell";
 
 interface Inquiry {
   id: string;
@@ -112,7 +113,9 @@ export default function AdminInquiriesPage() {
               <tr key={q.id}>
                 <td className="border px-2 py-1">{q.name}</td>
                 <td className="border px-2 py-1">{q.email}</td>
-                <td className="border px-2 py-1 max-w-xs truncate">{q.message}</td>
+                <td className="border px-2 py-1">
+                  <MessageCell message={q.message} className="max-w-xs" />
+                </td>
                 <td className="border px-2 py-1">
                   {new Date(q.createdAt).toLocaleString()}
                 </td>
