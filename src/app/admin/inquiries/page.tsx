@@ -37,6 +37,7 @@ export default function AdminInquiriesPage() {
   };
 
   const removeInquiry = async (id: string) => {
+    if (!confirm("削除してもよろしいですか？")) return;
     const res = await fetch(`/api/admin/inquiries/${id}`, { method: "DELETE" });
     if (res.ok) {
       setInquiries((prev) => prev.filter((q) => q.id !== id));
