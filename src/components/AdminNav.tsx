@@ -19,7 +19,9 @@ export default function AdminNav() {
     <nav className="mb-4 space-x-4">
       {links.map((link) => {
         const isActive =
-          pathname === link.href || pathname.startsWith(link.href + "/");
+          link.href === "/admin"
+            ? pathname === "/admin"
+            : pathname === link.href || pathname.startsWith(link.href + "/");
         const className = `px-2 py-1 rounded ${
           isActive ? "font-bold bg-gray-200" : ""
         }`;
