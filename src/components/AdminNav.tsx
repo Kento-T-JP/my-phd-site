@@ -23,7 +23,7 @@ export default function AdminNav() {
             ? pathname === "/admin"
             : pathname === link.href || pathname.startsWith(link.href + "/");
         const className = `px-2 py-1 rounded ${
-          isActive ? "font-bold bg-gray-200" : ""
+          isActive ? "font-bold bg-blue-600 text-white" : ""
         }`;
         return (
           <Link key={link.href} href={link.href} className={className}>
