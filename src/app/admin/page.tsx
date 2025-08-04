@@ -1,27 +1,16 @@
-import Link from "next/link";
+import AdminCard from "@/components/AdminCard";
 
 export default function AdminPage() {
   return (
-    <main className="p-8">
-      <h1 className="text-xl font-bold mb-4">Admin Dashboard</h1>
-      <ul className="list-disc pl-5 space-y-2">
-        <li>
-          <Link href="/admin/users">Users</Link>
-        </li>
-        <li>
-          <Link href="/admin/inquiries">Inquiries</Link>
-        </li>
-        <li>
-          <Link href="/admin/formations">Formations</Link>
-        </li>
-        <li>
-          <Link href="/admin/stats">Stats</Link>
-        </li>
-        <li>
-          <Link href="/admin/jfa-import">JFA Import</Link>
-        </li>
-      </ul>
+    <main className="p-8 bg-gray-50 rounded-lg">
+      <h1 className="text-xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <AdminCard href="/admin/users" title="Users" icon="👥" />
+        <AdminCard href="/admin/inquiries" title="Inquiries" icon="✉️" />
+        <AdminCard href="/admin/formations" title="Formations" icon="📝" />
+        <AdminCard href="/admin/stats" title="Stats" icon="📊" />
+        <AdminCard href="/admin/jfa-import" title="JFA Import" icon="⬇️" />
+      </div>
     </main>
   );
 }
-
