@@ -667,7 +667,11 @@ export default function Formation({
       onClick={() => handleClick(p.id, true)}
     >
       {selectedId === p.id && (
-        <span className="orbit-dot absolute inset-0 pointer-events-none" />
+        <>
+          <span className="selected-ring absolute inset-0 pointer-events-none" />
+          <span className="selected-aura absolute inset-0 pointer-events-none" />
+          <span className="speedline absolute inset-0 pointer-events-none" />
+        </>
       )}
       <div className="relative w-12 h-12 mx-auto">
         {p.image ? (
@@ -874,7 +878,11 @@ export default function Formation({
                   className="player-card group text-center"
                 >
                   {selectedId === p.id && (
-                    <span className="orbit-dot absolute inset-0 pointer-events-none" />
+                    <>
+                      <span className="selected-ring absolute inset-0 pointer-events-none" />
+                      <span className="selected-aura absolute inset-0 pointer-events-none" />
+                      <span className="speedline absolute inset-0 pointer-events-none" />
+                    </>
                   )}
                   <div className="relative w-12 h-12 mx-auto">
                     {p.image ? (

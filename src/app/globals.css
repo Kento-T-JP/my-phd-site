@@ -81,32 +81,38 @@ body {
   }
 }
 
-/* ───── Player card orbiting dot ───── */
-@keyframes orbit {
-  0% {
-    background-position: top center;
-  }
-  25% {
-    background-position: center right;
-  }
-  50% {
-    background-position: bottom center;
-  }
-  75% {
-    background-position: center left;
-  }
-  100% {
-    background-position: top center;
-  }
-}
-
 .player-card {
   @apply relative w-32 max-w-32 max-h-32 p-2 rounded cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50;
 }
 
-.orbit-dot {
-  background-image: radial-gradient(circle, #00ffff 0 3px, transparent 4px);
-  background-repeat: no-repeat;
-  background-size: 6px 6px;
-  animation: orbit 1.5s linear infinite;
+/* ───── Player selection effects ───── */
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes aura-pulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.4; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes speedline-trail {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.selected-ring {
+  @apply rounded-full ring-2 ring-cyan-300/70;
+  animation: ring-spin 1.5s linear infinite;
+}
+
+.selected-aura {
+  @apply rounded-full bg-cyan-400/30 blur-sm;
+  animation: aura-pulse 3s ease-in-out infinite;
+}
+
+.speedline {
+  @apply rounded-full bg-cyan-300/40;
+  background: radial-gradient(circle, rgba(56,189,248,0.6) 20%, transparent 60%);
+  animation: speedline-trail 0.8s ease-out infinite;
 }
