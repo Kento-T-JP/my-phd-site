@@ -35,7 +35,7 @@ describe("contact submissions API", () => {
 
   it("returns submissions for authenticated user", async () => {
     const { GET } = await import("../src/app/api/contact-submissions/route");
-    sessionSpy.mockResolvedValue({ user: { email: "a@test.com" } });
+    sessionSpy.mockResolvedValue({ user: { email: "a@test.com", isAdmin: true } });
     const fake = [
       {
         id: "1",

@@ -15,15 +15,35 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
         if (!user) return null;
         const valid = await compare(credentials.password, user.hashedPassword);
         if (!valid) return null;
-        return { id: user.id.toString(), email: user.email } as any;
+        return {
+          id: user.id.toString(),
+          email: user.email,
+          isAdmin: user.isAdmin,
+        } as any;
       },
     }),
   ],
   session: { strategy: "jwt" },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.isAdmin = (user as any).isAdmin;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).isAdmin = token.isAdmin as boolean;
+      }
+      return session;
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
