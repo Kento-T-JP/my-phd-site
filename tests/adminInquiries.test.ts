@@ -90,15 +90,62 @@ describe("admin inquiries API", () => {
       createdAt: new Date().toISOString(),
     };
     prisma.contactSubmission.update.mockResolvedValue(fake);
-    const res = await PATCH(new Request("http://test", { method: "PATCH" }), {
-      params: Promise.resolve({ id: "1" }),
-    } as any);
+    const res = await PATCH(
+      new Request("http://test", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "handled" }),
+      }),
+      {
+        params: Promise.resolve({ id: "1" }),
+      } as any
+    );
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.status).toBe("handled");
     expect(prisma.contactSubmission.update).toHaveBeenCalledWith({
       where: { id: "1" },
       data: { status: "handled" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        category: true,
+        message: true,
+        status: true,
+        createdAt: true,
+      },
+  });
+  });
+
+  it("marks an inquiry as unhandled", async () => {
+    const { PATCH } = await import("../src/app/api/admin/inquiries/[id]/route");
+    const fake = {
+      id: "1",
+      name: "Bob",
+      email: "bob@example.com",
+      category: "General",
+      message: "Hello",
+      status: "received",
+      createdAt: new Date().toISOString(),
+    };
+    prisma.contactSubmission.update.mockResolvedValue(fake);
+    const res = await PATCH(
+      new Request("http://test", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "received" }),
+      }),
+      {
+        params: Promise.resolve({ id: "1" }),
+      } as any
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.status).toBe("received");
+    expect(prisma.contactSubmission.update).toHaveBeenCalledWith({
+      where: { id: "1" },
+      data: { status: "received" },
       select: {
         id: true,
         name: true,
