@@ -47,6 +47,14 @@ export default function ContactSubmissionsPage() {
     );
   }
 
+  if (!session.user?.isAdmin) {
+    return (
+      <main className="p-8">
+        <p>Unauthorized</p>
+      </main>
+    );
+  }
+
   return (
     <main className="p-8">
       <h1 className="text-xl font-bold mb-4">お問い合わせ一覧</h1>
