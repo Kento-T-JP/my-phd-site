@@ -106,6 +106,7 @@ export default function AdminInquiriesPage() {
         <table className="min-w-full border text-sm">
           <thead>
             <tr>
+              <th className="border px-2 py-1">ID</th>
               <th className="border px-2 py-1">Name</th>
               <th className="border px-2 py-1">Email</th>
               <th className="border px-2 py-1">Category</th>
@@ -118,6 +119,7 @@ export default function AdminInquiriesPage() {
           <tbody>
             {inquiries.map((q) => (
               <tr key={q.id}>
+                <td className="border px-2 py-1">{q.id}</td>
                 <td className="border px-2 py-1">{q.name}</td>
                 <td className="border px-2 py-1">{q.email}</td>
                 <td className="border px-2 py-1">{q.category ?? ""}</td>
