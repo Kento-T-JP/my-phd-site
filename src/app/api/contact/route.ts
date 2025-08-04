@@ -157,7 +157,7 @@ export async function POST(req: Request) {
     process.env.GMAIL_USER ||
     process.env.CONTACT_RECIPIENT;
   const confirmText =
-    `We received your message.\n\n` +
+    `Thank you for your inquiry. We received your message.\n\n` +
     `Category: ${details.category}\n` +
     `Message: ${details.message}\n\n` +
     `Reference ID: ${details.id}`;
@@ -209,7 +209,7 @@ export async function POST(req: Request) {
       await resend.emails.send({
         to: payload.email,
         from: confirmFrom ?? '',
-        subject: 'We received your message',
+        subject: 'Start-XI: We received your message',
         text: confirmText,
         html: confirmHtml,
       });

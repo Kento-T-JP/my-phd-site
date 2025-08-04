@@ -171,6 +171,24 @@ npm test
 ```
 (runs `vitest run` under the hood)
 
+## Domain Information
+
+- **Domain name:** `start-xi.com`
+- **Registrar:** Onamae.com
+- **Purchased by:** Kento Totsuka
+- **Purpose:** Used for deploying the soccer formation app and sending transactional emails via Resend.
+- **Expiration date:** August 4, 2026
+- **Nameservers:**
+  - 01.dnsv.jp
+  - 02.dnsv.jp
+  - 03.dnsv.jp
+  - 04.dnsv.jp
+- **Email setup:**
+  - SPF, DKIM, and DMARC records are configured for `send.start-xi.com`
+  - Domain verified on [Resend](https://resend.com/) for sending transactional email
+
+**Note:** Please renew the domain before the expiration date to prevent service disruption.
+
 
 
 ## Editing Players
