@@ -42,9 +42,14 @@ export default function AdminInquiriesPage() {
     }
   }, [status]);
 
-  const markHandled = async (id: string) => {
+  const toggleHandled = async (id: string, status: string) => {
+    const nextStatus = status === "handled" ? "received" : "handled";
     try {
-      const res = await fetch(`/api/admin/inquiries/${id}`, { method: "PATCH" });
+      const res = await fetch(`/api/admin/inquiries/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
       if (!res.ok) throw new Error();
       alert("更新しました");
       await load();
@@ -122,16 +127,16 @@ export default function AdminInquiriesPage() {
                 <td className="border px-2 py-1">
                   {new Date(q.createdAt).toLocaleString()}
                 </td>
-                <td className="border px-2 py-1">{q.status}</td>
+                <td className="border px-2 py-1">
+                  {q.status === "handled" ? "Handled" : "Unhandled"}
+                </td>
                 <td className="border px-2 py-1 space-x-2">
-                  {q.status !== "handled" && (
-                    <button
-                      className="bg-blue-500 text-white px-2 py-1 rounded"
-                      onClick={() => markHandled(q.id)}
-                    >
-                      Mark handled
-                    </button>
-                  )}
+                  <button
+                    className="bg-blue-500 text-white px-2 py-1 rounded"
+                    onClick={() => toggleHandled(q.id, q.status)}
+                  >
+                    {q.status === "handled" ? "Unmark handled" : "Mark handled"}
+                  </button>
                   <button
                     className="bg-red-500 text-white px-2 py-1 rounded"
                     onClick={() => removeInquiry(q.id)}

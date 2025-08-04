@@ -15,7 +15,7 @@ async function unwrap(params: Promise<{ id: string }> | { id: string }) {
 }
 
 export async function PATCH(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -23,9 +23,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await unwrap(params);
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+  const status = body?.status;
+  if (status !== "handled" && status !== "received") {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
   const inquiry = await prisma.contactSubmission.update({
     where: { id },
-    data: { status: "handled" },
+    data: { status },
     select: {
       id: true,
       name: true,
