@@ -5,6 +5,8 @@ import prisma, {
   addRosterPlayers,
   syncRosterPlayers,
 } from '@/lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -179,6 +181,10 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   let unwrapped;
   if (
     (React as any).use &&

@@ -32,6 +32,11 @@ vi.mock('@/lib/jfa', () => ({
   scrapeJfaPlayers: vi.fn(),
 }));
 
+vi.mock('next-auth/next', () => ({
+  __esModule: true,
+  getServerSession: vi.fn(),
+}));
+
 let prisma: {
   player: { findUnique: any };
   roster: { findUnique: any };
@@ -52,6 +57,7 @@ let rTitlesSpy: ReturnType<typeof vi.fn>;
 let syncSpy: ReturnType<typeof vi.fn>;
 let validateSpy: ReturnType<typeof vi.fn>;
 let scrapeSpy: ReturnType<typeof vi.fn>;
+let sessionSpy: any;
 
 describe('player API routes', () => {
   beforeEach(async () => {
@@ -93,6 +99,10 @@ describe('player API routes', () => {
     rTitlesSpy.mockReset();
     validateSpy.mockReset();
     scrapeSpy.mockReset();
+    const auth = await import('next-auth/next');
+    sessionSpy = auth.getServerSession as any;
+    sessionSpy.mockReset();
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
   });
 
   it('GET returns a player', async () => {
@@ -180,6 +190,10 @@ describe('roster API routes', () => {
     tNamesSpy.mockReset();
     allTSpy.mockReset();
     rTitlesSpy.mockReset();
+    const auth = await import('next-auth/next');
+    sessionSpy = auth.getServerSession as any;
+    sessionSpy.mockReset();
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
   });
 
   it('GET returns rosters', async () => {
@@ -280,6 +294,10 @@ describe('jfa import route', () => {
     linkSlugSpy.mockReset();
     validateSpy.mockReset();
     scrapeSpy.mockReset();
+    const auth = await import('next-auth/next');
+    sessionSpy = auth.getServerSession as any;
+    sessionSpy.mockReset();
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
   });
 
   it('passes rosterDate through to roster creation', async () => {
