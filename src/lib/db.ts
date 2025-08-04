@@ -16,6 +16,33 @@ const prisma = new PrismaClient();
 export default prisma;
 
 /**
+ * Retrieve various statistics for the admin dashboard.
+ */
+export async function getAdminStats() {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [
+    totalUsers,
+    verifiedUsers,
+    totalFormations,
+    totalContactInquiries,
+    registrationsLast7Days,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { emailVerified: { not: null } } }),
+    prisma.formation.count(),
+    prisma.contactSubmission.count(),
+    prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+  ]);
+  return {
+    totalUsers,
+    verifiedUsers,
+    totalFormations,
+    totalContactInquiries,
+    registrationsLast7Days,
+  };
+}
+
+/**
  * すべての選手を id 昇順で取得するユーティリティ関数。
  * API ルート（/api/players）などから呼び出して使用します。
  */
