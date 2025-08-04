@@ -95,15 +95,34 @@ body {
   position: relative;
 }
 
+
+/* static cyan ring */
 .player-card.selected::after {
   content: "";
   position: absolute;
   inset: -2px;
   padding: 2px;
   border-radius: inherit;
-  background:
-    radial-gradient(circle at 50% 0, rgba(103,232,249,1) 0 4px, rgba(103,232,249,0) 5px),
-    conic-gradient(rgba(103,232,249,0.3) 0deg 360deg);
+  background: conic-gradient(rgba(103,232,249,0.6) 0deg, rgba(103,232,249,0.6) 360deg);
+  box-shadow: 0 0 8px rgba(103,232,249,0.5);
+  opacity: 0.8;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* orbiting glow dot */
+.player-card.selected::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 0, rgba(103,232,249,1) 0 4px, rgba(103,232,249,0) 5px);
+  box-shadow: 0 0 6px rgba(103,232,249,0.7);
   animation: glow-orbit 2s linear infinite;
   opacity: 0.8;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -111,4 +130,6 @@ body {
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
+  transform-origin: center;
+  z-index: 1;
 }
