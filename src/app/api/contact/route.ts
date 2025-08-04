@@ -177,6 +177,7 @@ export async function POST(req: Request) {
           id: details.id,
           name: details.name,
           email: details.email,
+          category: details.category,
           message: details.message,
           ip,
           userAgent,
