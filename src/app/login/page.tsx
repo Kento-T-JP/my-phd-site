@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -17,7 +17,12 @@ export default function LoginPage() {
       password,
     });
     if (res?.ok) {
-      router.push("/");
+      const session = await getSession();
+      if (session?.user?.isAdmin) {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     } else {
       setError("メールアドレスまたはパスワードが正しくありません");
     }

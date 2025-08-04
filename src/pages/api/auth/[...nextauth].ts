@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/db";
 import { compare } from "bcrypt";
+import { timingSafeEqual } from "crypto";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -15,6 +16,25 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
+
+        const adminEmail = process.env.ADMIN_EMAIL || "";
+        const adminPassword = process.env.ADMIN_PASSWORD || "";
+        const safeCompare = (a: string, b: string) =>
+          a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+        if (
+          adminEmail &&
+          adminPassword &&
+          safeCompare(credentials.email, adminEmail) &&
+          safeCompare(credentials.password, adminPassword)
+        ) {
+          return {
+            id: "admin",
+            email: adminEmail,
+            isAdmin: true,
+          } as any;
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
