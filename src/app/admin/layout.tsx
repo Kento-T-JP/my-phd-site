@@ -18,7 +18,7 @@ export default async function AdminLayout({
     <div className="p-4">
       <nav className="mb-4 space-x-4">
         <Link href="/admin/users">Users</Link>
-        <Link href="/admin/contact">Inquiries</Link>
+        <Link href="/admin/inquiries">Inquiries</Link>
         <Link href="/admin/formations">Formations</Link>
         <Link href="/admin/stats">Stats</Link>
       </nav>
