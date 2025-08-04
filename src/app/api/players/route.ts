@@ -5,6 +5,8 @@ import prisma, {
   ensureTournamentRoster,
   addRosterPlayers,
 } from '@/lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -32,6 +34,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
   const form = await req.formData();
   const name = form.get("name");

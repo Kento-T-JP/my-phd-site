@@ -4,8 +4,14 @@ import prisma, {
   upsertTournamentRosterPlayersBySlug,
 } from '@/lib/db';
 import { validateJfaUrl, scrapeJfaPlayers } from '@/lib/jfa';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { url } = await req.json();
     if (typeof url !== 'string' || !validateJfaUrl(url)) {

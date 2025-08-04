@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, { getRosters, ensureTournamentRoster } from '@/lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -9,6 +11,10 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { tournament } = await req.json();
     if (!tournament || typeof tournament !== 'string') {

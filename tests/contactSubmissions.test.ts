@@ -33,6 +33,15 @@ describe("contact submissions API", () => {
     expect(prisma.contactSubmission.findMany).not.toHaveBeenCalled();
   });
 
+  it("returns 401 for non-admin user", async () => {
+    const { GET } = await import("../src/app/api/contact-submissions/route");
+    sessionSpy.mockResolvedValue({ user: { email: "user@test.com", isAdmin: false } });
+
+    const res = await GET(new Request("http://test"));
+    expect(res.status).toBe(401);
+    expect(prisma.contactSubmission.findMany).not.toHaveBeenCalled();
+  });
+
   it("returns submissions for authenticated user", async () => {
     const { GET } = await import("../src/app/api/contact-submissions/route");
     sessionSpy.mockResolvedValue({ user: { email: "a@test.com", isAdmin: true } });
