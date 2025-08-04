@@ -663,7 +663,7 @@ export default function Formation({
   const renderBenchCard = (p: Player) => (
     <div
       key={p.id}
-      className={`player-card relative w-32 max-w-32 max-h-32 p-2 border rounded cursor-pointer group transition-transform duration-200 hover:scale-105 backdrop-blur-sm border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50`}
+      className="player-card group"
       onClick={() => handleClick(p.id, true)}
     >
       {selectedId === p.id && (
@@ -871,7 +871,7 @@ export default function Formation({
                 }}
               >
                 <div
-                  className={`player-card relative group w-32 max-w-32 max-h-32 p-2 rounded text-center cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50`}
+                  className="player-card group text-center"
                 >
                   {selectedId === p.id && (
                     <span className="orbit-dot absolute inset-0 pointer-events-none" />
