@@ -65,7 +65,6 @@ export default function UsersPage() {
   }
 
   async function updateAdmin(id: number, isAdmin: boolean) {
-    setError(null);
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PATCH",
@@ -73,21 +72,22 @@ export default function UsersPage() {
         body: JSON.stringify({ isAdmin }),
       });
       if (!res.ok) throw new Error();
+      alert("更新しました");
       await load();
     } catch (e) {
-      setError("更新に失敗しました");
+      alert("更新に失敗しました");
     }
   }
 
   async function deleteUser(id: number) {
     if (!confirm("削除してもよろしいですか？")) return;
-    setError(null);
     try {
       const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
+      alert("削除しました");
       await load();
     } catch (e) {
-      setError("削除に失敗しました");
+      alert("削除に失敗しました");
     }
   }
 
