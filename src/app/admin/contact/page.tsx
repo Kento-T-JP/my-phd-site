@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
+import MessageCell from "@/components/MessageCell";
 
 type ContactSubmission = {
   id: string;
@@ -93,8 +94,8 @@ export default function ContactSubmissionsPage() {
                 <td className="border px-2 py-1">{s.name}</td>
                 <td className="border px-2 py-1">{s.email}</td>
                 <td className="border px-2 py-1">{s.category ?? ""}</td>
-                <td className="border px-2 py-1 max-w-xs truncate">
-                  {s.message}
+                <td className="border px-2 py-1">
+                  <MessageCell message={s.message} className="max-w-xs" />
                 </td>
                 <td className="border px-2 py-1">
                   {new Date(s.createdAt).toLocaleString()}
