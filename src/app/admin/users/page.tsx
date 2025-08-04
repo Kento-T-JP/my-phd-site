@@ -64,6 +64,7 @@ export default function UsersPage() {
   }
 
   async function deleteUser(id: number) {
+    if (!confirm("削除してもよろしいですか？")) return;
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     await load();
   }

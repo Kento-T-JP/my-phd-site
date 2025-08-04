@@ -57,6 +57,7 @@ export default function FormationDetailPage({ params }: Props) {
   }
 
   const handleDelete = async () => {
+    if (!confirm("削除してもよろしいですか？")) return;
     await fetch(`/api/admin/formations/${id}`, { method: "DELETE" });
     router.push("/admin/formations");
   };
