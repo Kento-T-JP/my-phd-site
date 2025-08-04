@@ -86,11 +86,6 @@ body {
 }
 
 /* ───── Player selection effects ───── */
-@keyframes ring-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 @keyframes aura-pulse {
   0%, 100% { transform: scale(0.95); opacity: 0.4; }
   50% { transform: scale(1.05); opacity: 0.8; }
@@ -103,7 +98,6 @@ body {
 
 .selected-ring {
   @apply rounded-full ring-2 ring-cyan-300/70;
-  animation: ring-spin 1.5s linear infinite;
 }
 
 .selected-aura {
