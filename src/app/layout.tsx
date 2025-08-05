@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import AuthProvider from "@/components/AuthProvider";
 import CanvasParticles from "@/components/CanvasParticles";
+import Analytics from "@/components/Analytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
         <CanvasParticles />
         <AuthProvider>
           <Header />
+          <Analytics />
           {children}
         </AuthProvider>
       </body>

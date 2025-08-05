@@ -11,6 +11,8 @@ type Stats = {
   totalFormations: number;
   totalContactInquiries: number;
   registrationsLast7Days: number;
+  pageViews: number;
+  siteVisitors: number;
 };
 
 export default function StatsPage() {
@@ -81,6 +83,8 @@ export default function StatsPage() {
             title="Registrations (7 days)"
             value={stats?.registrationsLast7Days}
           />
+          <Card title="Site Visitors" value={stats?.siteVisitors} />
+          <Card title="Page Views" value={stats?.pageViews} />
         </div>
       )}
       <div className="mt-4">

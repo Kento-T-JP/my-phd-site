@@ -26,12 +26,18 @@ export async function getAdminStats() {
     totalFormations,
     totalContactInquiries,
     registrationsLast7Days,
+    pageViews,
+    uniqueVisitors,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { emailVerified: { not: null } } }),
     prisma.formation.count(),
     prisma.contactSubmission.count(),
     prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.visit.count(),
+    prisma.visit
+      .findMany({ distinct: ['ip'], select: { ip: true } })
+      .then((rows) => rows.length),
   ]);
   return {
     totalUsers,
@@ -39,6 +45,8 @@ export async function getAdminStats() {
     totalFormations,
     totalContactInquiries,
     registrationsLast7Days,
+    pageViews,
+    siteVisitors: uniqueVisitors,
   };
 }
 

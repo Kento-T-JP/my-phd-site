@@ -110,3 +110,11 @@ model EmailVerificationToken {
   expires DateTime
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model Visit {
+  id        Int      @id @default(autoincrement())
+  path      String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}

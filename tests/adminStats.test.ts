@@ -32,6 +32,8 @@ describe('admin stats API', () => {
       totalFormations: 1,
       totalContactInquiries: 1,
       registrationsLast7Days: 1,
+      pageViews: 10,
+      siteVisitors: 5,
     });
     sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
     const { GET } = await import('../src/app/api/admin/stats/route');
@@ -39,6 +41,7 @@ describe('admin stats API', () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.totalUsers).toBe(1);
+    expect(data.pageViews).toBe(10);
     expect(statsSpy).toHaveBeenCalled();
   });
 
