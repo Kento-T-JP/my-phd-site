@@ -93,8 +93,8 @@ export default function StatsPage() {
 function Card({ title, value }: { title: string; value?: number }) {
   return (
     <div className="border rounded p-4">
-      <div className="text-sm text-gray-800 dark:text-gray-200">{title}</div>
-      <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+      <div className="text-sm text-white">{title}</div>
+      <div className="text-2xl font-bold text-indigo-300 dark:text-indigo-400">
         {value ?? "-"}
       </div>
     </div>
