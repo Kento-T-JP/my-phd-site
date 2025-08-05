@@ -26,7 +26,7 @@ export default function StatsPage() {
       const res = await fetch("/api/admin/stats");
       if (!res.ok) throw new Error();
       setStats(await res.json());
-    } catch (e) {
+    } catch {
       setError("統計情報の取得に失敗しました");
     } finally {
       setIsLoading(false);
@@ -93,8 +93,10 @@ export default function StatsPage() {
 function Card({ title, value }: { title: string; value?: number }) {
   return (
     <div className="border rounded p-4">
-      <div className="text-sm text-gray-600">{title}</div>
-      <div className="text-2xl font-bold">{value ?? "-"}</div>
+      <div className="text-sm text-gray-800 dark:text-gray-200">{title}</div>
+      <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+        {value ?? "-"}
+      </div>
     </div>
   );
 }
