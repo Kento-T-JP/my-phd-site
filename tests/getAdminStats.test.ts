@@ -5,6 +5,7 @@ const mockPrisma = prisma as unknown as {
   user: { count: any };
   formation: { count: any };
   contactSubmission: { count: any };
+  visit: { count: any; findMany: any };
 };
 
 describe('getAdminStats', () => {
@@ -12,6 +13,10 @@ describe('getAdminStats', () => {
     mockPrisma.user.count = vi.fn();
     mockPrisma.formation.count = vi.fn();
     mockPrisma.contactSubmission.count = vi.fn();
+    mockPrisma.visit = {
+      count: vi.fn(),
+      findMany: vi.fn(),
+    } as any;
   });
 
   it('computes counts correctly', async () => {
@@ -23,6 +28,11 @@ describe('getAdminStats', () => {
       .mockResolvedValueOnce(2);
     mockPrisma.formation.count.mockResolvedValue(5);
     mockPrisma.contactSubmission.count.mockResolvedValue(3);
+    mockPrisma.visit.count.mockResolvedValue(20);
+    mockPrisma.visit.findMany.mockResolvedValue([
+      { ip: '1.1.1.1' },
+      { ip: '2.2.2.2' },
+    ]);
 
     const stats = await getAdminStats();
     expect(stats).toEqual({
@@ -31,6 +41,8 @@ describe('getAdminStats', () => {
       totalFormations: 5,
       totalContactInquiries: 3,
       registrationsLast7Days: 2,
+      pageViews: 20,
+      siteVisitors: 2,
     });
     expect(mockPrisma.user.count.mock.calls[0]).toEqual([]);
     expect(mockPrisma.user.count).toHaveBeenNthCalledWith(2, {
@@ -41,6 +53,11 @@ describe('getAdminStats', () => {
     });
     expect(mockPrisma.formation.count).toHaveBeenCalled();
     expect(mockPrisma.contactSubmission.count).toHaveBeenCalled();
+    expect(mockPrisma.visit.count).toHaveBeenCalled();
+    expect(mockPrisma.visit.findMany).toHaveBeenCalledWith({
+      distinct: ['ip'],
+      select: { ip: true },
+    });
     vi.useRealTimers();
   });
 });
