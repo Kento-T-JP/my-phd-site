@@ -173,6 +173,45 @@ describe('player API routes', () => {
     const data = await res.json();
     expect(data.roster.id).toBe(6);
   });
+
+  it('POST uses tournament when roster not selected', async () => {
+    const { POST } = await import('../src/app/api/players/route');
+    createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'], role: 'player' });
+    ensureSpy.mockResolvedValue({ id: 7, tournamentId: 2, title: 'R', date: new Date() });
+    prisma.roster.findUnique.mockResolvedValue({ id: 7, tournament: { id: 2, name: 'Cup' }, date: new Date(), title: 'R' });
+    const form = new FormData();
+    form.append('name', 'C');
+    form.append('position', 'GK');
+    form.append('tournament', 'Cup');
+    const req = new Request('http://test', { method: 'POST', body: form });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(createSpy).toHaveBeenCalled();
+    expect(ensureSpy).toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalled();
+    const data = await res.json();
+    expect(data.roster.id).toBe(7);
+  });
+
+  it('PUT uses tournament when roster not selected', async () => {
+    const { PUT } = await import('../src/app/api/players/[id]/route');
+    updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'], role: 'player' });
+    ensureSpy.mockResolvedValue({ id: 8, tournamentId: 3, title: 'R2', date: new Date() });
+    prisma.roster.findUnique.mockResolvedValue({ id: 8, tournament: { id: 3, name: 'Cup2' }, date: new Date(), title: 'R2' });
+    prisma.rosterPlayer.findFirst.mockResolvedValue(null);
+    const form = new FormData();
+    form.append('name', 'D');
+    form.append('position', 'DF');
+    form.append('tournament', 'Cup2');
+    const req = new Request('http://test', { method: 'PUT', body: form });
+    const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
+    expect(res.status).toBe(200);
+    expect(updateSpy).toHaveBeenCalled();
+    expect(ensureSpy).toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalled();
+    const data = await res.json();
+    expect(data.roster.id).toBe(8);
+  });
 });
 
 describe('roster API routes', () => {

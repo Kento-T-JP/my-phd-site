@@ -86,6 +86,10 @@ During CI deployment, run:
 npm run deploy:migrate
 ```
 
+### Optional roster selection
+
+When adding or editing a player, selecting a roster is optional. Leave the roster dropdown blank to associate the player only with the tournament.
+
 ## Docker Compose
 
 Build and start the application along with a Postgres database. Pass the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
@@ -44,6 +44,8 @@ export default function EditPlayerPage() {
     tournament?: string;
   }>({});
 
+  const prevTournament = useRef("");
+
   useEffect(() => {
     async function load() {
       const res = await fetch(`/api/players/${id}`);
@@ -65,9 +67,12 @@ export default function EditPlayerPage() {
   }, [id]);
 
   useEffect(() => {
+    if (prevTournament.current && prevTournament.current !== tournamentName) {
+      setRosterId("");
+    }
+    prevTournament.current = tournamentName;
     if (!tournamentName.trim()) {
       setRosters([]);
-      setRosterId("");
       return;
     }
     const slug = slugify(tournamentName.trim());
@@ -78,11 +83,6 @@ export default function EditPlayerPage() {
       .then((res) => (res.ok ? res.json() : []))
       .then((list) => {
         setRosters(list);
-        setRosterId((current) =>
-          list.some((r: { id: number }) => String(r.id) === current)
-            ? current
-            : ""
-        );
       })
       .catch(() => {});
     return () => controller.abort();
@@ -247,12 +247,14 @@ export default function EditPlayerPage() {
               value={tournamentName}
               onChange={setTournamentName}
             />
-            {rosters.length > 1 && (
+            {/* Optional roster selection; leave blank to assign only tournament */}
+            {rosters.length > 0 && (
               <select
                 className="w-full p-2 border rounded mt-2"
                 value={rosterId}
                 onChange={(e) => setRosterId(e.target.value)}
               >
+                <option value=""></option>
                 {rosters.map((r) => (
                   <option key={r.id} value={r.id}>
                     {rosterDisplayTitle(r)}

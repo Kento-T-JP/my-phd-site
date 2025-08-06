@@ -43,9 +43,9 @@ export default function NewPlayerPage() {
   }>({});
 
   useEffect(() => {
+    setRosterId("");
     if (!tournamentName.trim()) {
       setRosters([]);
-      setRosterId("");
       return;
     }
     const slug = slugify(tournamentName.trim());
@@ -56,11 +56,6 @@ export default function NewPlayerPage() {
       .then((res) => (res.ok ? res.json() : []))
       .then((list) => {
         setRosters(list);
-        setRosterId((current) =>
-          list.some((r: { id: number }) => String(r.id) === current)
-            ? current
-            : ""
-        );
       })
       .catch(() => {});
     return () => controller.abort();
@@ -217,12 +212,14 @@ export default function NewPlayerPage() {
               value={tournamentName}
               onChange={setTournamentName}
             />
-            {rosters.length > 1 && (
+            {/* Optional roster selection; leave blank to assign only tournament */}
+            {rosters.length > 0 && (
               <select
                 className="w-full p-2 border rounded mt-2"
                 value={rosterId}
                 onChange={(e) => setRosterId(e.target.value)}
               >
+                <option value=""></option>
                 {rosters.map((r) => (
                   <option key={r.id} value={r.id}>
                     {rosterDisplayTitle(r)}
