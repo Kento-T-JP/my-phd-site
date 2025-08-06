@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
@@ -17,6 +18,7 @@ const positionOptions: PositionKey[] = Array.from(
 export default function EditPlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
@@ -35,6 +37,7 @@ export default function EditPlayerPage() {
     image?: string;
     tournament?: string;
   }>({});
+  const [ownerId, setOwnerId] = useState<number | null>(null);
 
   const prevTournament = useRef("");
 
@@ -43,6 +46,7 @@ export default function EditPlayerPage() {
       const res = await fetch(`/api/players/${id}`);
       if (res.ok) {
         const p = await res.json();
+        setOwnerId(p.userId ?? null);
         setName(p.name);
         setPositions(p.position as PositionKey[]);
         setNumber(p.number ? String(p.number) : "");
@@ -123,7 +127,8 @@ export default function EditPlayerPage() {
       if (tournamentName.trim() !== "") {
         window.dispatchEvent(new Event("tournament-saved"));
       }
-      setSuccessMessage("選手情報を更新しました！");
+      const msg = ownerId && session?.user?.id === ownerId ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
+      setSuccessMessage(msg);
       setTimeout(() => {
         router.push("/");
       }, 1500);
@@ -164,7 +169,9 @@ export default function EditPlayerPage() {
 
   return (
     <main className="p-8 max-w-md mx-auto">
-      <h1 className="text-xl font-bold mb-4">Edit Player</h1>
+      <h1 className="text-xl font-bold mb-4">
+        {ownerId && session?.user?.id === ownerId ? "Edit Player" : "カスタム選手を作成"}
+      </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-1">名前</label>
@@ -276,7 +283,7 @@ export default function EditPlayerPage() {
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
           disabled={loading}
         >
-          送信
+          {ownerId && session?.user?.id === ownerId ? "送信" : "カスタム作成"}
         </button>
         <button
           type="button"
