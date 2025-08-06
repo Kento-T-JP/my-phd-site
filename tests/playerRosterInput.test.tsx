@@ -18,43 +18,23 @@ vi.mock('@/components/TournamentSelect', () => ({
 // ensure React is available for components using old JSX transform
 (globalThis as any).React = React;
 
-describe('player roster selection', () => {
+describe('player roster input', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();
   });
 
-  it('shows roster dropdown when only one roster', async () => {
-    const fetchMock = vi.fn((url: any) => {
-      if (url.toString().includes('/api/rosters')) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => [
-            {
-              id: 1,
-              date: '2020-01-01',
-              title: 'R',
-              tournament: { name: 'Cup' },
-            },
-          ],
-        });
-      }
-      return Promise.resolve({ ok: true, json: async () => ({}) });
-    });
-    // @ts-ignore
-    global.fetch = fetchMock;
-
+  it('shows roster input when tournament is provided', () => {
     render(<NewPlayerPage />);
+    expect(screen.queryByTestId('roster')).toBeNull();
 
     fireEvent.change(screen.getByTestId('tournament'), {
       target: { value: 'Cup' },
     });
 
-    const rosterSelect = await screen.findByRole('combobox');
-    const options = rosterSelect.querySelectorAll('option');
-    expect(options.length).toBe(2);
-    expect(options[0].value).toBe('');
-    expect(rosterSelect).toHaveValue('');
+    const rosterInput = screen.getByTestId('roster');
+    expect(rosterInput).toBeTruthy();
+    expect(rosterInput).toHaveValue('');
   });
 });
 
