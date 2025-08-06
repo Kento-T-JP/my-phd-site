@@ -1,6 +1,6 @@
 import Formation from "@/components/Formation";
-import Link from "next/link";
 import JfaImportForm from "@/components/JfaImportForm";
+import HomeNav from "@/components/HomeNav";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
@@ -58,25 +58,7 @@ export default async function Home({
   return (
     <main className="p-8">
       <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
-      <div className="mb-4 space-x-4">
-        <Link href="/players/new" className="text-yellow-300 underline">
-          新規選手登録
-        </Link>
-        <Link href="/players" className="text-yellow-300 underline">
-          選手一覧を編集
-        </Link>
-        <Link href="/admin/jfa-import" className="text-yellow-300 underline">
-          JFAメンバーインポート
-        </Link>
-        <Link href="/contact" className="text-yellow-300 underline">
-          お問い合わせ
-        </Link>
-        {session?.user?.isAdmin && (
-          <Link href="/admin" className="text-yellow-300 underline">
-            管理者画面
-          </Link>
-        )}
-      </div>
+      <HomeNav isAdmin={session?.user?.isAdmin ?? false} />
       <Formation initialFormation={initialFormation} />
     </main>
   );
