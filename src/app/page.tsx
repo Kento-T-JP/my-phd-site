@@ -56,10 +56,12 @@ export default async function Home({
   const session = await getServerSession(authOptions);
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
+    <>
       <HomeNav isAdmin={session?.user?.isAdmin ?? false} />
-      <Formation initialFormation={initialFormation} />
-    </main>
+      <main className="relative z-0 p-8">
+        <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
+        <Formation initialFormation={initialFormation} />
+      </main>
+    </>
   );
 }
