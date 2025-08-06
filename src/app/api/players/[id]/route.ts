@@ -238,4 +238,34 @@ export async function PUT(
   return handleUpdate(req, num);
 }
 
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  let unwrapped;
+  if (
+    (React as any).use &&
+    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
+  ) {
+    unwrapped = React.use(params as any);
+  } else {
+    unwrapped = await params;
+  }
+  const id = Number(unwrapped.id);
+  if (Number.isNaN(id)) {
+    return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.favoritePlayer.deleteMany({ where: { playerId: id } });
+    await tx.formationNode.deleteMany({ where: { playerId: id } });
+    await tx.rosterPlayer.deleteMany({ where: { playerId: id } });
+    await tx.player.delete({ where: { id } });
+  });
+  return NextResponse.json({ success: true });
+}
+
 export const PATCH = PUT;
