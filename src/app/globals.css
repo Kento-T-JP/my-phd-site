@@ -134,6 +134,5 @@ body {
 .tempo-pulse {
   @apply rounded-full;
   background: radial-gradient(circle, rgba(56,189,248,0.5) 25%, rgba(59,130,246,0.2) 55%, transparent 70%);
-  mix-blend-mode: screen;
   animation: tempo-pulse 1s ease-in-out;
 }
