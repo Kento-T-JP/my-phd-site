@@ -69,8 +69,8 @@ export default async function Home({
           JFAメンバーインポート
         </Link>
         {session?.user?.isAdmin && (
-          <Link href="/admin/inquiries" className="text-yellow-300 underline">
-            お問い合わせ一覧
+          <Link href="/admin" className="text-yellow-300 underline">
+            管理者画面
           </Link>
         )}
         <Link href="/contact" className="text-yellow-300 underline">
