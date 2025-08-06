@@ -21,13 +21,26 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
     <nav className="mb-6 relative z-50">
       <button
         type="button"
-        className="text-yellow-300 hover:text-white hover:underline"
+        className="text-yellow-300 hover:text-white hover:underline md:hidden"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
         onClick={() => setIsOpen((prev) => !prev)}
+        aria-label="メニュー"
       >
-        メニュー
+        <svg
+          className="w-6 h-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
       </button>
       {isOpen && (
         <>
