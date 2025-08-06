@@ -28,7 +28,8 @@ export const PlayerSchema = z.object({
 });
 
 export async function GET() {
-  const players = await getPlayers();
+  const session = await getServerSession(authOptions);
+  const players = await getPlayers(undefined, session?.user?.id);
   const filtered = players.filter(
     (p) => p.name.toLowerCase() !== 'unknown'
   );
@@ -37,7 +38,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -118,6 +119,7 @@ export async function POST(req: Request) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
+          userId: session.user.id,
           role: 'player',
         },
         undefined,

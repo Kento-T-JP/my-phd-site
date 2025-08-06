@@ -110,7 +110,15 @@ describe('player API routes', () => {
     const auth = await import('next-auth/next');
     sessionSpy = auth.getServerSession as any;
     sessionSpy.mockReset();
-    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true, id: 1 } });
+  });
+
+  it('GET players uses session user id', async () => {
+    const { GET } = await import('../src/app/api/players/route');
+    playersSpy.mockResolvedValue([{ id: 1, name: 'P', position: [], role: 'player' }]);
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(playersSpy).toHaveBeenCalledWith(undefined, 1);
   });
 
   it('GET returns a player', async () => {
@@ -135,6 +143,7 @@ describe('player API routes', () => {
 
   it('PUT returns 400 on update error', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
     updateSpy.mockImplementation(() => { throw new Error('duplicate'); });
     const form = new FormData();
     form.append('name', 'B');
@@ -171,6 +180,7 @@ describe('player API routes', () => {
 
   it('PUT links player to roster by title', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
     updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'], role: 'player' });
     upsertTournamentSpy.mockResolvedValue({ id: 3, name: 'T2' });
     upsertRosterSpy.mockResolvedValue({ id: 6, title: 'R2', tournamentId: 3 });
@@ -215,6 +225,7 @@ describe('player API routes', () => {
 
   it('PUT uses tournament when roster not selected', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
     updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'], role: 'player' });
     ensureSpy.mockResolvedValue({ id: 8, tournamentId: 3, title: 'R2', date: new Date() });
     prisma.roster.findUnique.mockResolvedValue({ id: 8, tournament: { id: 3, name: 'Cup2' }, date: new Date(), title: 'R2' });
