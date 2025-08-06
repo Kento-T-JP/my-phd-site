@@ -1,7 +1,6 @@
 import Formation from "@/components/Formation";
 import Link from "next/link";
 import JfaImportForm from "@/components/JfaImportForm";
-import BackButton from "@/components/BackButton";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
