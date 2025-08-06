@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma, { getPlayers } from '@/lib/db';
 import React from 'react';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 export async function GET(
   _req: Request,
@@ -23,6 +25,7 @@ export async function GET(
   if (!roster) {
     return NextResponse.json({ error: 'Roster not found' }, { status: 404 });
   }
-  const players = await getPlayers(id);
+  const session = await getServerSession(authOptions);
+  const players = await getPlayers(id, session?.user?.id);
   return NextResponse.json(players);
 }

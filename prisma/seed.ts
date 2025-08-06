@@ -28,6 +28,7 @@ async function main() {
           image: p.image,
           position: p.position,
           role: 'player',
+          userId: undefined,
         })
       );
       const inserted = await Promise.all(promises);
