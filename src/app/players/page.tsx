@@ -63,10 +63,13 @@ export default function PlayersPage() {
       try {
         const res = await fetch("/api/players");
         if (!res.ok) throw new Error("Failed to fetch players");
-        setPlayers((await res.json()) as Player[]);
-      } catch (err) {
-        setError("Failed to load players");
-      } finally {
+        const data = (await res.json()) as Player[];
+        // API から返却されたセッションユーザーの結果をそのまま利用しつつ、
+        // もし万が一 isDeleted フラグが付いている場合は除外する
+        setPlayers(data.filter((p) => !p.isDeleted));
+        } catch {
+          setError("Failed to load players");
+        } finally {
         setLoading(false);
       }
     }
@@ -260,9 +263,21 @@ export default function PlayersPage() {
                 )}
               </td>
               <td className="px-2 py-1 text-right">
-                <Link href={`/players/${p.id}/edit`} className="text-yellow-300 underline">
-                  編集
-                </Link>
+                {session ? (
+                  <Link
+                    href={`/players/${p.id}/edit`}
+                    className="text-yellow-300 underline"
+                  >
+                    {p.userId === session.user.id ? "編集" : "カスタム作成"}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="text-yellow-300 underline"
+                  >
+                    編集
+                  </Link>
+                )}
               </td>
             </tr>
           ))}
