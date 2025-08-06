@@ -69,16 +69,16 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-transform z-50 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-all duration-300 ease-in-out z-50 ${
+          isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
       >
-        <ul>
+        <ul className="space-y-2">
           {links.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
+                className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
               >
                 {link.label}
               </Link>
@@ -88,7 +88,7 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
             <li>
               <Link
                 href="/admin"
-                className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
+                className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
               >
                 管理者画面
               </Link>
