@@ -169,7 +169,7 @@ describe('player API routes', () => {
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect(createSpy).toHaveBeenCalled();
+    expect(createSpy.mock.calls[0][0].userId).toBe(1);
     expect(ensureSpy).not.toHaveBeenCalled();
     expect(upsertTournamentSpy).toHaveBeenCalled();
     expect(upsertRosterSpy).toHaveBeenCalled();
@@ -214,7 +214,7 @@ describe('player API routes', () => {
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect(createSpy).toHaveBeenCalled();
+    expect(createSpy.mock.calls[0][0].userId).toBe(1);
     expect(ensureSpy).toHaveBeenCalled();
     expect(addSpy).toHaveBeenCalled();
     expect(upsertTournamentSpy).not.toHaveBeenCalled();
@@ -245,6 +245,21 @@ describe('player API routes', () => {
     const data = await res.json();
     expect(data.roster.id).toBe(8);
   });
+
+  it('PUT creates override for global player', async () => {
+    const { PUT } = await import('../src/app/api/players/[id]/route');
+    sessionSpy.mockResolvedValue({ user: { id: 5, isAdmin: false } });
+    prisma.player.findUnique.mockResolvedValue({ id: 2, userId: null, name: 'G', position: ['GK'] });
+    createSpy.mockResolvedValue({ id: 10, name: 'G', position: ['GK'], userId: 5, basePlayerId: 2, role: 'player' });
+    const form = new FormData();
+    form.append('name', 'G');
+    form.append('position', 'GK');
+    const req = new Request('http://test', { method: 'PUT', body: form });
+    const res = await PUT(req, { params: Promise.resolve({ id: '2' }) });
+    expect(res.status).toBe(200);
+    expect(createSpy.mock.calls[0][0]).toMatchObject({ userId: 5, basePlayerId: 2 });
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('roster API routes', () => {
@@ -265,7 +280,7 @@ describe('roster API routes', () => {
     const auth = await import('next-auth/next');
     sessionSpy = auth.getServerSession as any;
     sessionSpy.mockReset();
-    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true } });
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true, id: 1 } });
   });
 
   it('GET returns rosters', async () => {
@@ -309,6 +324,7 @@ describe('roster API routes', () => {
     });
     expect(res.status).toBe(200);
     const data = await res.json();
+    expect(playersSpy).toHaveBeenCalledWith(1, 1);
     expect(data[0].id).toBe(2);
   });
 });

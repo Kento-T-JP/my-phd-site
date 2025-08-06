@@ -5,6 +5,7 @@ const mockPrisma = prisma as unknown as {
   rosterPlayer: { upsert: any };
   $transaction: any;
   roster: { findUnique: any };
+  player: { findMany: any };
 };
 
 describe('RosterPlayer fields', () => {
@@ -12,6 +13,7 @@ describe('RosterPlayer fields', () => {
     mockPrisma.rosterPlayer.upsert = vi.fn();
     mockPrisma.$transaction = vi.fn(async (ops: any[]) => Promise.all(ops));
     mockPrisma.roster.findUnique = vi.fn();
+    mockPrisma.player.findMany = vi.fn();
   });
 
   it('addRosterPlayers inserts number and position', async () => {
@@ -33,6 +35,7 @@ describe('RosterPlayer fields', () => {
   });
 
   it('getPlayers returns roster-specific fields', async () => {
+    mockPrisma.player.findMany.mockResolvedValue([]);
     mockPrisma.roster.findUnique.mockResolvedValue({
       players: [
         {
@@ -43,7 +46,7 @@ describe('RosterPlayer fields', () => {
         },
       ],
     });
-    const players = await getPlayers(1);
+    const players = await getPlayers(1, 1);
     expect(players).toEqual([
       { id: 2, name: 'John', number: 10, position: ['GK'], role: 'player' },
     ]);
