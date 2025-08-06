@@ -56,9 +56,9 @@ describe('admin API authorization', () => {
     expect(res.status).toBe(401);
   });
 
-  it('blocks non-admin from creating player', async () => {
+  it('blocks unauthenticated from creating player', async () => {
     const { POST } = await import('../src/app/api/players/route');
-    sessionSpy.mockResolvedValue({ user: { email: 'u@test.com', isAdmin: false } });
+    sessionSpy.mockResolvedValue(null);
     const form = new FormData();
     form.append('name', 'A');
     form.append('position', 'GK');

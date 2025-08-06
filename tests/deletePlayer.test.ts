@@ -2,11 +2,7 @@ import { describe, it, beforeEach, expect, vi } from 'vitest';
 
 vi.mock('@/lib/db', () => {
   const prisma = {
-    favoritePlayer: { deleteMany: vi.fn() },
-    formationNode: { deleteMany: vi.fn() },
-    rosterPlayer: { deleteMany: vi.fn() },
-    player: { delete: vi.fn() },
-    $transaction: vi.fn(async (fn: any) => fn(prisma)),
+    player: { findUnique: vi.fn(), update: vi.fn(), create: vi.fn() },
   } as any;
   return { __esModule: true, default: prisma };
 });
@@ -23,35 +19,63 @@ describe('DELETE /api/players/[id]', () => {
   beforeEach(async () => {
     const db = await import('@/lib/db');
     prisma = db.default as any;
-    prisma.favoritePlayer.deleteMany.mockReset();
-    prisma.formationNode.deleteMany.mockReset();
-    prisma.rosterPlayer.deleteMany.mockReset();
-    prisma.player.delete.mockReset();
-    prisma.$transaction.mockImplementation(async (fn: any) => fn(prisma));
+    prisma.player.findUnique.mockReset();
+    prisma.player.update.mockReset();
+    prisma.player.create.mockReset();
     const auth = await import('next-auth/next');
     sessionSpy = auth.getServerSession as any;
     sessionSpy.mockReset();
   });
 
-  it('requires admin', async () => {
+  it('requires authentication', async () => {
     const { DELETE } = await import('../src/app/api/players/[id]/route');
-    sessionSpy.mockResolvedValue({ user: { isAdmin: false } });
+    sessionSpy.mockResolvedValue(null);
     const res = await DELETE(new Request('http://test', { method: 'DELETE' }), {
       params: Promise.resolve({ id: '1' }),
     } as any);
     expect(res.status).toBe(401);
   });
 
-  it('deletes player and related data', async () => {
+  it('blocks non-owner without admin', async () => {
     const { DELETE } = await import('../src/app/api/players/[id]/route');
-    sessionSpy.mockResolvedValue({ user: { isAdmin: true } });
+    sessionSpy.mockResolvedValue({ user: { id: 1, isAdmin: false } });
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 2, name: 'A', position: [] });
+    const res = await DELETE(new Request('http://test', { method: 'DELETE' }), {
+      params: Promise.resolve({ id: '1' }),
+    } as any);
+    expect(res.status).toBe(403);
+  });
+
+  it('soft deletes owned player', async () => {
+    const { DELETE } = await import('../src/app/api/players/[id]/route');
+    sessionSpy.mockResolvedValue({ user: { id: 1, isAdmin: false } });
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1, name: 'A', position: [] });
     const res = await DELETE(new Request('http://test', { method: 'DELETE' }), {
       params: Promise.resolve({ id: '1' }),
     } as any);
     expect(res.status).toBe(200);
-    expect(prisma.favoritePlayer.deleteMany).toHaveBeenCalledWith({ where: { playerId: 1 } });
-    expect(prisma.formationNode.deleteMany).toHaveBeenCalledWith({ where: { playerId: 1 } });
-    expect(prisma.rosterPlayer.deleteMany).toHaveBeenCalledWith({ where: { playerId: 1 } });
-    expect(prisma.player.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(prisma.player.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { isDeleted: true } });
+  });
+
+  it('creates override when deleting global player', async () => {
+    const { DELETE } = await import('../src/app/api/players/[id]/route');
+    sessionSpy.mockResolvedValue({ user: { id: 5, isAdmin: false } });
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: null, name: 'G', position: ['GK'], number: 1, image: null, wikiUrl: null });
+    const res = await DELETE(new Request('http://test', { method: 'DELETE' }), {
+      params: Promise.resolve({ id: '1' }),
+    } as any);
+    expect(res.status).toBe(200);
+    expect(prisma.player.create).toHaveBeenCalledWith({
+      data: {
+        name: 'G',
+        position: ['GK'],
+        number: 1,
+        image: null,
+        wikiUrl: null,
+        userId: 5,
+        basePlayerId: 1,
+        isDeleted: true,
+      },
+    });
   });
 });

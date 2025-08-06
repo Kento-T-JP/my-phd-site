@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, {
   updatePlayer,
+  createPlayer,
   ensureTournamentRoster,
   addRosterPlayers,
   syncRosterPlayers,
@@ -47,7 +48,7 @@ export async function GET(
   return NextResponse.json({ ...player, role: 'player' });
 }
 
-async function handleUpdate(req: Request, id: number) {
+async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
   try {
     const form = await req.formData();
     const name = form.get('name');
@@ -119,24 +120,44 @@ async function handleUpdate(req: Request, id: number) {
     let player;
     let rosterInfo;
     await prisma.$transaction(async (tx) => {
-      const prev = await tx.rosterPlayer.findFirst({
-        where: { playerId: id },
-        orderBy: { rosterId: 'desc' },
-      });
+      let prev;
+      if (!overrideUserId) {
+        prev = await tx.rosterPlayer.findFirst({
+          where: { playerId: id },
+          orderBy: { rosterId: 'desc' },
+        });
+      }
 
-      player = await updatePlayer(
-        id,
-        {
-          name: parsed.data.name,
-          position: parsed.data.position,
-          number: parsed.data.number,
-          image: imagePath,
-          wikiUrl: parsed.data.wikiUrl,
-          role: 'player',
-        },
-        undefined,
-        tx,
-      );
+      if (overrideUserId) {
+        player = await createPlayer(
+          {
+            name: parsed.data.name,
+            position: parsed.data.position,
+            number: parsed.data.number,
+            image: imagePath,
+            wikiUrl: parsed.data.wikiUrl,
+            userId: overrideUserId,
+            basePlayerId: id,
+            role: 'player',
+          },
+          undefined,
+          tx,
+        );
+      } else {
+        player = await updatePlayer(
+          id,
+          {
+            name: parsed.data.name,
+            position: parsed.data.position,
+            number: parsed.data.number,
+            image: imagePath,
+            wikiUrl: parsed.data.wikiUrl,
+            role: 'player',
+          },
+          undefined,
+          tx,
+        );
+      }
       if (rosterId) {
         await addRosterPlayers(
           rosterId,
@@ -219,7 +240,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   let unwrapped;
@@ -235,6 +256,16 @@ export async function PUT(
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
   }
+  const player = await prisma.player.findUnique({ where: { id: num } });
+  if (!player) {
+    return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
+  }
+  if (player.userId && player.userId !== session.user.id && !session.user.isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  if (!player.userId && !session.user.isAdmin) {
+    return handleUpdate(req, num, session.user.id);
+  }
   return handleUpdate(req, num);
 }
 
@@ -243,7 +274,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   let unwrapped;
@@ -259,12 +290,32 @@ export async function DELETE(
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
   }
-  await prisma.$transaction(async (tx) => {
-    await tx.favoritePlayer.deleteMany({ where: { playerId: id } });
-    await tx.formationNode.deleteMany({ where: { playerId: id } });
-    await tx.rosterPlayer.deleteMany({ where: { playerId: id } });
-    await tx.player.delete({ where: { id } });
-  });
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (!player) {
+    return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
+  }
+  if (player.userId && player.userId !== session.user.id && !session.user.isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  if (!player.userId && !session.user.isAdmin) {
+    await prisma.player.create({
+      data: {
+        name: player.name,
+        position: player.position,
+        number: player.number,
+        image: player.image,
+        wikiUrl: player.wikiUrl,
+        userId: session.user.id,
+        basePlayerId: id,
+        isDeleted: true,
+      },
+    });
+  } else {
+    await prisma.player.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
+  }
   return NextResponse.json({ success: true });
 }
 
