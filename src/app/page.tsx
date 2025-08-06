@@ -68,14 +68,14 @@ export default async function Home({
         <Link href="/admin/jfa-import" className="text-yellow-300 underline">
           JFAメンバーインポート
         </Link>
+        <Link href="/contact" className="text-yellow-300 underline">
+          お問い合わせ
+        </Link>
         {session?.user?.isAdmin && (
           <Link href="/admin" className="text-yellow-300 underline">
             管理者画面
           </Link>
         )}
-        <Link href="/contact" className="text-yellow-300 underline">
-          お問い合わせ
-        </Link>
       </div>
       <Formation initialFormation={initialFormation} />
     </main>
