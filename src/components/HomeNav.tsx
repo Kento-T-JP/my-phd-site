@@ -9,7 +9,7 @@ interface HomeNavProps {
 
 export default function HomeNav({ isAdmin = false }: HomeNavProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLUListElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const links = [
@@ -38,46 +38,58 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
   }, []);
 
   return (
-    <nav className="mb-6 relative">
+    <nav>
       <button
         ref={buttonRef}
         type="button"
-        className="text-yellow-300 hover:text-white hover:underline"
+        className="fixed top-4 left-4 z-50 text-yellow-300 hover:text-white"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        メニュー
+        <span className="sr-only">メニュー</span>
+        <svg
+          className="h-6 w-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
-      <ul
+      <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`absolute mt-2 bg-blue-900/50 border border-cyan-400/20 px-4 py-2 rounded-md backdrop-blur-sm ${
-          isOpen ? "block" : "hidden"
+        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-transform z-40 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-        {isAdmin && (
-          <li>
-            <Link
-              href="/admin"
-              className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
-            >
-              管理者画面
-            </Link>
-          </li>
-        )}
-      </ul>
+        <ul>
+          {links.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+          {isAdmin && (
+            <li>
+              <Link
+                href="/admin"
+                className="block py-1 text-yellow-300 hover:text-white hover:underline transition-colors"
+              >
+                管理者画面
+              </Link>
+            </li>
+          )}
+        </ul>
+      </aside>
     </nav>
   );
 }
