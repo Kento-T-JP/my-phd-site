@@ -16,6 +16,9 @@ describe('updatePlayer', () => {
     await expect(
       updatePlayer(1, { name: 'John', position: ['GK'], role: 'player' })
     ).rejects.toThrow('同じ名前の選手が既に存在します');
+    expect(mockPrisma.player.findFirst).toHaveBeenCalledWith({
+      where: { name: 'John', userId: null, NOT: { id: 1 } },
+    });
   });
 
   it('updates when no duplicate', async () => {
@@ -24,5 +27,14 @@ describe('updatePlayer', () => {
     const res = await updatePlayer(1, { name: 'John', position: ['GK'], role: 'player' });
     expect(mockPrisma.player.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { name: 'John', position: ['GK'] } });
     expect(res.id).toBe(1);
+  });
+
+  it('checks duplicates per user', async () => {
+    mockPrisma.player.findFirst.mockResolvedValue(null);
+    mockPrisma.player.update.mockResolvedValue({ id: 1, name: 'John', position: ['GK'], userId: 3 });
+    await updatePlayer(1, { name: 'John', position: ['GK'], role: 'player', userId: 3 });
+    expect(mockPrisma.player.findFirst).toHaveBeenCalledWith({
+      where: { name: 'John', userId: 3, NOT: { id: 1 } },
+    });
   });
 });

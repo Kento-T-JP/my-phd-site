@@ -54,12 +54,32 @@ export async function getAdminStats() {
  * すべての選手を id 昇順で取得するユーティリティ関数。
  * API ルート（/api/players）などから呼び出して使用します。
  */
-export async function getPlayers(rosterId?: number) {
+export async function getPlayers(rosterId?: number, userId?: number) {
+  const baseIds: number[] = [];
+  if (userId) {
+    const overrides = await prisma.player.findMany({
+      where: { userId, basePlayerId: { not: null } },
+      select: { basePlayerId: true },
+    });
+    for (const o of overrides) {
+      if (o.basePlayerId !== null) {
+        baseIds.push(o.basePlayerId);
+      }
+    }
+  }
+  const playerWhere: Prisma.PlayerWhereInput = userId
+    ? {
+        isDeleted: false,
+        OR: [{ userId }, { userId: null }],
+        id: baseIds.length ? { notIn: baseIds } : undefined,
+      }
+    : { isDeleted: false };
   if (rosterId) {
     const roster = await prisma.roster.findUnique({
       where: { id: rosterId },
       include: {
         players: {
+          where: { player: playerWhere },
           include: { player: true },
           orderBy: { playerId: 'asc' },
         },
@@ -75,6 +95,7 @@ export async function getPlayers(rosterId?: number) {
     );
   }
   const players = await prisma.player.findMany({
+    where: playerWhere,
     orderBy: { id: 'asc' },
     include: {
       rosterPlayers: {
@@ -96,7 +117,9 @@ export async function createPlayer(
   rosterId?: number,
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const dup = await client.player.findFirst({ where: { name: data.name } });
+  const dup = await client.player.findFirst({
+    where: { name: data.name, userId: data.userId ?? null },
+  });
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
@@ -144,6 +167,7 @@ export async function updatePlayer(
   const dup = await client.player.findFirst({
     where: {
       name: data.name,
+      userId: data.userId ?? null,
       NOT: { id },
     },
   });
