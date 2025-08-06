@@ -4,6 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import Home from '@/app/page';
 
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: { user: { email: 'a@test.com' } } }) }));
+vi.mock('next-auth/next', () => ({ getServerSession: () => Promise.resolve({ user: { email: 'a@test.com', isAdmin: false } }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('next/headers', () => ({
   cookies: () => ({ toString: () => '' }),
