@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
@@ -188,6 +188,12 @@ export default function Formation({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIsBench, setSelectedIsBench] = useState<boolean | null>(null);
 
+  const [lastClickedId, setLastClickedId] = useState<number | null>(null);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tempoPulseId, setTempoPulseId] = useState<number | null>(null);
+  const tempoPulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
@@ -234,6 +240,13 @@ export default function Formation({
       body: JSON.stringify({ playerId: id }),
     });
   };
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      if (tempoPulseTimeoutRef.current) clearTimeout(tempoPulseTimeoutRef.current);
+    };
+  }, []);
 
   // update when a different formation is supplied from props
   useEffect(() => {
@@ -445,6 +458,40 @@ export default function Formation({
 
   /* ───────── swap (bench ↔ field) ───────── */
   const handleClick = (id: number, isBench: boolean) => {
+    // Track rapid click sequences for tempo pulse
+    if (lastClickedId === id) {
+      const newCount = clickCount + 1;
+      if (newCount >= 11) {
+        setTempoPulseId(id);
+        setClickCount(0);
+        setLastClickedId(null);
+        if (clickTimeoutRef.current) {
+          clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = null;
+        }
+        if (tempoPulseTimeoutRef.current)
+          clearTimeout(tempoPulseTimeoutRef.current);
+        tempoPulseTimeoutRef.current = setTimeout(() => {
+          setTempoPulseId(null);
+        }, 1000);
+      } else {
+        setClickCount(newCount);
+        if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = setTimeout(() => {
+          setClickCount(0);
+          setLastClickedId(null);
+        }, 5000);
+      }
+    } else {
+      setLastClickedId(id);
+      setClickCount(1);
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = setTimeout(() => {
+        setClickCount(0);
+        setLastClickedId(null);
+      }, 5000);
+    }
+
     if (selectedId === null) {
       setSelectedId(id);
       setSelectedIsBench(isBench);
@@ -591,7 +638,7 @@ export default function Formation({
         const data = await res.json();
         alert(data.error || "保存に失敗しました");
       }
-    } catch (err) {
+    } catch {
       alert("保存に失敗しました");
     }
   };
@@ -621,7 +668,7 @@ export default function Formation({
         const data = await res.json();
         alert(data.error || "更新に失敗しました");
       }
-    } catch (err) {
+    } catch {
       alert("更新に失敗しました");
     }
   };
@@ -651,8 +698,8 @@ export default function Formation({
     .sort((a, b) => {
       const posA = a.position[0] ?? "";
       const posB = b.position[0] ?? "";
-      const idxA = BENCH_POSITION_ORDER.indexOf(posA as any);
-      const idxB = BENCH_POSITION_ORDER.indexOf(posB as any);
+      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
+      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
       if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
       if (idxA === -1) return 1;
       if (idxB === -1) return -1;
@@ -672,6 +719,9 @@ export default function Formation({
           <span className="selected-aura absolute inset-0 pointer-events-none" />
           <span className="speedline absolute inset-0 pointer-events-none" />
         </>
+      )}
+      {tempoPulseId === p.id && (
+        <span className="tempo-pulse absolute inset-0 pointer-events-none" />
       )}
       <div className="relative w-12 h-12 mx-auto">
         {p.image ? (
@@ -883,6 +933,9 @@ export default function Formation({
                       <span className="selected-aura absolute inset-0 pointer-events-none" />
                       <span className="speedline absolute inset-0 pointer-events-none" />
                     </>
+                  )}
+                  {tempoPulseId === p.id && (
+                    <span className="tempo-pulse absolute inset-0 pointer-events-none" />
                   )}
                   <div className="relative w-12 h-12 mx-auto">
                     {p.image ? (
