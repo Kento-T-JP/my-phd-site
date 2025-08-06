@@ -60,10 +60,16 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-transform z-40 ${
+        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-transform z-50 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
