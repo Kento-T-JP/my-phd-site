@@ -4,6 +4,8 @@ import prisma, {
   ensureTournamentRoster,
   addRosterPlayers,
   syncRosterPlayers,
+  upsertTournament,
+  upsertRoster,
 } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
@@ -71,11 +73,23 @@ async function handleUpdate(req: Request, id: number) {
       typeof rosterEntry === 'string' && rosterEntry.trim() !== ''
         ? Number(rosterEntry)
         : undefined;
+    const rosterTitleEntry = form.get('roster');
+    const rosterTitle =
+      typeof rosterTitleEntry === 'string' && rosterTitleEntry.trim() !== ''
+        ? rosterTitleEntry
+        : undefined;
     const dateEntry = form.get('tournamentDate');
     const tournamentDate =
       typeof dateEntry === 'string' && dateEntry.trim() !== ''
         ? new Date(dateEntry)
         : undefined;
+
+    if (rosterTitle && !tournamentName) {
+      return NextResponse.json(
+        { error: 'Tournament is required when specifying a roster' },
+        { status: 400 },
+      );
+    }
 
     const parsed = PlayerSchema.safeParse({
       name,
@@ -139,6 +153,29 @@ async function handleUpdate(req: Request, id: number) {
           await syncRosterPlayers(player.id, prev.rosterId, tx);
         }
         rosterInfo = { id: rosterId } as any;
+      } else if (rosterTitle && tournamentName) {
+        const tournament = await upsertTournament(tournamentName, tx);
+        const roster = await upsertRoster(
+          tournament.id,
+          rosterTitle,
+          tx,
+          tournamentDate,
+        );
+        await addRosterPlayers(
+          roster.id,
+          [
+            {
+              playerId: player.id,
+              number: parsed.data.number,
+              position: parsed.data.position,
+            },
+          ],
+          tx,
+        );
+        if (prev && prev.rosterId !== roster.id) {
+          await syncRosterPlayers(player.id, prev.rosterId, tx);
+        }
+        rosterInfo = roster;
       } else if (tournamentName) {
         rosterInfo = await ensureTournamentRoster(
           tournamentName,

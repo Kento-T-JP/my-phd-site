@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
-import { rosterDisplayTitle } from "@/lib/format";
-
-function slugify(str: string) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -28,10 +23,7 @@ export default function NewPlayerPage() {
   const [image, setImage] = useState<File | null>(null);
   const [wikiUrl, setWikiUrl] = useState("");
   const [tournamentName, setTournamentName] = useState("");
-  const [rosters, setRosters] = useState<
-    { id: number; date: string; endDate?: string | null; title: string; tournament: { name: string } }[]
-  >([]);
-  const [rosterId, setRosterId] = useState("");
+  const [rosterTitle, setRosterTitle] = useState("");
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{
@@ -42,24 +34,6 @@ export default function NewPlayerPage() {
     tournament?: string;
   }>({});
 
-  useEffect(() => {
-    setRosterId("");
-    if (!tournamentName.trim()) {
-      setRosters([]);
-      return;
-    }
-    const slug = slugify(tournamentName.trim());
-    const controller = new AbortController();
-    fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, {
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((list) => {
-        setRosters(list);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, [tournamentName]);
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -80,8 +54,11 @@ export default function NewPlayerPage() {
     if (number.trim() !== "") form.append("number", number);
     if (image) form.append("image", image);
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
-    if (rosterId) {
-      form.append("rosterId", rosterId);
+    if (rosterTitle.trim() !== "") {
+      if (tournamentName.trim() !== "") {
+        form.append("tournament", tournamentName);
+      }
+      form.append("roster", rosterTitle);
     } else if (tournamentName.trim() !== "") {
       form.append("tournament", tournamentName);
     }
@@ -212,20 +189,17 @@ export default function NewPlayerPage() {
               value={tournamentName}
               onChange={setTournamentName}
             />
-            {/* Optional roster selection; leave blank to assign only tournament */}
-            {rosters.length > 0 && (
-              <select
-                className="w-full p-2 border rounded mt-2"
-                value={rosterId}
-                onChange={(e) => setRosterId(e.target.value)}
-              >
-                <option value=""></option>
-                {rosters.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {rosterDisplayTitle(r)}
-                  </option>
-                ))}
-              </select>
+            {/* Optional roster name; leave blank to assign only tournament */}
+            {tournamentName.trim() !== "" && (
+              <>
+                <label className="block mb-1 mt-2">Roster (optional)</label>
+                <input
+                  data-testid="roster"
+                  className="w-full p-2 border rounded"
+                  value={rosterTitle}
+                  onChange={(e) => setRosterTitle(e.target.value)}
+                />
+              </>
             )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
