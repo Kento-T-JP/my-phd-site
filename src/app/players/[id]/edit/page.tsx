@@ -71,6 +71,23 @@ export default function EditPlayerPage() {
     );
   };
 
+  const handleDelete = async () => {
+    if (!confirm("削除してもよろしいですか？")) return;
+    const res = await fetch(`/api/players/${id}`, { method: "DELETE" });
+    setErrors({});
+    setMessage([]);
+    setSuccessMessage("");
+    if (res.ok) {
+      setSuccessMessage("選手を削除しました");
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+    } else {
+      const err = await res.json();
+      setMessage([err.error || "選手の削除に失敗しました"]);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,6 +284,13 @@ export default function EditPlayerPage() {
           className="px-4 py-2 bg-gray-300 text-black rounded"
         >
           戻る
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="px-4 py-2 bg-red-500 text-white rounded"
+        >
+          削除
         </button>
       </form>
     </main>
