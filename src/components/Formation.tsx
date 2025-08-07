@@ -54,6 +54,7 @@ const positionOptions: PositionKey[] = Array.from(
 ) as PositionKey[];
 
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "FW"];
+const BENCH_LIMIT = 12;
 
 export interface PlayerFilterOptions {
   name?: string;
@@ -692,7 +693,9 @@ export default function Formation({
     return <div>Loading...</div>;
   }
 
-  const benchList = benchOrder.map((id) => players.find((p) => p.id === id));
+  const benchIds = benchOrder.slice(0, BENCH_LIMIT);
+  const benchOutIds = benchOrder.slice(BENCH_LIMIT);
+  const benchList = benchIds.map((id) => players.find((p) => p.id === id));
   const benchPlayers = benchList
     .filter((p): p is Player => p?.role === "player")
     .sort((a, b) => {
@@ -706,6 +709,19 @@ export default function Formation({
       return idxA - idxB;
     });
   const staff = benchList.filter((p): p is Player => p?.role === "staff");
+  const benchOutPlayers = benchOutIds
+    .map((id) => players.find((p) => p.id === id))
+    .filter((p): p is Player => p?.role === "player")
+    .sort((a, b) => {
+      const posA = a.position[0] ?? "";
+      const posB = b.position[0] ?? "";
+      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
+      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
+      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
 
   const renderBenchCard = (p: Player) => (
     <div
@@ -1029,6 +1045,15 @@ export default function Formation({
           {staff.map(renderBenchCard)}
         </div>
       </div>
+
+      {benchOutPlayers.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold mb-2">Off Bench</h3>
+          <div className="flex flex-wrap gap-2">
+            {benchOutPlayers.map(renderBenchCard)}
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 flex gap-2 items-center">
         {session ? (
