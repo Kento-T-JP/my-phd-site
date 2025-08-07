@@ -11,7 +11,7 @@ export default function Header() {
   const homeHref = "/";
   const homeLabel = "Home";
   return (
-    <header className="bg-[#002D62] text-white flex items-center p-4">
+    <header className="fixed top-0 left-0 w-full z-50 bg-[#002D62] text-white flex items-center p-4">
       <Image
         src="/emblem.svg"
         alt="Samurai Blue Emblem"

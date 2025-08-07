@@ -42,7 +42,7 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-17 left-6 z-50 text-yellow-300 hover:text-white"
+        className="fixed top-16 left-6 z-40 text-yellow-300 hover:text-white"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
@@ -62,14 +62,14 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
       </button>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40"
+          className="fixed inset-x-0 top-16 bottom-0 bg-black/40 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed inset-y-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-all duration-300 ease-in-out z-50 ${
+        className={`fixed top-16 bottom-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
       >

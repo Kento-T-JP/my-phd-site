@@ -34,8 +34,10 @@ export default function RootLayout({
         <CanvasParticles />
         <AuthProvider>
           <Header />
-          <Analytics />
-          {children}
+          <div className="mt-16">
+            <Analytics />
+            {children}
+          </div>
         </AuthProvider>
       </body>
     </html>
