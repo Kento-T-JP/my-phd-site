@@ -10,6 +10,7 @@ import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
 import type { Formation } from "@/types/formation";
+import html2canvas from "html2canvas";
 
 export interface InitialFormation {
   id?: number;
@@ -207,6 +208,12 @@ export default function Formation({
   const [positionInput, setPositionInput] = useState("");
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
+  const captureRef = useRef<HTMLDivElement>(null);
+  const previewDialogRef = useRef<HTMLDialogElement>(null);
+  const screenshotButtonRef = useRef<HTMLButtonElement>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
     initialFormation
       ? {
@@ -240,6 +247,35 @@ export default function Formation({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ playerId: id }),
     });
+  };
+
+  useEffect(() => {
+    const dialog = previewDialogRef.current;
+    if (previewOpen) {
+      dialog?.showModal();
+    } else {
+      dialog?.close();
+      screenshotButtonRef.current?.focus();
+    }
+  }, [previewOpen]);
+
+  const handleDialogKeyDown = (
+    e: React.KeyboardEvent<HTMLDialogElement>
+  ) => {
+    if (e.key === "Escape") setPreviewOpen(false);
+  };
+
+  const handleDialogClickOutside = (
+    e: React.MouseEvent<HTMLDialogElement>
+  ) => {
+    if (e.target === previewDialogRef.current) setPreviewOpen(false);
+  };
+
+  const handleScreenshot = async () => {
+    if (!captureRef.current) return;
+    const canvas = await html2canvas(captureRef.current!);
+    setPreviewSrc(canvas.toDataURL("image/png"));
+    setPreviewOpen(true);
   };
 
   useEffect(() => {
@@ -868,6 +904,7 @@ export default function Formation({
         </button>
       </div>
 
+      <div ref={captureRef}>
       {/* field */}
       <div className="field formation-field relative w-full h-[600px] border border-cyan-400/10 rounded overflow-hidden">
         <div className="field-sweep absolute inset-0 pointer-events-none" />
@@ -1054,6 +1091,7 @@ export default function Formation({
           </div>
         </div>
       )}
+      </div>
 
       <div className="mt-4 flex gap-2 items-center">
         {session ? (
@@ -1085,7 +1123,48 @@ export default function Formation({
             Login to save
           </Link>
         )}
+        <button
+          ref={screenshotButtonRef}
+          onClick={handleScreenshot}
+          className="px-4 py-2 bg-purple-500 text-white rounded"
+          aria-haspopup="dialog"
+        >
+          Screenshot
+        </button>
       </div>
+      <dialog
+        ref={previewDialogRef}
+        onKeyDown={handleDialogKeyDown}
+        onClick={handleDialogClickOutside}
+        className="rounded p-4 max-w-lg"
+        aria-modal="true"
+        role="dialog"
+      >
+        {previewSrc && (
+          <img
+            src={previewSrc}
+            alt="Formation screenshot"
+            className="mb-4 max-w-full h-auto"
+          />
+        )}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => setPreviewOpen(false)}
+            className="bg-blue-500 text-white px-2 py-1 rounded"
+          >
+            Close
+          </button>
+          {previewSrc && (
+            <a
+              href={previewSrc}
+              download="formation.png"
+              className="bg-green-600 text-white px-2 py-1 rounded"
+            >
+              Download
+            </a>
+          )}
+        </div>
+      </dialog>
     </div>
   );
 }
