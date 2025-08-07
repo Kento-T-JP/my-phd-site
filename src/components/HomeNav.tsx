@@ -42,7 +42,7 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-16 left-6 z-40 text-yellow-300 hover:text-white"
+        className="fixed top-18 left-6 z-40 text-yellow-300 hover:text-white"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
