@@ -273,7 +273,7 @@ export default function Formation({
 
   const handleScreenshot = async () => {
     if (!captureRef.current) return;
-    const canvas = await html2canvas(captureRef.current!);
+    const canvas = await html2canvas(captureRef.current!, { useCORS: true });
     setPreviewSrc(canvas.toDataURL("image/png"));
     setPreviewOpen(true);
   };
@@ -783,6 +783,7 @@ export default function Formation({
             width={48}
             height={48}
             className="w-12 h-12 object-cover rounded-full pointer-events-none"
+            crossOrigin="anonymous"
           />
         ) : (
           <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
@@ -998,6 +999,7 @@ export default function Formation({
                         width={48}
                         height={48}
                         className="w-12 h-12 object-cover rounded-full pointer-events-none"
+                        crossOrigin="anonymous"
                       />
                     ) : (
                       <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
