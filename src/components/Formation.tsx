@@ -273,9 +273,14 @@ export default function Formation({
 
   const handleScreenshot = async () => {
     if (!captureRef.current) return;
-    const canvas = await html2canvas(captureRef.current!, { useCORS: true });
-    setPreviewSrc(canvas.toDataURL("image/png"));
-    setPreviewOpen(true);
+    try {
+      const canvas = await html2canvas(captureRef.current!, { useCORS: true });
+      setPreviewSrc(canvas.toDataURL("image/png"));
+      setPreviewOpen(true);
+    } catch (error) {
+      console.error("Failed to capture screenshot", error);
+      alert("スクリーンショットの取得に失敗しました");
+    }
   };
 
   useEffect(() => {
