@@ -283,7 +283,24 @@ export default function Formation({
   const handleScreenshot = async () => {
     if (!captureRef.current) return;
     try {
-      const canvas = await html2canvas(captureRef.current!, { useCORS: true });
+      const canvas = await html2canvas(captureRef.current!, {
+        useCORS: true,
+        allowTaint: true,
+        imageTimeout: 3000,
+        backgroundColor: null,
+        onclone: (doc) => {
+          // hide UI not meant for the screenshot
+          doc.querySelector("#menu")?.remove();
+          doc.querySelectorAll(".header,.modal").forEach((e) => e.remove());
+
+          // remove heavy filters that confuse html2canvas
+          doc
+            .querySelectorAll(
+              ".tempo-pulse,.speedline,.backdrop-filter"
+            )
+            .forEach((e) => ((e as HTMLElement).style.filter = "none"));
+        },
+      });
       const dataUrl = canvas.toDataURL("image/png");
       setPreviewSrc(dataUrl);
       const supportsDialog =
@@ -930,9 +947,12 @@ export default function Formation({
         </button>
       </div>
 
-      <div ref={captureRef}>
+      <div id="field-bench" ref={captureRef}>
       {/* field */}
-      <div className="field formation-field relative w-full h-[600px] border border-cyan-400/10 rounded overflow-hidden">
+      <div
+        id="field"
+        className="field formation-field relative w-full h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+      >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
           const base = formation.positions[posKey as keyof typeof formation.positions];
@@ -1078,6 +1098,25 @@ export default function Formation({
         })}
       </div>
 
+      {/* bench */}
+      <div className="mt-8">
+        <h3 className="text-lg font-bold mb-2">Bench</h3>
+        <div className="flex flex-wrap gap-2">
+          {benchPlayers.map(renderBenchCard)}
+          {staff.map(renderBenchCard)}
+        </div>
+      </div>
+
+      {benchOutPlayers.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold mb-2">Off Bench</h3>
+          <div className="flex flex-wrap gap-2">
+            {benchOutPlayers.map(renderBenchCard)}
+          </div>
+        </div>
+      )}
+      </div>
+
       {/* formation selector */}
       <div className="mt-4 space-x-2 flex flex-wrap">
         {formations.map((f) => (
@@ -1099,25 +1138,6 @@ export default function Formation({
         >
           Reset
         </button>
-      </div>
-
-      {/* bench */}
-      <div className="mt-8">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="flex flex-wrap gap-2">
-          {benchPlayers.map(renderBenchCard)}
-          {staff.map(renderBenchCard)}
-        </div>
-      </div>
-
-      {benchOutPlayers.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-bold mb-2">Off Bench</h3>
-          <div className="flex flex-wrap gap-2">
-            {benchOutPlayers.map(renderBenchCard)}
-          </div>
-        </div>
-      )}
       </div>
 
       <div className="mt-4 flex gap-2 items-center">
