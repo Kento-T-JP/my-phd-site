@@ -252,12 +252,21 @@ export default function Formation({
   useEffect(() => {
     const dialog = previewDialogRef.current;
     if (previewOpen) {
-      dialog?.showModal();
+      if (dialog && typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        if (previewSrc) {
+          window.open(previewSrc, "_blank");
+          alert(
+            "このブラウザはダイアログのプレビューに対応していません。新しいタブで画像を開きました。"
+          );
+        }
+      }
     } else {
       dialog?.close();
       screenshotButtonRef.current?.focus();
     }
-  }, [previewOpen]);
+  }, [previewOpen, previewSrc]);
 
   const handleDialogKeyDown = (
     e: React.KeyboardEvent<HTMLDialogElement>
@@ -275,8 +284,19 @@ export default function Formation({
     if (!captureRef.current) return;
     try {
       const canvas = await html2canvas(captureRef.current!, { useCORS: true });
-      setPreviewSrc(canvas.toDataURL("image/png"));
-      setPreviewOpen(true);
+      const dataUrl = canvas.toDataURL("image/png");
+      setPreviewSrc(dataUrl);
+      const supportsDialog =
+        typeof HTMLDialogElement !== "undefined" &&
+        typeof HTMLDialogElement.prototype.showModal === "function";
+      if (supportsDialog) {
+        setPreviewOpen(true);
+      } else {
+        window.open(dataUrl, "_blank");
+        alert(
+          "このブラウザはダイアログのプレビューに対応していません。新しいタブで画像を開きました。"
+        );
+      }
     } catch (error) {
       console.error("Failed to capture screenshot", error);
       alert("スクリーンショットの取得に失敗しました");
