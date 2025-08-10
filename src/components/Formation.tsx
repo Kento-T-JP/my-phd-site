@@ -281,7 +281,10 @@ export default function Formation({
   };
 
   const handleScreenshot = async () => {
-    if (!captureRef.current) return;
+    if (!captureRef.current) {
+      alert("撮影対象が表示されていません");
+      return;
+    }
     try {
       const canvas = await html2canvas(captureRef.current!, {
         useCORS: true,
