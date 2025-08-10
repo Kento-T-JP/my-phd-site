@@ -213,6 +213,9 @@ export default function Formation({
   const screenshotButtonRef = useRef<HTMLButtonElement>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [screenshotStatus, setScreenshotStatus] = useState<
+    "capturing" | "success" | "error" | null
+  >(null);
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
     initialFormation
@@ -283,8 +286,10 @@ export default function Formation({
   const handleScreenshot = async () => {
     if (!captureRef.current) {
       alert("撮影対象が表示されていません");
+      setScreenshotStatus("error");
       return;
     }
+    setScreenshotStatus("capturing");
     try {
       const canvas = await html2canvas(captureRef.current!, {
         useCORS: true,
@@ -317,8 +322,10 @@ export default function Formation({
           "このブラウザはダイアログのプレビューに対応していません。新しいタブで画像を開きました。"
         );
       }
+      setScreenshotStatus("success");
     } catch (error) {
       console.error("Failed to capture screenshot", error);
+      setScreenshotStatus("error");
       alert("スクリーンショットの取得に失敗しました");
     }
   };
@@ -1173,14 +1180,25 @@ export default function Formation({
             Login to save
           </Link>
         )}
-        <button
-          ref={screenshotButtonRef}
-          onClick={handleScreenshot}
-          className="px-4 py-2 bg-purple-500 text-white rounded"
-          aria-haspopup="dialog"
-        >
-          Screenshot
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            ref={screenshotButtonRef}
+            onClick={handleScreenshot}
+            className="px-4 py-2 bg-purple-500 text-white rounded"
+            aria-haspopup="dialog"
+          >
+            Screenshot
+          </button>
+          {screenshotStatus === "capturing" && (
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+          )}
+          {screenshotStatus === "success" && (
+            <span className="text-green-600">Captured!</span>
+          )}
+          {screenshotStatus === "error" && (
+            <span className="text-red-600">Failed</span>
+          )}
+        </div>
       </div>
       <dialog
         ref={previewDialogRef}
