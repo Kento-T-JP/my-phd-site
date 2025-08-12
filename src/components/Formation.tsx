@@ -216,6 +216,7 @@ export default function Formation({
   const [screenshotStatus, setScreenshotStatus] = useState<
     "capturing" | "success" | "error" | null
   >(null);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
     initialFormation
@@ -290,6 +291,7 @@ export default function Formation({
       return;
     }
     setScreenshotStatus("capturing");
+    setScreenshotError(null);
     try {
       const canvas = await Promise.race([
         html2canvas(captureRef.current!, {
@@ -307,6 +309,12 @@ export default function Formation({
                 ".tempo-pulse,.speedline,.backdrop-filter"
               )
               .forEach((e) => ((e as HTMLElement).style.filter = "none"));
+
+            doc.querySelectorAll("img").forEach((img) => {
+              img.addEventListener("error", () => {
+                console.error("Failed to load image in screenshot:", (img as HTMLImageElement).src);
+              });
+            });
           },
         }),
         new Promise<never>((_, reject) =>
@@ -335,11 +343,20 @@ export default function Formation({
       }
       setScreenshotStatus("success");
     } catch (error) {
-      console.error("Failed to capture screenshot", error);
+      if (error instanceof Error) {
+        console.error("Failed to capture screenshot", error.message, error.stack);
+        setScreenshotError(error.message);
+      } else {
+        console.error("Failed to capture screenshot", error);
+        setScreenshotError(String(error));
+      }
       setScreenshotStatus("error");
       alert("スクリーンショットの取得に失敗しました");
     } finally {
-      setTimeout(() => setScreenshotStatus(null), 3000);
+      setTimeout(() => {
+        setScreenshotStatus(null);
+        setScreenshotError(null);
+      }, 3000);
     }
   };
 
@@ -1209,7 +1226,9 @@ export default function Formation({
             <span className="text-green-600">Captured!</span>
           )}
           {screenshotStatus === "error" && (
-            <span className="text-red-600">Failed</span>
+            <span className="text-red-600">
+              Failed{screenshotError ? `: ${screenshotError}` : ""}
+            </span>
           )}
         </div>
       </div>
