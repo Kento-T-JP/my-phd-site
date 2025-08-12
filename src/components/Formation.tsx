@@ -311,6 +311,13 @@ export default function Formation({
       });
       const dataUrl = canvas.toDataURL("image/png");
       setPreviewSrc(dataUrl);
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "formation.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      alert("画像を保存しました");
       const supportsDialog =
         typeof HTMLDialogElement !== "undefined" &&
         typeof HTMLDialogElement.prototype.showModal === "function";
