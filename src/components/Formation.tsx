@@ -294,8 +294,7 @@ export default function Formation({
       const canvas = await Promise.race([
         html2canvas(captureRef.current!, {
           useCORS: true,
-          allowTaint: true,
-          imageTimeout: 3000,
+          imageTimeout: 10000,
           backgroundColor: null,
           onclone: (doc) => {
             // hide UI not meant for the screenshot
@@ -311,7 +310,7 @@ export default function Formation({
           },
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 10000)
+          setTimeout(() => reject(new Error("timeout")), 15000)
         ),
       ]);
       const dataUrl = canvas.toDataURL("image/png");
