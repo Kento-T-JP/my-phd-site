@@ -291,24 +291,29 @@ export default function Formation({
     }
     setScreenshotStatus("capturing");
     try {
-      const canvas = await html2canvas(captureRef.current!, {
-        useCORS: true,
-        allowTaint: true,
-        imageTimeout: 3000,
-        backgroundColor: null,
-        onclone: (doc) => {
-          // hide UI not meant for the screenshot
-          doc.querySelector("#menu")?.remove();
-          doc.querySelectorAll(".header,.modal").forEach((e) => e.remove());
+      const canvas = await Promise.race([
+        html2canvas(captureRef.current!, {
+          useCORS: true,
+          allowTaint: true,
+          imageTimeout: 3000,
+          backgroundColor: null,
+          onclone: (doc) => {
+            // hide UI not meant for the screenshot
+            doc.querySelector("#menu")?.remove();
+            doc.querySelectorAll(".header,.modal").forEach((e) => e.remove());
 
-          // remove heavy filters that confuse html2canvas
-          doc
-            .querySelectorAll(
-              ".tempo-pulse,.speedline,.backdrop-filter"
-            )
-            .forEach((e) => ((e as HTMLElement).style.filter = "none"));
-        },
-      });
+            // remove heavy filters that confuse html2canvas
+            doc
+              .querySelectorAll(
+                ".tempo-pulse,.speedline,.backdrop-filter"
+              )
+              .forEach((e) => ((e as HTMLElement).style.filter = "none"));
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 10000)
+        ),
+      ]);
       const dataUrl = canvas.toDataURL("image/png");
       setPreviewSrc(dataUrl);
       const link = document.createElement("a");
@@ -334,6 +339,8 @@ export default function Formation({
       console.error("Failed to capture screenshot", error);
       setScreenshotStatus("error");
       alert("スクリーンショットの取得に失敗しました");
+    } finally {
+      setTimeout(() => setScreenshotStatus(null), 3000);
     }
   };
 
