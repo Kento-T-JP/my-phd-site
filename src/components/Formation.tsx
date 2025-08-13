@@ -218,6 +218,319 @@ export default function Formation({
   >(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
+  // --- utils for reliable screenshots ---
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const waitForImages = (root: HTMLElement) =>
+    new Promise<void>((resolveAll) => {
+      const rootRect = root.getBoundingClientRect();
+      const imgs = Array.from(root.querySelectorAll("img")).filter((img) => {
+        const r = img.getBoundingClientRect();
+        const hasSize = r.width > 0 && r.height > 0;
+        const overlaps = !(
+          r.right < rootRect.left ||
+          r.left > rootRect.right ||
+          r.bottom < rootRect.top ||
+          r.top > rootRect.bottom
+        );
+        return hasSize && overlaps;
+      });
+      if (imgs.length === 0) return resolveAll();
+      let done = 0;
+      const finish = () => {
+        done += 1;
+        if (done >= imgs.length) resolveAll();
+      };
+      imgs.forEach((img) => {
+        try {
+          img.setAttribute("loading", "eager");
+          img.setAttribute("decoding", "sync");
+          img.setAttribute("crossorigin", "anonymous");
+          (img as HTMLImageElement).crossOrigin = "anonymous";
+        } catch {}
+        const el = img as HTMLImageElement;
+        if (el.complete && el.naturalWidth > 0) {
+          finish();
+          return;
+        }
+        const onDone = () => {
+          img.removeEventListener("load", onDone);
+          img.removeEventListener("error", onDone);
+          finish();
+        };
+        img.addEventListener("load", onDone, { once: true });
+        img.addEventListener("error", onDone, { once: true });
+        setTimeout(onDone, 3000);
+        try {
+          el.decode?.().then(onDone).catch(onDone);
+        } catch {}
+      });
+    });
+  /**
+   * Helper: Create initials for a player name (max 2 chars).
+   */
+  const toInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+  /**
+   * Compute placements for field(11) and bench list based on current state.
+   */
+  const getExportData = () => {
+    type Place = { id: number; name: string; img?: string; top: number; left: number; number?: number };
+    const placements: Place[] = [];
+    const byId = new Map<number, Player>();
+    players.forEach((p) => byId.set(p.id, p));
+
+    const drawnLocal = new Set<number>();
+    let idxLocal = 0;
+    const keys = Object.keys(formation.positions);
+
+    keys.forEach((posKey) => {
+      const base = formation.positions[posKey as keyof typeof formation.positions];
+      if (!base) return;
+
+      const customs: Player[] = [];
+      lineupOrder.forEach((pid) => {
+        if (customs.length >= base.max) return;
+        if (drawnLocal.has(pid)) return;
+        if (playerPositions[pid]) {
+          const pl = byId.get(pid);
+          if (pl) { customs.push(pl); drawnLocal.add(pid); }
+        }
+      });
+
+      const defaults: Player[] = [];
+      while (customs.length + defaults.length < base.max && idxLocal < lineupOrder.length) {
+        const pid = lineupOrder[idxLocal++];
+        if (drawnLocal.has(pid)) continue;
+        const pl = byId.get(pid);
+        if (pl) { defaults.push(pl); drawnLocal.add(pid); }
+      }
+
+      const group = [...customs, ...defaults];
+      group.forEach((p) => {
+        const isDefault = defaults.includes(p);
+        const offset = isDefault ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * OFFSET_STEP) : 0;
+        const def = { top: base.top, left: base.left + offset };
+        const pos = playerPositions[p.id] ?? def;
+        placements.push({ id: p.id, name: p.name, img: p.image, top: pos.top, left: pos.left, number: p.number });
+      });
+    });
+
+    const benchIds = benchOrder.slice(0, 12);
+    const benchList = benchIds.map((id) => players.find((p) => p.id === id)).filter(Boolean) as Player[];
+    const benchPlayersSorted = benchList
+      .filter((p) => p.role === "player")
+      .sort((a, b) => {
+        const posA = a.position[0] ?? "";
+        const posB = b.position[0] ?? "";
+        const idxA = BENCH_POSITION_ORDER.indexOf(posA);
+        const idxB = BENCH_POSITION_ORDER.indexOf(posB);
+        if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    const staffSorted = benchList.filter((p) => p.role === "staff");
+
+    return { placements, benchPlayersSorted, staffSorted };
+  };
+
+  /**
+   * Build a minimal SVG (no external images) and return a dataURL.
+   * This path avoids CORS and html2canvas edge cases.
+   */
+  const buildSvgDataUrl = () => {
+    const { placements, benchPlayersSorted, staffSorted } = getExportData();
+    const width = 1600;
+    const fieldH = 700;
+    const benchRowH = 90; // avatar(48) + name + gaps
+    const benchPad = 24;
+    const benchRows = Math.ceil((benchPlayersSorted.length + staffSorted.length) / 12) || 1;
+    const height = fieldH + benchPad + benchRows * benchRowH + 24;
+
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Field players as circles with initials
+    const fieldNodes = placements.map((pl) => {
+      const cx = (pl.left / 100) * width;
+      const cy = (pl.top / 100) * fieldH;
+      const initials = esc(toInitials(pl.name));
+      return `\n  <g transform="translate(${cx},${cy})">\n    <circle r="32" fill="#e6ffff" />\n    <text x="0" y="6" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="18" font-weight="700" text-anchor="middle" fill="#0a3d2e">${initials}</text>\n    <text x="0" y="52" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="12" text-anchor="middle" fill="#e6ffff">${esc(pl.name)}</text>\n  </g>`;
+    }).join("");
+
+    // Bench grid
+    const allBench = [...benchPlayersSorted, ...staffSorted];
+    const benchCells = allBench.map((p, i) => {
+      const col = i % 12;
+      const row = Math.floor(i / 12);
+      const cellW = width / 12;
+      const x = col * cellW + cellW / 2;
+      const y = fieldH + benchPad + row * benchRowH;
+      const initials = esc(toInitials(p.name));
+      return `\n  <g transform="translate(${x},${y})">\n    <circle r="24" fill="#e6ffff" />\n    <text x="0" y="5" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="14" font-weight="700" text-anchor="middle" fill="#0a3d2e">${initials}</text>\n    <text x="0" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="11" text-anchor="middle" fill="#e6ffff">${esc(p.name)}</text>\n  </g>`;
+    }).join("");
+
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n  <defs>\n    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">\n      <stop offset="0%" stop-color="#0a3d2e" />\n      <stop offset="50%" stop-color="#0a3d2e" />\n      <stop offset="50%" stop-color="#0c4b37" />\n      <stop offset="100%" stop-color="#0c4b37" />\n    </linearGradient>\n  </defs>\n  <rect x="0" y="0" width="${width}" height="${fieldH}" fill="url(#grass)" />\n  <circle cx="${width/2}" cy="${fieldH/2}" r="90" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" />\n  ${fieldNodes}\n  ${benchCells}\n</svg>`;
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    return { url, width, height };
+  };
+
+  /**
+   * Build an off-screen export-only layout that includes ONLY Field(11) + Bench.
+   * Returns { root, cleanup }.
+   */
+  const buildExportNode = (opts: { noImages?: boolean } = {}) => {
+    const { noImages = false } = opts;
+    // --- resolve on-field placements following current formation logic ---
+    const { placements, benchPlayersSorted, staffSorted } = getExportData();
+
+    // --- Root container fixed width for stable render ---
+    const root = document.createElement("div");
+    root.id = "formation-export-root";
+    Object.assign(root.style, {
+      position: "fixed",
+      left: "0",
+      top: "0",
+      width: "1600px",
+      background: "transparent",
+      zIndex: "-1",
+      padding: "24px",
+      boxSizing: "border-box",
+      fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
+      opacity: "0",
+      pointerEvents: "none",
+      transform: "translateZ(0)",
+    } as CSSStyleDeclaration);
+
+    // --- Field area ---
+    const field = document.createElement("div");
+    Object.assign(field.style, {
+      position: "relative",
+      width: "100%",
+      height: "700px",
+      borderRadius: "16px",
+      overflow: "hidden",
+      border: "1px solid rgba(0,255,255,0.15)",
+      background: "linear-gradient(0deg, #0a3d2e 0%, #0a3d2e 50%, #0c4b37 50%, #0c4b37 100%)",
+      backgroundSize: "100% 120px",
+    } as CSSStyleDeclaration);
+
+    const circle = document.createElement("div");
+    Object.assign(circle.style, {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      width: "180px",
+      height: "180px",
+      borderRadius: "50%",
+      border: "2px solid rgba(255,255,255,0.3)",
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+    } as CSSStyleDeclaration);
+    field.appendChild(circle);
+
+    placements.forEach((pl) => {
+      const holder = document.createElement("div");
+      Object.assign(holder.style, {
+        position: "absolute",
+        left: `${pl.left}%`,
+        top: `${pl.top}%`,
+        transform: "translate(-50%, -50%)",
+        textAlign: "center",
+        color: "#e6ffff",
+        fontWeight: "600",
+      } as CSSStyleDeclaration);
+
+      const avatar = document.createElement("div");
+      Object.assign(avatar.style, { width: "64px", height: "64px", margin: "0 auto 6px", borderRadius: "9999px", overflow: "hidden", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" } as CSSStyleDeclaration);
+
+      if (!noImages && pl.img) {
+        const img = document.createElement("img");
+        img.src = pl.img;
+        img.alt = pl.name;
+        img.width = 64; img.height = 64;
+        img.crossOrigin = "anonymous";
+        Object.assign(img.style, { width: "64px", height: "64px", objectFit: "cover" } as CSSStyleDeclaration);
+        avatar.appendChild(img);
+      } else {
+        const fallback = document.createElement("div");
+        fallback.textContent = toInitials(pl.name);
+        Object.assign(fallback.style, { fontSize: "18px", fontWeight: "700", letterSpacing: "0.5px", color: "#0a3d2e", background: "#e6ffff", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" } as CSSStyleDeclaration);
+        avatar.appendChild(fallback);
+      }
+
+      const name = document.createElement("div");
+      name.textContent = pl.name;
+      Object.assign(name.style, { fontSize: "12px", lineHeight: "1.1" } as CSSStyleDeclaration);
+
+      if (pl.number) {
+        const num = document.createElement("div");
+        num.textContent = `#${pl.number}`;
+        Object.assign(num.style, { fontSize: "10px", opacity: "0.75" } as CSSStyleDeclaration);
+        holder.appendChild(num);
+      }
+
+      holder.appendChild(avatar);
+      holder.appendChild(name);
+      field.appendChild(holder);
+    });
+
+    // --- Bench area ---
+    const benchWrap = document.createElement("div");
+    Object.assign(benchWrap.style, { width: "100%", marginTop: "24px" } as CSSStyleDeclaration);
+
+    const benchGrid = document.createElement("div");
+    Object.assign(benchGrid.style, {
+      display: "grid",
+      gridTemplateColumns: "repeat(12, 1fr)",
+      gap: "10px",
+      alignItems: "start",
+    } as CSSStyleDeclaration);
+
+    const addBenchCard = (p: Player) => {
+      const card = document.createElement("div");
+      Object.assign(card.style, { textAlign: "center", color: "#e6ffff" } as CSSStyleDeclaration);
+      const avatar = document.createElement("div");
+      Object.assign(avatar.style, { width: "48px", height: "48px", margin: "0 auto 4px", borderRadius: "9999px", overflow: "hidden", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" } as CSSStyleDeclaration);
+      if (!noImages && (p as Player).image) {
+        const img = document.createElement("img");
+        img.src = (p as Player).image!;
+        img.alt = p.name;
+        img.width = 48; img.height = 48;
+        img.crossOrigin = "anonymous";
+        Object.assign(img.style, { width: "48px", height: "48px", objectFit: "cover" } as CSSStyleDeclaration);
+        avatar.appendChild(img);
+      } else {
+        const fallback = document.createElement("div");
+        fallback.textContent = toInitials(p.name);
+        Object.assign(fallback.style, { fontSize: "14px", fontWeight: "700", letterSpacing: "0.5px", color: "#0a3d2e", background: "#e6ffff", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" } as CSSStyleDeclaration);
+        avatar.appendChild(fallback);
+      }
+      const name = document.createElement("div");
+      name.textContent = p.name;
+      Object.assign(name.style, { fontSize: "11px", lineHeight: "1.15" } as CSSStyleDeclaration);
+      card.appendChild(avatar);
+      card.appendChild(name);
+      benchGrid.appendChild(card);
+    };
+
+    benchPlayersSorted.forEach(addBenchCard);
+    staffSorted.forEach(addBenchCard);
+
+    benchWrap.appendChild(benchGrid);
+
+    root.appendChild(field);
+    root.appendChild(benchWrap);
+
+    document.body.appendChild(root);
+    const cleanup = () => { try { document.body.removeChild(root); } catch {} };
+    return { root, cleanup };
+  };
+
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
     initialFormation
       ? {
@@ -285,62 +598,109 @@ export default function Formation({
   };
 
   const handleScreenshot = async () => {
-    if (!captureRef.current) {
-      alert("撮影対象が表示されていません");
-      setScreenshotStatus("error");
-      return;
-    }
     setScreenshotStatus("capturing");
     setScreenshotError(null);
-    try {
-      const canvas = await Promise.race([
-        html2canvas(captureRef.current!, {
-          useCORS: true,
-          imageTimeout: 10000,
-          backgroundColor: null,
-          onclone: (doc) => {
-            // hide UI not meant for the screenshot
-            doc.querySelector("#menu")?.remove();
-            doc.querySelectorAll(".header,.modal").forEach((e) => e.remove());
 
-            // remove heavy filters that confuse html2canvas
-            doc
-              .querySelectorAll(
-                ".tempo-pulse,.speedline,.backdrop-filter"
-              )
-              .forEach((e) => ((e as HTMLElement).style.filter = "none"));
-
-            doc.querySelectorAll("img").forEach((img) => {
-              img.addEventListener("error", () => {
-                console.error("Failed to load image in screenshot:", (img as HTMLImageElement).src);
-              });
-            });
-          },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 15000)
-        ),
+    const attempt = async (root: HTMLElement, opts: Parameters<typeof html2canvas>[1], timeoutMs: number) => {
+      return Promise.race([
+        html2canvas(root, opts),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs)),
       ]);
+    };
+
+    try {
+      const { root, cleanup } = buildExportNode();
+      await sleep(0);
+      await waitForImages(root);
+
+      let canvas: HTMLCanvasElement;
+      try {
+        // Pass 1: fast/stable path (with images)
+        canvas = (await attempt(root, {
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: null,
+          foreignObjectRendering: false,
+          imageTimeout: 8000,
+          scale: Math.max(2, window.devicePixelRatio || 1),
+        }, 12000)) as HTMLCanvasElement;
+      } catch (e1) {
+        console.warn("Pass1 failed, retry with foreignObjectRendering:true", e1);
+        try {
+          // Pass 2: fallback path (with images)
+          canvas = (await attempt(root, {
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: null,
+            foreignObjectRendering: true,
+            imageTimeout: 10000,
+            scale: Math.max(2, window.devicePixelRatio || 1),
+            onclone: (doc) => {
+              doc.querySelectorAll(".tempo-pulse,.speedline,.backdrop-filter").forEach((e) => {
+                (e as HTMLElement).style.filter = "none";
+                (e as HTMLElement).style.backdropFilter = "none";
+              });
+            },
+          }, 15000)) as HTMLCanvasElement;
+        } catch (e2) {
+          console.warn("Pass2 failed, retry WITHOUT images", e2);
+          // Pass 3: rebuild export without any external images (use initials)
+          cleanup();
+          const attemptNoImg = buildExportNode({ noImages: true });
+          try {
+            await sleep(0);
+            // no need to wait for images here
+            canvas = (await attempt(attemptNoImg.root, {
+              useCORS: false,
+              allowTaint: true,
+              backgroundColor: null,
+              foreignObjectRendering: false,
+              imageTimeout: 4000,
+              scale: Math.max(2, window.devicePixelRatio || 1),
+            }, 8000)) as HTMLCanvasElement;
+          } finally {
+            attemptNoImg.cleanup();
+          }
+          // Pass 4: SVG fallback (no external images, zero CORS risk)
+          try {
+            const { url, width, height } = buildSvgDataUrl();
+            // Draw the SVG into a canvas
+            const img = new Image();
+            const loadP = new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error('svg-load-error'));
+            });
+            img.src = url;
+            await loadP;
+            const cvs = document.createElement('canvas');
+            cvs.width = width; cvs.height = height;
+            const ctx = cvs.getContext('2d');
+            if (!ctx) throw new Error('canvas-ctx');
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            canvas = cvs;
+          } catch (e3) {
+            console.error('Pass3 & SVG fallback failed', e3);
+            throw e3; // bubble up to outer catch
+          }
+        }
+      }
+
+      cleanup();
+
       const dataUrl = canvas.toDataURL("image/png");
       setPreviewSrc(dataUrl);
+
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = "formation.png";
+      link.download = "formation_export.png";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      alert("画像を保存しました");
-      const supportsDialog =
-        typeof HTMLDialogElement !== "undefined" &&
-        typeof HTMLDialogElement.prototype.showModal === "function";
-      if (supportsDialog) {
-        setPreviewOpen(true);
-      } else {
-        window.open(dataUrl, "_blank");
-        alert(
-          "このブラウザはダイアログのプレビューに対応していません。新しいタブで画像を開きました。"
-        );
-      }
+
+      const dialogOk = typeof HTMLDialogElement !== "undefined" && typeof HTMLDialogElement.prototype.showModal === "function";
+      if (dialogOk) setPreviewOpen(true); else window.open(dataUrl, "_blank");
+
       setScreenshotStatus("success");
     } catch (error) {
       if (error instanceof Error) {
@@ -351,7 +711,7 @@ export default function Formation({
         setScreenshotError(String(error));
       }
       setScreenshotStatus("error");
-      alert("スクリーンショットの取得に失敗しました");
+      alert("スクリーンショットの取得に失敗しました。\n画像/CORSやCSS由来の可能性があります。\n・画像ドメインのCORS設定\n・外部フォント/フィルター\nをご確認ください。\n（画像なし版→SVGフォールバックまで自動試行しました）");
     } finally {
       setTimeout(() => {
         setScreenshotStatus(null);
