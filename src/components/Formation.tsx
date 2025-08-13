@@ -1094,7 +1094,11 @@ export default function Formation({
         )}
         <div className="flex items-center gap-2">
           <Link
-            href="/formations/screenshot"
+            href={
+              initialFormation?.id
+                ? `/formations/screenshot?formationId=${initialFormation.id}`
+                : "/formations/screenshot"
+            }
             className="px-4 py-2 bg-purple-500 text-white rounded"
           >
             Screenshot
