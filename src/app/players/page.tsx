@@ -67,9 +67,12 @@ export default function PlayersPage() {
         // API から返却されたセッションユーザーの結果をそのまま利用しつつ、
         // もし万が一 isDeleted フラグが付いている場合は除外する
         setPlayers(data.filter((p) => !p.isDeleted));
-        } catch {
-          setError("Failed to load players");
-        } finally {
+      } catch (err) {
+        console.error(err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load players"
+        );
+      } finally {
         setLoading(false);
       }
     }
