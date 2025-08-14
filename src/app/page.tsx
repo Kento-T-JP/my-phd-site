@@ -10,6 +10,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 async function fetchPlayers(): Promise<Player[]> {
   const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
   if (!res.ok) {
+    console.error(`Failed to fetch players: ${res.status} ${res.statusText}`);
     throw new Error("Failed to fetch players");
   }
   return (await res.json()) as Player[];
@@ -39,7 +40,8 @@ export default async function Home({
       if (res.ok) {
         initialFormation = (await res.json()) as SavedFormation;
       }
-    } catch {
+    } catch (error) {
+      console.error(`Failed to fetch formation ${formationId}:`, error);
       // ignore errors and fall back to default
     }
   }
@@ -53,6 +55,7 @@ export default async function Home({
     );
   }
 
+  // Note: Ensure authOptions is compatible with server-side environment to avoid warnings
   const session = await getServerSession(authOptions);
 
   return (

@@ -54,11 +54,15 @@ export async function getAdminStats() {
  * すべての選手を id 昇順で取得するユーティリティ関数。
  * API ルート（/api/players）などから呼び出して使用します。
  */
-export async function getPlayers(rosterId?: number, userId?: number) {
+export async function getPlayers(rosterId?: number, userId?: number | string) {
+  // Safely normalize userId: accept string or number, ignore invalid
+  const uid = typeof userId === 'string' ? Number(userId) : userId;
+  const hasUid = typeof uid === 'number' && Number.isFinite(uid);
+
   const baseIds: number[] = [];
-  if (userId) {
+  if (hasUid) {
     const overrides = await prisma.player.findMany({
-      where: { userId, basePlayerId: { not: null } },
+      where: { userId: uid, basePlayerId: { not: null } },
       select: { basePlayerId: true },
     });
     for (const o of overrides) {
@@ -67,10 +71,10 @@ export async function getPlayers(rosterId?: number, userId?: number) {
       }
     }
   }
-  const playerWhere: Prisma.PlayerWhereInput = userId
+  const playerWhere: Prisma.PlayerWhereInput = hasUid
     ? {
         isDeleted: false,
-        OR: [{ userId }, { userId: null }],
+        OR: [{ userId: uid }, { userId: null }],
         id: baseIds.length ? { notIn: baseIds } : undefined,
       }
     : { isDeleted: false };
