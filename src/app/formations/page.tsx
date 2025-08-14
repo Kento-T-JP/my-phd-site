@@ -44,6 +44,11 @@ export default function FormationsPage() {
     setSelectedId((prev) => (prev === id ? "" : prev));
   };
 
+  const handleSaved = (saved: SavedFormation) => {
+    setList((prev) => [...prev, saved]);
+    setSelectedId(saved.id);
+  };
+
   const selectedFormation =
     selectedId === "" ? null : list.find((f) => f.id === selectedId) || null;
 
@@ -94,7 +99,7 @@ export default function FormationsPage() {
           {selectedFormation && (
             <Formation
               initialFormation={selectedFormation}
-              onSaved={loadList}
+              onSaved={handleSaved}
               onUpdated={loadList}
             />
           )}
