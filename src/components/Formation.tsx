@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
-import type { Formation } from "@/types/formation";
+import type { Formation, SavedFormation } from "@/types/formation";
 
 export interface InitialFormation {
   id?: number;
@@ -155,14 +155,17 @@ const freezeDefaults = (
 };
 
 export default function Formation({
-  initialFormation,
+  initialFormation: initialFormationProp,
   onSaved,
   onUpdated,
 }: {
   initialFormation?: InitialFormation;
-  onSaved?: () => void;
+  onSaved?: (saved: SavedFormation) => void;
   onUpdated?: () => void;
 }) {
+  const [initialFormation, setInitialFormation] = useState<
+    InitialFormation | undefined
+  >(initialFormationProp);
   /* ───────── state ───────── */
   const base = initialFormation
     ? formations.find((f) => f.name === initialFormation.name) ?? formations[0]
@@ -241,6 +244,10 @@ export default function Formation({
       body: JSON.stringify({ playerId: id }),
     });
   };
+
+  useEffect(() => {
+    setInitialFormation(initialFormationProp);
+  }, [initialFormationProp]);
 
   useEffect(() => {
     return () => {
@@ -633,8 +640,10 @@ export default function Formation({
         }),
       });
       if (res.ok) {
+        const saved = (await res.json()) as SavedFormation;
         alert("保存しました");
-        onSaved?.();
+        setInitialFormation(saved);
+        onSaved?.(saved);
       } else {
         const data = await res.json();
         alert(data.error || "保存に失敗しました");
@@ -1093,16 +1102,14 @@ export default function Formation({
           </Link>
         )}
         <div className="flex items-center gap-2">
-          <Link
-            href={
-              initialFormation?.id
-                ? `/formations/screenshot?formationId=${initialFormation.id}`
-                : "/formations/screenshot"
-            }
-            className="px-4 py-2 bg-purple-500 text-white rounded"
-          >
-            Screenshot
-          </Link>
+          {initialFormation?.id && (
+            <Link
+              href={`/formations/screenshot?formationId=${initialFormation.id}`}
+              className="px-4 py-2 bg-purple-500 text-white rounded"
+            >
+              Screenshot
+            </Link>
+          )}
         </div>
       </div>
     </div>
