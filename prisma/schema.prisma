@@ -15,15 +15,15 @@ model Player {
   number          Int?
   image           String?
   wikiUrl         String?
+  basePlayerId    Int?
+  isDeleted       Boolean          @default(false)
+  userId          Int?
   favoritePlayers FavoritePlayer[]
   formationNodes  FormationNode[]
-  rosterPlayers   RosterPlayer[]
-  user            User?            @relation(fields: [userId], references: [id])
-  userId          Int?
   basePlayer      Player?          @relation("PlayerBase", fields: [basePlayerId], references: [id])
-  basePlayerId    Int?
   children        Player[]         @relation("PlayerBase")
-  isDeleted       Boolean          @default(false)
+  user            User?            @relation(fields: [userId], references: [id])
+  rosterPlayers   RosterPlayer[]
 
   @@unique([userId, name])
 }
@@ -59,16 +59,16 @@ model RosterPlayer {
 }
 
 model User {
-  id              Int              @id @default(autoincrement())
-  email           String           @unique
-  hashedPassword  String
-  isAdmin        Boolean          @default(false)
-  emailVerified  DateTime?
-  createdAt      DateTime         @default(now())
-  favoritePlayers FavoritePlayer[]
-  formations      Formation[]
+  id                 Int                      @id @default(autoincrement())
+  email              String                   @unique
+  hashedPassword     String
+  createdAt          DateTime                 @default(now())
+  emailVerified      DateTime?
+  isAdmin            Boolean                  @default(false)
   verificationTokens EmailVerificationToken[]
-  players         Player[]
+  favoritePlayers    FavoritePlayer[]
+  formations         Formation[]
+  players            Player[]
 }
 
 model Formation {
@@ -117,7 +117,7 @@ model EmailVerificationToken {
   token   String   @id
   userId  Int
   expires DateTime
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Visit {
