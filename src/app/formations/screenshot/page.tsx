@@ -81,13 +81,16 @@ export default function FormationScreenshotPage() {
         }
         #field-bench {
           display: flex;
+          flex-direction: row-reverse;
         }
         #field-bench #bench {
           width: 200px;
           margin-top: 0;
+          order: 1;
         }
         #field-bench #field {
           flex: 1;
+          order: 2;
         }
       `}</style>
     </main>
