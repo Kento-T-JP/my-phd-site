@@ -59,12 +59,7 @@ export default function FormationScreenshotPage() {
         <Link href="/formations" className="text-blue-500 underline">
           ← 戻る
         </Link>
-        <button
-          onClick={requestFull}
-          className="px-3 py-1 bg-blue-600 text-white rounded"
-        >
-          端末のスクショ機能を使って撮影してください
-        </button>
+        <p>端末のスクショ機能を使って撮影してください</p>
       </div>
       {formation ? (
         <div className="screenshot-wrapper">
