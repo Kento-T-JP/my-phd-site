@@ -882,11 +882,20 @@ export default function Formation({
         </button>
       </div>
 
-      <div id="field-bench">
+      <div id="field-bench" className="flex">
+      {/* bench */}
+      <div id="bench" className="w-[200px]">
+        <h3 className="text-lg font-bold mb-2">Bench</h3>
+        <div className="flex flex-wrap gap-2">
+          {benchPlayers.map(renderBenchCard)}
+          {staff.map(renderBenchCard)}
+        </div>
+      </div>
+
       {/* field */}
       <div
         id="field"
-        className="field formation-field relative w-full h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+        className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
       >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
@@ -1031,16 +1040,8 @@ export default function Formation({
             );
           });
         })}
-      </div>
-
-      {/* bench */}
-      <div id="bench" className="mt-8">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="flex flex-wrap gap-2">
-          {benchPlayers.map(renderBenchCard)}
-          {staff.map(renderBenchCard)}
         </div>
-      </div>
+        </div>
 
       {benchOutPlayers.length > 0 && (
         <div className="mt-8">
@@ -1050,7 +1051,6 @@ export default function Formation({
           </div>
         </div>
       )}
-      </div>
 
       {/* formation selector */}
       <div className="mt-4 space-x-2 flex flex-wrap">
