@@ -806,6 +806,10 @@ export default function Formation({
     </div>
   );
 
+  const screenshotHref = initialFormation?.id
+    ? `/formations/screenshot?formationId=${initialFormation.id}`
+    : "#";
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
@@ -1102,14 +1106,21 @@ export default function Formation({
           </Link>
         )}
         <div className="flex items-center gap-2">
-          {initialFormation?.id && (
-            <Link
-              href={`/formations/screenshot?formationId=${initialFormation.id}`}
-              className="px-4 py-2 bg-purple-500 text-white rounded"
-            >
-              Screenshot
-            </Link>
-          )}
+          <Link
+            href={screenshotHref}
+            aria-disabled={!initialFormation?.id}
+            onClick={(e) => {
+              if (!initialFormation?.id) {
+                e.preventDefault();
+                alert("Save the formation first");
+              }
+            }}
+            className={`px-4 py-2 bg-purple-500 text-white rounded ${
+              !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            Screenshot
+          </Link>
         </div>
       </div>
     </div>
