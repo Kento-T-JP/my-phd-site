@@ -158,10 +158,14 @@ export default function Formation({
   initialFormation: initialFormationProp,
   onSaved,
   onUpdated,
+  benchPosition = "bottom",
+  benchColumns,
 }: {
   initialFormation?: InitialFormation;
   onSaved?: (saved: SavedFormation) => void;
   onUpdated?: () => void;
+  benchPosition?: "bottom" | "left";
+  benchColumns?: number;
 }) {
   const [initialFormation, setInitialFormation] = useState<
     InitialFormation | undefined
@@ -810,6 +814,25 @@ export default function Formation({
     ? `/formations/screenshot?formationId=${initialFormation.id}`
     : "#";
 
+  const benchSection = (
+    <div
+      id="bench"
+      className={benchPosition === "left" ? "w-[200px]" : "w-full"}
+    >
+      <h3 className="text-lg font-bold mb-2">Bench</h3>
+      <div
+        className={
+          benchColumns === 2
+            ? "grid grid-cols-2 gap-2"
+            : "flex flex-wrap gap-2"
+        }
+      >
+        {benchPlayers.map(renderBenchCard)}
+        {staff.map(renderBenchCard)}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
@@ -882,21 +905,17 @@ export default function Formation({
         </button>
       </div>
 
-      <div id="field-bench" className="flex">
-      {/* bench */}
-      <div id="bench" className="w-[200px]">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="flex flex-wrap gap-2">
-          {benchPlayers.map(renderBenchCard)}
-          {staff.map(renderBenchCard)}
-        </div>
-      </div>
-
-      {/* field */}
       <div
-        id="field"
-        className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+        id="field-bench"
+        className={benchPosition === "bottom" ? "flex flex-col" : "flex"}
       >
+        {benchPosition === "left" && benchSection}
+
+        {/* field */}
+        <div
+          id="field"
+          className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+        >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
           const base = formation.positions[posKey as keyof typeof formation.positions];
@@ -1041,7 +1060,8 @@ export default function Formation({
           });
         })}
         </div>
-        </div>
+        {benchPosition === "bottom" && benchSection}
+      </div>
 
       {benchOutPlayers.length > 0 && (
         <div className="mt-8">
