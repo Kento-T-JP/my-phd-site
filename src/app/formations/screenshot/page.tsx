@@ -79,6 +79,16 @@ export default function FormationScreenshotPage() {
         .screenshot-wrapper > div > :not(#field-bench) {
           display: none;
         }
+        #field-bench {
+          display: flex;
+        }
+        #field-bench #bench {
+          width: 200px;
+          margin-top: 0;
+        }
+        #field-bench #field {
+          flex: 1;
+        }
       `}</style>
     </main>
   );
