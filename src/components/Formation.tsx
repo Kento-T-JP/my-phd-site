@@ -1034,7 +1034,7 @@ export default function Formation({
       </div>
 
       {/* bench */}
-      <div className="mt-8">
+      <div id="bench" className="mt-8">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
         <div className="flex flex-wrap gap-2">
           {benchPlayers.map(renderBenchCard)}
