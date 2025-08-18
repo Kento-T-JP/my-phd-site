@@ -8,7 +8,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 async function fetchPlayers(): Promise<Player[]> {
-  const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
+  const baseUrl = await getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/players`, { cache: "no-store" });
   if (!res.ok) {
     console.error(`Failed to fetch players: ${res.status} ${res.statusText}`);
     throw new Error("Failed to fetch players");
@@ -21,22 +22,20 @@ import type { SavedFormation } from "@/types/formation";
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { formationId?: string };
+  searchParams: Promise<{ formationId?: string }>;
 }) {
   const players = await fetchPlayers();
-
-  const formationId = searchParams?.formationId;
+  const params = await searchParams;
+  const formationId = params?.formationId;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
       const cookieHeader = cookies().toString();
-      const res = await fetch(
-        `${getBaseUrl()}/api/formations/${formationId}`,
-        {
-          cache: "no-store",
-          headers: { cookie: cookieHeader },
-        }
-      );
+      const baseUrl = await getBaseUrl();
+      const res = await fetch(`${baseUrl}/api/formations/${formationId}`, {
+        cache: "no-store",
+        headers: { cookie: cookieHeader },
+      });
       if (res.ok) {
         initialFormation = (await res.json()) as SavedFormation;
       }
