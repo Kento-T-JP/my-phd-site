@@ -420,9 +420,11 @@ export default function Formation({
     }
 
     const existingIds = new Set(players.map((p) => p.id));
-    const validLineup = lineupOrder.filter((id) => existingIds.has(id));
+    const validLineup = Array.from(
+      new Set(lineupOrder.filter((id) => existingIds.has(id)))
+    );
 
-    if (validLineup.length === 0 || validLineup.length < 11) {
+    if (validLineup.length < 11) {
       const ids = makeInitialFieldIds(formation, filteredPlayers);
       setLineupOrder(Array.from(ids));
       setBenchOrder(
