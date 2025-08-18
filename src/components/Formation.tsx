@@ -410,24 +410,35 @@ export default function Formation({
 
   // initialize ids when players or formation change and no initial lineup
   useEffect(() => {
+    if (players.length === 0) return;
+
     if (filteredPlayers.length === 0) {
-      if (lineupOrder.length === 0) {
-        setBenchOrder([]);
-        setLineupOrder([]);
-      }
-      return;
-    }
-    if (lineupOrder.length > 0) {
+      setBenchOrder([]);
+      setLineupOrder([]);
       setLoading(false);
       return;
     }
-    const ids = makeInitialFieldIds(formation, filteredPlayers);
-    setBenchOrder(
-      filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
-    );
-    setLineupOrder(Array.from(ids));
+
+    const existingIds = new Set(players.map((p) => p.id));
+    const validLineup = lineupOrder.filter((id) => existingIds.has(id));
+
+    if (validLineup.length === 0 || validLineup.length < 11) {
+      const ids = makeInitialFieldIds(formation, filteredPlayers);
+      setLineupOrder(Array.from(ids));
+      setBenchOrder(
+        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+      );
+    } else {
+      setLineupOrder(validLineup);
+      setBenchOrder(
+        filteredPlayers
+          .map((p) => p.id)
+          .filter((id) => !validLineup.includes(id))
+      );
+    }
     setLoading(false);
-  }, [filteredPlayers, formation, lineupOrder.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredPlayers, formation, players, lineupOrder.length]);
 
 
   /* ───────── drag handler ───────── */
