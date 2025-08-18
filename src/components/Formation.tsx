@@ -703,9 +703,8 @@ export default function Formation({
   };
 
   useEffect(() => {
-    handleReset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedRoster, selectedPosition]);
+    if (players.length > 0) handleReset();
+  }, [players, search, selectedRoster, selectedPosition]);
 
   /* ───────── render helpers ───────── */
   // track which IDs have already been drawn this frame
