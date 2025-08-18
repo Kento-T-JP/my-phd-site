@@ -294,6 +294,7 @@ export default function Formation({
         setRosters(data);
       } catch (err) {
         console.error(err);
+        setError("Failed to load rosters");
       }
     }
     fetchRosters();
@@ -309,6 +310,7 @@ export default function Formation({
         setTournaments(data);
       } catch (err) {
         console.error(err);
+        setError("Failed to load tournaments");
       }
     }
     fetchTournaments();
