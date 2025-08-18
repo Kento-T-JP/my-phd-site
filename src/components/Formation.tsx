@@ -206,13 +206,17 @@ export default function Formation({
   useEffect(() => {
     const updateBenchHeight = () => {
       if (fieldRef.current && benchRef.current) {
-        benchRef.current.style.maxHeight = `${fieldRef.current.clientHeight}px`;
+        const fieldHeight = fieldRef.current.clientHeight;
+        const bench = benchRef.current;
+        bench.style.maxHeight = `${fieldHeight}px`;
+        bench.style.overflowY =
+          bench.scrollHeight > fieldHeight ? "auto" : "hidden";
       }
     };
     updateBenchHeight();
     window.addEventListener("resize", updateBenchHeight);
     return () => window.removeEventListener("resize", updateBenchHeight);
-  }, []);
+  }, [benchOrder.length, benchPosition]);
 
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
@@ -826,15 +830,12 @@ export default function Formation({
     <div
       ref={benchRef}
       id="bench"
-      className={benchPosition === "left" ? "w-[200px] overflow-y-auto" : "w-full"}
+      className={benchPosition === "left" ? "w-[200px]" : "w-full"}
     >
       <h3 className="text-lg font-bold mb-2">Bench</h3>
       <div
-        className={
-          benchPosition === "left"
-            ? "grid grid-cols-2 gap-2"
-            : "flex flex-wrap gap-2"
-        }
+        className="grid gap-2"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(0, 1fr))" }}
       >
         {benchPlayers.map(renderBenchCard)}
         {staff.map(renderBenchCard)}
