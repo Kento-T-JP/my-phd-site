@@ -101,6 +101,7 @@ export default function FormationsPage() {
               initialFormation={selectedFormation}
               onSaved={handleSaved}
               onUpdated={loadList}
+              benchPosition="bottom"
             />
           )}
         </>

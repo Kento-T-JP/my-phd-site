@@ -63,7 +63,7 @@ export default function FormationScreenshotPage() {
       </div>
       {formation ? (
         <div className="screenshot-wrapper">
-          <Formation initialFormation={formation} />
+          <Formation initialFormation={formation} benchPosition="left" />
         </div>
       ) : error ? (
         <p>{error}</p>
