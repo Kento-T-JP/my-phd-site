@@ -158,10 +158,12 @@ export default function Formation({
   initialFormation: initialFormationProp,
   onSaved,
   onUpdated,
+  benchPosition = "bottom",
 }: {
   initialFormation?: InitialFormation;
   onSaved?: (saved: SavedFormation) => void;
   onUpdated?: () => void;
+  benchPosition?: "bottom" | "left";
 }) {
   const [initialFormation, setInitialFormation] = useState<
     InitialFormation | undefined
@@ -197,6 +199,20 @@ export default function Formation({
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempoPulseId, setTempoPulseId] = useState<number | null>(null);
   const tempoPulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const benchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateBenchHeight = () => {
+      if (fieldRef.current && benchRef.current) {
+        benchRef.current.style.maxHeight = `${fieldRef.current.clientHeight}px`;
+      }
+    };
+    updateBenchHeight();
+    window.addEventListener("resize", updateBenchHeight);
+    return () => window.removeEventListener("resize", updateBenchHeight);
+  }, []);
 
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
@@ -806,6 +822,26 @@ export default function Formation({
     </div>
   );
 
+  const renderBench = () => (
+    <div
+      ref={benchRef}
+      id="bench"
+      className={benchPosition === "left" ? "w-[200px] overflow-y-auto" : "w-full"}
+    >
+      <h3 className="text-lg font-bold mb-2">Bench</h3>
+      <div
+        className={
+          benchPosition === "left"
+            ? "grid grid-cols-2 gap-2"
+            : "flex flex-wrap gap-2"
+        }
+      >
+        {benchPlayers.map(renderBenchCard)}
+        {staff.map(renderBenchCard)}
+      </div>
+    </div>
+  );
+
   const screenshotHref = initialFormation?.id
     ? `/formations/screenshot?formationId=${initialFormation.id}`
     : "#";
@@ -882,23 +918,19 @@ export default function Formation({
         </button>
       </div>
 
-      <div id="field-bench" className="flex">
-      {/* bench */}
-      <div id="bench" className="w-[200px]">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="flex flex-wrap gap-2">
-          {benchPlayers.map(renderBenchCard)}
-          {staff.map(renderBenchCard)}
-        </div>
-      </div>
-
-      {/* field */}
-      <div
-        id="field"
-        className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
-      >
-        <div className="field-sweep absolute inset-0 pointer-events-none" />
-        {sortedKeys.map((posKey) => {
+        <div
+          id="field-bench"
+          className={benchPosition === "bottom" ? "flex flex-col" : "flex"}
+        >
+          {benchPosition === "left" && renderBench()}
+          {/* field */}
+          <div
+            ref={fieldRef}
+            id="field"
+            className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+          >
+            <div className="field-sweep absolute inset-0 pointer-events-none" />
+            {sortedKeys.map((posKey) => {
           const base = formation.positions[posKey as keyof typeof formation.positions];
           if (!base) return null;
 
@@ -1040,7 +1072,8 @@ export default function Formation({
             );
           });
         })}
-        </div>
+          </div>
+          {benchPosition === "bottom" && renderBench()}
         </div>
 
       {benchOutPlayers.length > 0 && (
