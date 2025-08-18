@@ -12,11 +12,15 @@ export default function FormationsPage() {
   const formationId = searchParams.get("formationId");
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | "">("");
 
   const loadList = useCallback(async () => {
-    const res = await fetch("/api/formations");
-    if (res.ok) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/formations");
+      if (!res.ok) throw new Error();
       const data = (await res.json()) as SavedFormation[];
       setList(data);
       if (data.length > 0) {
@@ -29,8 +33,11 @@ export default function FormationsPage() {
           return data[0].id;
         });
       }
+    } catch {
+      setError("Failed to load formations");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [formationId]);
 
   useEffect(() => {
@@ -67,6 +74,8 @@ export default function FormationsPage() {
       <h1 className="text-xl font-bold mb-4">Saved Formations</h1>
       {loading ? (
         <p>Loading...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
       ) : list.length === 0 ? (
         <p>No formations saved.</p>
       ) : (
