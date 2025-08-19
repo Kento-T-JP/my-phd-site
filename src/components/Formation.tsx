@@ -884,9 +884,9 @@ export default function Formation({
 
       <div id="field-bench" className="flex">
       {/* bench */}
-      <div id="bench" className="w-[200px]">
+      <div id="bench" className="w-[264px]">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {benchPlayers.map(renderBenchCard)}
           {staff.map(renderBenchCard)}
         </div>
