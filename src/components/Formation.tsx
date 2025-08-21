@@ -811,7 +811,7 @@ export default function Formation({
     : "#";
 
   return (
-    <div className="p-4">
+    <div className="p-4 pb-32">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
       <div className="flex gap-2 mb-4">
         <input
@@ -1075,54 +1075,52 @@ export default function Formation({
         </button>
       </div>
 
-      <div className="mt-4 flex gap-2 items-center">
+      <footer className="fixed bottom-0 left-0 w-full z-50 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center">
         {session ? (
           <>
             <input
               type="text"
-              className="border p-1 flex-1"
+              className="border p-2 flex-1 w-full text-black"
               placeholder="Formation name"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
             />
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-500 text-white rounded"
+              className="px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto"
             >
-              Save
+              保存
             </button>
             {initialFormation?.id && (
               <button
                 onClick={handleUpdate}
-                className="px-4 py-2 bg-green-600 text-white rounded"
+                className="px-4 py-2 bg-green-600 text-white rounded w-full sm:w-auto"
               >
-                Update
+                更新
               </button>
             )}
           </>
         ) : (
-          <Link href="/login" className="underline">
+          <Link href="/login" className="underline w-full text-center">
             Login to save
           </Link>
         )}
-        <div className="flex items-center gap-2">
-          <Link
-            href={screenshotHref}
-            aria-disabled={!initialFormation?.id}
-            onClick={(e) => {
-              if (!initialFormation?.id) {
-                e.preventDefault();
-                alert("Save the formation first");
-              }
-            }}
-            className={`px-4 py-2 bg-purple-500 text-white rounded ${
-              !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Screenshot
-          </Link>
-        </div>
-      </div>
+        <Link
+          href={screenshotHref}
+          aria-disabled={!initialFormation?.id}
+          onClick={(e) => {
+            if (!initialFormation?.id) {
+              e.preventDefault();
+              alert("Save the formation first");
+            }
+          }}
+          className={`px-4 py-2 bg-purple-500 text-white rounded w-full sm:w-auto ${
+            !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          Screenshot
+        </Link>
+      </footer>
     </div>
   );
 }
