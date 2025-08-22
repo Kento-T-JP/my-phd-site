@@ -2,33 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import prisma from "@/lib/db";
-import React from "react";
 import { z } from "zod";
-
-interface ReactWithUse {
-  use<T>(value: Promise<T> | T): T;
-  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
-    ReactCurrentDispatcher?: { current: unknown };
-  };
-}
+import { unwrapParams } from "@/lib/unwrap";
 
 const AdminInquiryUpdateSchema = z.object({
   status: z.enum(["handled", "received"]),
 });
 
 export type AdminInquiryUpdate = z.infer<typeof AdminInquiryUpdateSchema>;
-
-async function unwrap(params: Promise<{ id: string }> | { id: string }) {
-  const react = React as unknown as ReactWithUse;
-  if (
-    react.use &&
-    react.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher
-      ?.current
-  ) {
-    return react.use(params);
-  }
-  return params instanceof Promise ? await params : params;
-}
 
 export async function PATCH(
   req: Request,
@@ -38,7 +19,7 @@ export async function PATCH(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { id } = await unwrap(params);
+  const { id } = await unwrapParams(params);
   let body: unknown;
   try {
     body = await req.json();
@@ -73,7 +54,7 @@ export async function DELETE(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { id } = await unwrap(params);
+  const { id } = await unwrapParams(params);
   await prisma.contactSubmission.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

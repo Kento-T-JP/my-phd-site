@@ -2,34 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-import React from 'react';
 import { z } from 'zod';
+import { unwrapParams } from '@/lib/unwrap';
 
-interface ReactWithUse {
-  use<T>(value: Promise<T> | T): T;
-  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
-    ReactCurrentDispatcher?: { current: unknown };
-  };
-}
 
 const AdminUserUpdateSchema = z.object({
   isAdmin: z.boolean(),
 });
 
 export type AdminUserUpdate = z.infer<typeof AdminUserUpdateSchema>;
-
-async function unwrap(params: Promise<{ id: string }> | { id: string }) {
-  const react = React as unknown as ReactWithUse;
-  if (
-    react.use &&
-    react.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher
-      ?.current
-  ) {
-    return react.use(params);
-  }
-  return params instanceof Promise ? await params : params;
-}
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -38,7 +19,7 @@ export async function PATCH(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const unwrapped = await unwrap(params);
+  const unwrapped = await unwrapParams(params);
   const id = Number(unwrapped.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
@@ -69,7 +50,7 @@ export async function DELETE(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const unwrapped = await unwrap(params);
+  const unwrapped = await unwrapParams(params);
   const id = Number(unwrapped.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });

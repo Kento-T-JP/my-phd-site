@@ -2,18 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import React from "react";
-
-async function unwrap(params: Promise<{ id: string }> | { id: string }) {
-  if (
-    (React as any).use &&
-    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher
-      .current
-  ) {
-    return React.use(params as any);
-  }
-  return params instanceof Promise ? await params : params;
-}
+import { unwrapParams } from "@/lib/unwrap";
 
 export async function GET(
   _req: Request,
@@ -23,7 +12,7 @@ export async function GET(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { id } = await unwrap(params);
+  const { id } = await unwrapParams(params);
   const num = Number(id);
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
@@ -53,7 +42,7 @@ export async function DELETE(
   if (!session?.user?.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { id } = await unwrap(params);
+  const { id } = await unwrapParams(params);
   const num = Number(id);
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
