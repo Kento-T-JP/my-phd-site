@@ -10,6 +10,7 @@ import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -141,7 +142,7 @@ export default function PlayersPage() {
   if (loading) {
     return (
       <main className="p-8">
-        <p>Loading...</p>
+        <LoadingSpinner />
       </main>
     );
   }

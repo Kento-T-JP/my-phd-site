@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
 import Formation from "@/components/Formation";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
@@ -66,7 +67,7 @@ export default function FormationsPage() {
     <main className="p-8">
       <h1 className="text-xl font-bold mb-4">Saved Formations</h1>
       {loading ? (
-        <p>Loading...</p>
+        <LoadingSpinner />
       ) : list.length === 0 ? (
         <p>No formations saved.</p>
       ) : (

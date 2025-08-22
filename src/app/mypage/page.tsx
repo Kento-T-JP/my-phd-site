@@ -7,6 +7,7 @@ import type { SavedFormation } from "@/types/formation";
 import type { Player } from "@/types/player";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function MyPage() {
   const { data: session, status } = useSession();
@@ -48,7 +49,7 @@ export default function MyPage() {
   if (status === "loading") {
     return (
       <main className="p-8">
-        <p>Loading...</p>
+        <LoadingSpinner />
       </main>
     );
   }
@@ -69,7 +70,7 @@ export default function MyPage() {
       <p className="mb-4">Email: {session.user?.email}</p>
       <h2 className="text-lg font-bold mb-2">Saved Formations</h2>
       {loading ? (
-        <p>Loading...</p>
+        <LoadingSpinner />
       ) : list.length === 0 ? (
         <p>No formations saved.</p>
       ) : (
@@ -94,7 +95,7 @@ export default function MyPage() {
       )}
       <h2 className="text-lg font-bold mt-4 mb-2">Favorite Players</h2>
       {favLoading ? (
-        <p>Loading...</p>
+        <LoadingSpinner />
       ) : favorites.length === 0 ? (
         <p>No favorite players.</p>
       ) : (
