@@ -129,7 +129,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
             number: parsed.data.number,
             image: imagePath,
             wikiUrl: parsed.data.wikiUrl,
-            userId: overrideUserId,
+            userId: Number.isFinite(overrideUserId) ? overrideUserId : undefined,
             basePlayerId: id,
             role: 'player',
           },
@@ -237,6 +237,8 @@ export async function PUT(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const rawId = session.user.id;
+  const userId = Number(rawId);
   const unwrapped = await unwrapParams(params);
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
@@ -246,11 +248,19 @@ export async function PUT(
   if (!player) {
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
-  if (player.userId && player.userId !== session.user.id && !session.user.isAdmin) {
+  if (
+    player.userId &&
+    player.userId !== userId &&
+    !session.user.isAdmin
+  ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   if (!player.userId && !session.user.isAdmin) {
-    return handleUpdate(req, num, session.user.id);
+    return handleUpdate(
+      req,
+      num,
+      Number.isFinite(userId) ? userId : undefined,
+    );
   }
   return handleUpdate(req, num);
 }
@@ -263,6 +273,8 @@ export async function DELETE(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const rawId = session.user.id;
+  const userId = Number(rawId);
   const unwrapped = await unwrapParams(params);
   const id = Number(unwrapped.id);
   if (Number.isNaN(id)) {
@@ -272,7 +284,11 @@ export async function DELETE(
   if (!player) {
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
-  if (player.userId && player.userId !== session.user.id && !session.user.isAdmin) {
+  if (
+    player.userId &&
+    player.userId !== userId &&
+    !session.user.isAdmin
+  ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   if (!player.userId && !session.user.isAdmin) {
@@ -283,7 +299,7 @@ export async function DELETE(
         number: player.number,
         image: player.image,
         wikiUrl: player.wikiUrl,
-        userId: session.user.id,
+        userId: Number.isFinite(userId) ? userId : undefined,
         basePlayerId: id,
         isDeleted: true,
       },
