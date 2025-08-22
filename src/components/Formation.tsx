@@ -1085,7 +1085,7 @@ export default function Formation({
           <>
             <input
               type="text"
-              className="border p-2 flex-1 w-full text-black"
+              className="border p-2 flex-1 w-full text-white"
               placeholder="Formation name"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
