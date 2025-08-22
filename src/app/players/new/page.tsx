@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ const positionOptions: PositionKey[] = Array.from(
 
 export default function NewPlayerPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
@@ -33,6 +35,19 @@ export default function NewPlayerPage() {
     image?: string;
     tournament?: string;
   }>({});
+
+  if (status === "loading") {
+    return (
+      <main className="p-8 max-w-md mx-auto">
+        <p>Loading...</p>
+      </main>
+    );
+  }
+
+  if (!session) {
+    router.push("/login");
+    return null;
+  }
 
 
   const togglePosition = (pos: PositionKey) => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import NewPlayerPage from '@/app/players/new/page';
+import { SessionProvider } from 'next-auth/react';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn() }) }));
 
@@ -25,7 +26,12 @@ describe('player roster input', () => {
   });
 
   it('shows roster input when tournament is provided', () => {
-    render(<NewPlayerPage />);
+    const session = { user: { id: 1 }, expires: '' } as any;
+    render(
+      <SessionProvider session={session}>
+        <NewPlayerPage />
+      </SessionProvider>
+    );
     expect(screen.queryByTestId('roster')).toBeNull();
 
     fireEvent.change(screen.getByTestId('tournament'), {
