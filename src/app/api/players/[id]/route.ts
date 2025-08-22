@@ -13,22 +13,14 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
-import React from 'react';
 import { RosterInfo } from '@/types/roster';
+import { unwrapParams } from '@/lib/unwrap';
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  let unwrapped;
-  if (
-    (React as any).use &&
-    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
-  ) {
-    unwrapped = React.use(params as any);
-  } else {
-    unwrapped = await params;
-  }
+  const unwrapped = await unwrapParams(params);
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
@@ -245,15 +237,7 @@ export async function PUT(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  let unwrapped;
-  if (
-    (React as any).use &&
-    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
-  ) {
-    unwrapped = React.use(params as any);
-  } else {
-    unwrapped = await params;
-  }
+  const unwrapped = await unwrapParams(params);
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
@@ -279,15 +263,7 @@ export async function DELETE(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  let unwrapped;
-  if (
-    (React as any).use &&
-    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
-  ) {
-    unwrapped = React.use(params as any);
-  } else {
-    unwrapped = await params;
-  }
+  const unwrapped = await unwrapParams(params);
   const id = Number(unwrapped.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'IDが無効です' }, { status: 400 });
