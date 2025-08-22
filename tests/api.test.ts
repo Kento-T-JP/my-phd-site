@@ -335,9 +335,11 @@ describe('lookup API routes', () => {
     tNamesSpy = mod.getTournamentNames as any;
     allTSpy = mod.getTournaments as any;
     rTitlesSpy = mod.getRosterTitles as any;
+    upsertTournamentSpy = mod.upsertTournament as any;
     tNamesSpy.mockReset();
     allTSpy.mockReset();
     rTitlesSpy.mockReset();
+    upsertTournamentSpy.mockReset();
   });
 
   it('GET tournament names', async () => {
@@ -366,6 +368,35 @@ describe('lookup API routes', () => {
     expect(allTSpy).toHaveBeenCalled();
     const data = await res.json();
     expect(data[0].slug).toBe('cup');
+  });
+
+  it('POST tournaments creates tournament', async () => {
+    const { POST } = await import('../src/app/api/tournaments/route');
+    upsertTournamentSpy.mockResolvedValue({ id: 4, name: 'New', slug: 'new' });
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'New' }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(upsertTournamentSpy).toHaveBeenCalledWith('New');
+    const data = await res.json();
+    expect(data.name).toBe('New');
+  });
+
+  it('POST tournaments validates name', async () => {
+    const { POST } = await import('../src/app/api/tournaments/route');
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(upsertTournamentSpy).not.toHaveBeenCalled();
+    const data = await res.json();
+    expect(data.error).toBeDefined();
   });
 });
 
