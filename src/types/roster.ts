@@ -6,3 +6,8 @@ export interface RosterSummary {
   tournamentId: number;
   tournament: { name: string };
 }
+
+export interface RosterInfo {
+  id: number;
+  tournament?: { name: string } | null;
+}
