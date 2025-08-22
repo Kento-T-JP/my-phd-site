@@ -188,6 +188,7 @@ export default function Formation({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<Dragging | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIsBench, setSelectedIsBench] = useState<boolean | null>(null);
@@ -630,6 +631,7 @@ export default function Formation({
     if (!window.confirm('Save formation "' + name + '"?')) {
       return;
     }
+    setIsSaving(true);
     try {
       const res = await fetch("/api/formations", {
         method: "POST",
@@ -650,6 +652,8 @@ export default function Formation({
       }
     } catch {
       alert("保存に失敗しました");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1087,9 +1091,17 @@ export default function Formation({
             />
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto"
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              保存
+              {isSaving ? (
+                <span className="flex items-center">
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  保存中…
+                </span>
+              ) : (
+                "保存"
+              )}
             </button>
             {initialFormation?.id && (
               <button
