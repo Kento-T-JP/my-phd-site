@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { rosterDisplayTitle } from "@/lib/format";
+import type { RosterSummary } from "@/types/roster";
 
 export interface RosterOption {
   id: number;
@@ -23,9 +24,18 @@ export default function RosterTypeahead({ slug, value, onChange, listId = "roste
     if (!slug) return setOptions([]);
     const controller = new AbortController();
     fetch(`/api/rosters?slug=${encodeURIComponent(slug)}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((d) =>
-        setOptions(d.map((r: any) => ({ id: r.id, title: rosterDisplayTitle(r) })))
+      .then((res) =>
+        res.ok
+          ? (res.json() as Promise<RosterSummary[]>)
+          : ([] as RosterSummary[])
+      )
+      .then((d: RosterSummary[]) =>
+        setOptions(
+          d.map<RosterOption>((r: RosterSummary) => ({
+            id: r.id,
+            title: rosterDisplayTitle(r),
+          }))
+        )
       )
       .catch(() => {});
     return () => controller.abort();
