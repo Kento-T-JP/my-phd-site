@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
@@ -703,7 +704,7 @@ export default function Formation({
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   const benchIds = benchOrder.slice(0, BENCH_LIMIT);
