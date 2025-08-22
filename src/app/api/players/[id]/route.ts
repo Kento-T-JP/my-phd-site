@@ -14,6 +14,7 @@ import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
 import React from 'react';
+import { RosterInfo } from '@/types/roster';
 
 export async function GET(
   _req: Request,
@@ -118,7 +119,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
     }
 
     let player;
-    let rosterInfo;
+    let rosterInfo: RosterInfo | undefined;
     await prisma.$transaction(async (tx) => {
       let prev;
       if (!overrideUserId) {
@@ -173,7 +174,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         if (prev && prev.rosterId !== rosterId) {
           await syncRosterPlayers(player.id, prev.rosterId, tx);
         }
-        rosterInfo = { id: rosterId } as any;
+        rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
         const tournament = await upsertTournament(tournamentName, tx);
         const roster = await upsertRoster(
@@ -223,10 +224,11 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
     });
 
     if (rosterInfo) {
-      rosterInfo = await prisma.roster.findUnique({
-        where: { id: rosterInfo.id },
-        include: { tournament: true },
-      });
+      rosterInfo =
+        (await prisma.roster.findUnique({
+          where: { id: rosterInfo.id },
+          include: { tournament: true },
+        })) ?? undefined;
     }
     return NextResponse.json({ player, roster: rosterInfo });
   } catch (err) {

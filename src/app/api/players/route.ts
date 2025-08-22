@@ -12,6 +12,7 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { RosterInfo } from '@/types/roster';
 
 export const PlayerSchema = z.object({
   name: z.string().min(1, { message: "名前は必須です" }),
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
     }
 
     let player;
-    let rosterInfo;
+    let rosterInfo: RosterInfo | undefined;
     await prisma.$transaction(async (tx) => {
       player = await createPlayer(
         {
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
           ],
           tx,
         );
-        rosterInfo = { id: rosterId } as any;
+        rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
         const tournament = await upsertTournament(tournamentName, tx);
         const roster = await upsertRoster(
@@ -179,10 +180,11 @@ export async function POST(req: Request) {
     });
 
     if (rosterInfo) {
-      rosterInfo = await prisma.roster.findUnique({
-        where: { id: rosterInfo.id },
-        include: { tournament: true },
-      });
+      rosterInfo =
+        (await prisma.roster.findUnique({
+          where: { id: rosterInfo.id },
+          include: { tournament: true },
+        })) ?? undefined;
     }
     return NextResponse.json({ player, roster: rosterInfo }, { status: 201 });
   } catch (err) {
