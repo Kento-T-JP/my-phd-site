@@ -30,7 +30,12 @@ export const PlayerSchema = z.object({
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  const players = await getPlayers(undefined, session?.user?.id);
+  const rawId = session?.user?.id;
+  const userId = rawId === undefined ? undefined : Number(rawId);
+  const players = await getPlayers(
+    undefined,
+    Number.isFinite(userId) ? userId : undefined,
+  );
   const filtered = players.filter(
     (p) => p.name.toLowerCase() !== 'unknown'
   );
@@ -42,6 +47,8 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const rawId = session.user.id;
+  const userId = Number(rawId);
   try {
   const form = await req.formData();
   const name = form.get("name");
@@ -120,7 +127,7 @@ export async function POST(req: Request) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
-          userId: session.user.id,
+          userId: Number.isFinite(userId) ? userId : undefined,
           role: 'player',
         },
         undefined,

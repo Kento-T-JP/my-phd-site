@@ -125,14 +125,20 @@ export async function createPlayer(
   rosterId?: number,
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
+  const rawUid = data.userId as unknown;
+  const uid = typeof rawUid === 'string' ? Number(rawUid) : rawUid;
+  const userId =
+    typeof uid === 'number' && Number.isFinite(uid) ? uid : undefined;
   const dup = await client.player.findFirst({
-    where: { name: data.name, userId: data.userId ?? null },
+    where: { name: data.name, userId: userId ?? null },
   });
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
   const { role: _role, ...rest } = data;
-  const player = await client.player.create({ data: rest });
+  const player = await client.player.create({
+    data: { ...rest, userId },
+  });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
@@ -172,10 +178,14 @@ export async function updatePlayer(
   rosterId?: number,
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
+  const rawUid = data.userId as unknown;
+  const uid = typeof rawUid === 'string' ? Number(rawUid) : rawUid;
+  const userId =
+    typeof uid === 'number' && Number.isFinite(uid) ? uid : undefined;
   const dup = await client.player.findFirst({
     where: {
       name: data.name,
-      userId: data.userId ?? null,
+      userId: userId ?? null,
       NOT: { id },
     },
   });
@@ -183,7 +193,10 @@ export async function updatePlayer(
     throw new Error('同じ名前の選手が既に存在します');
   }
   const { role: _role, ...rest } = data;
-  const player = await client.player.update({ where: { id }, data: rest });
+  const player = await client.player.update({
+    where: { id },
+    data: { ...rest, userId },
+  });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
