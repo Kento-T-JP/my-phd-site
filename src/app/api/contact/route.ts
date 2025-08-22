@@ -171,8 +171,7 @@ export async function POST(req: Request) {
 
   const savePromise = (async () => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (prisma as any).contactSubmission.create({
+      await prisma.contactSubmission.create({
         data: {
           id: details.id,
           name: details.name,
