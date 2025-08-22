@@ -15,6 +15,10 @@ const prisma = new PrismaClient();
 
 export default prisma;
 
+interface HasTransaction {
+  $transaction: PrismaClient['$transaction'];
+}
+
 /**
  * Retrieve various statistics for the admin dashboard.
  */
@@ -286,8 +290,9 @@ export async function addRosterPlayers(
       },
     })
   );
-  if (typeof (client as any).$transaction === 'function') {
-    await (client as any).$transaction(upserts);
+  if ('$transaction' in client) {
+    const txClient = client as HasTransaction;
+    await txClient.$transaction(upserts);
   } else {
     await Promise.all(upserts);
   }
