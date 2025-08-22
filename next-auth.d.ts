@@ -1,4 +1,4 @@
-import NextAuth, { DefaultSession } from "next-auth";
+import { DefaultSession, DefaultUser } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
@@ -7,8 +7,10 @@ declare module "next-auth" {
       isAdmin?: boolean;
     } & DefaultSession["user"];
   }
-  interface User {
-    isAdmin: boolean;
+
+  interface User extends DefaultUser {
+    id: string;
+    isAdmin?: boolean;
   }
 }
 

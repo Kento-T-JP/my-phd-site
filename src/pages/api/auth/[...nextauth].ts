@@ -1,4 +1,5 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import NextAuth, { type NextAuthOptions, type Session, type User } from "next-auth";
+import { type JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/db";
@@ -14,7 +15,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials.password) return null;
 
         const adminEmail = process.env.ADMIN_EMAIL || "";
@@ -28,41 +29,43 @@ export const authOptions: NextAuthOptions = {
           safeCompare(credentials.email, adminEmail) &&
           safeCompare(credentials.password, adminPassword)
         ) {
-          return {
+          const adminUser: User = {
             id: "admin",
             email: adminEmail,
             isAdmin: true,
-          } as any;
+          };
+          return adminUser;
         }
 
-      const user = await prisma.user.findUnique({
-        where: { email: credentials.email },
-      });
-      if (!user) return null;
-      if (!user.emailVerified) return null;
-      const valid = await compare(credentials.password, user.hashedPassword);
-      if (!valid) return null;
-      return {
-        id: user.id.toString(),
-        email: user.email,
-          isAdmin: user.isAdmin,
-        } as any;
+        const userRecord = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!userRecord) return null;
+        if (!userRecord.emailVerified) return null;
+        const valid = await compare(credentials.password, userRecord.hashedPassword);
+        if (!valid) return null;
+        const dbUser: User = {
+          id: userRecord.id.toString(),
+          email: userRecord.email,
+          isAdmin: userRecord.isAdmin,
+        };
+        return dbUser;
       },
     }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
       if (user) {
-        token.id = (user as any).id;
-        token.isAdmin = (user as any).isAdmin;
+        token.id = user.id;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT & { id?: string; isAdmin?: boolean } }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        (session.user as any).isAdmin = token.isAdmin as boolean;
+        session.user.id = token.id!;
+        session.user.isAdmin = token.isAdmin;
       }
       return session;
     },
