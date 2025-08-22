@@ -235,12 +235,13 @@ export async function upsertRoster(
   title: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
   date?: Date,
+  userId?: number,
 ) {
   const where = { tournamentId_title: { tournamentId, title } } as const;
   return client.roster.upsert({
     where,
     update: {},
-    create: { tournamentId, title, date: date ?? new Date() },
+    create: { tournamentId, title, date: date ?? new Date(), userId: userId ?? null },
   });
 }
 
@@ -249,6 +250,7 @@ export async function ensureTournamentRoster(
   name: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
   rosterDate?: Date,
+  userId?: number,
 ) {
   const tournament = await upsertTournament(name, client);
   let roster: Awaited<ReturnType<typeof client.roster.findFirst>> | null = null;
@@ -265,7 +267,7 @@ export async function ensureTournamentRoster(
       },
     });
     if (!roster) {
-      roster = await upsertRoster(tournament.id, title, client, rosterDate);
+      roster = await upsertRoster(tournament.id, title, client, rosterDate, userId);
     }
   } else {
     roster = await client.roster.findFirst({
@@ -278,7 +280,7 @@ export async function ensureTournamentRoster(
       const mm = String(date.getMonth() + 1).padStart(2, '0');
       const dd = String(date.getDate()).padStart(2, '0');
       const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
-      roster = await upsertRoster(tournament.id, title, client, date);
+      roster = await upsertRoster(tournament.id, title, client, date, userId);
     }
   }
   return roster;

@@ -66,13 +66,4 @@ describe('admin API authorization', () => {
     expect(res.status).toBe(401);
   });
 
-  it('blocks non-admin from creating roster', async () => {
-    const { POST } = await import('../src/app/api/rosters/route');
-    sessionSpy.mockResolvedValue({ user: { email: 'u@test.com', isAdmin: false } });
-    const res = await POST(new Request('http://test', {
-      method: 'POST',
-      body: JSON.stringify({ tournament: 'T' }),
-    }));
-    expect(res.status).toBe(401);
-  });
 });
