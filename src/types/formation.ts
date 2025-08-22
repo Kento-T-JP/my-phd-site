@@ -1,4 +1,11 @@
 import type { PositionKey } from "@/types/player";
+import { z } from "zod";
+
+export const FormationNodeSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  playerId: z.number().int(),
+});
 
 export interface Formation {
   name: string;
@@ -12,13 +19,10 @@ export interface Formation {
   };
 }
 
-export interface FormationNode {
+export type FormationNode = z.infer<typeof FormationNodeSchema> & {
   id: number;
-  x: number;
-  y: number;
-  playerId: number;
   formationId: number;
-}
+};
 
 export interface SavedFormation extends Formation {
   id: number;

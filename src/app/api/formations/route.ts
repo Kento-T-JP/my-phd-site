@@ -3,12 +3,8 @@ import prisma from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { z } from "zod";
-
-export const FormationNodeSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-  playerId: z.number().int(),
-});
+import { FormationNodeSchema } from "@/types/formation";
+import type { FormationNode } from "@/types/formation";
 
 const PlayerPosSchema = z.object({ top: z.number(), left: z.number() });
 
@@ -67,7 +63,7 @@ export async function POST(req: Request) {
       userId: user.id,
       nodes: nodes
         ? {
-            create: nodes.map((n: any) => ({
+            create: nodes.map((n: FormationNode) => ({
               x: n.x,
               y: n.y,
               playerId: n.playerId,
