@@ -7,6 +7,13 @@ import prisma, {
 import type { Player } from '@/types/player';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { z } from 'zod';
+
+const FavoritePlayerSchema = z.object({
+  playerId: z.coerce.number().int().positive(),
+});
+
+export type FavoritePlayerRequest = z.infer<typeof FavoritePlayerSchema>;
 
 async function getUser() {
   const session = await getServerSession(authOptions);
@@ -28,17 +35,18 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     body = null;
   }
-  const id = Number(body?.playerId);
-  if (!id || Number.isNaN(id)) {
+  const parsed = FavoritePlayerSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid playerId' }, { status: 400 });
   }
-  await addFavoritePlayer(user.id, id);
+  const { playerId } = parsed.data;
+  await addFavoritePlayer(user.id, playerId);
   return NextResponse.json({ success: true }, { status: 201 });
 }
 
@@ -51,8 +59,9 @@ export async function DELETE(req: Request) {
   let idStr = url.searchParams.get('playerId');
   if (!idStr) {
     try {
-      const body = await req.json();
-      idStr = body?.playerId;
+      const body: unknown = await req.json();
+      const parsed = FavoritePlayerSchema.safeParse(body);
+      idStr = parsed.success ? String(parsed.data.playerId) : null;
     } catch {
       idStr = null;
     }

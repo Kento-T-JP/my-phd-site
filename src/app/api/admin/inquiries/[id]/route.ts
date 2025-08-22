@@ -3,13 +3,29 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import prisma from "@/lib/db";
 import React from "react";
+import { z } from "zod";
+
+interface ReactWithUse {
+  use<T>(value: Promise<T> | T): T;
+  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
+    ReactCurrentDispatcher?: { current: unknown };
+  };
+}
+
+const AdminInquiryUpdateSchema = z.object({
+  status: z.enum(["handled", "received"]),
+});
+
+export type AdminInquiryUpdate = z.infer<typeof AdminInquiryUpdateSchema>;
 
 async function unwrap(params: Promise<{ id: string }> | { id: string }) {
+  const react = React as unknown as ReactWithUse;
   if (
-    (React as any).use &&
-    (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher.current
+    react.use &&
+    react.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher
+      ?.current
   ) {
-    return React.use(params as any);
+    return react.use(params);
   }
   return params instanceof Promise ? await params : params;
 }
@@ -23,19 +39,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await unwrap(params);
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
-  const status = body?.status;
-  if (status !== "handled" && status !== "received") {
+  const parsed = AdminInquiryUpdateSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
   const inquiry = await prisma.contactSubmission.update({
     where: { id },
-    data: { status },
+    data: { status: parsed.data.status },
     select: {
       id: true,
       name: true,
