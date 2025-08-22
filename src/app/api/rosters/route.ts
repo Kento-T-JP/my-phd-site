@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
     if (!tournament || typeof tournament !== 'string') {
       return NextResponse.json({ error: 'Invalid tournament' }, { status: 400 });
     }
-    const roster = await ensureTournamentRoster(tournament);
+    const userId = Number(session.user.id);
+    const roster = await ensureTournamentRoster(tournament, prisma, undefined, userId);
     const full = await prisma.roster.findUnique({
       where: { id: roster.id },
       include: { tournament: true },
