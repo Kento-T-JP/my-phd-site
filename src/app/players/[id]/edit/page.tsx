@@ -18,7 +18,7 @@ const positionOptions: PositionKey[] = Array.from(
 export default function EditPlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
@@ -68,6 +68,19 @@ export default function EditPlayerPage() {
     }
     prevTournament.current = tournamentName;
   }, [tournamentName]);
+
+  if (status === "loading") {
+    return (
+      <main className="p-8 max-w-md mx-auto">
+        <p>Loading...</p>
+      </main>
+    );
+  }
+
+  if (!session) {
+    router.push("/login");
+    return null;
+  }
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
