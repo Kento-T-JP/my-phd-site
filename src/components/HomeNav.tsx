@@ -2,20 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface HomeNavProps {
   isAdmin?: boolean;
 }
 
 export default function HomeNav({ isAdmin = false }: HomeNavProps) {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const links = [
-    { href: "/players/new", label: "新規選手登録" },
+    { href: "/players/new", label: "新規選手登録", auth: true },
     { href: "/players", label: "選手一覧を編集" },
-    { href: "/jfa-import", label: "JFAメンバーインポート" },
+    { href: "/jfa-import", label: "JFAメンバーインポート", auth: true },
     { href: "/contact", label: "お問い合わせ" },
   ];
 
@@ -74,16 +76,18 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
         }`}
       >
         <ul className="space-y-2">
-          {links.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+          {links
+            .filter((link) => !link.auth || !!session)
+            .map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           {isAdmin && (
             <li>
               <Link
