@@ -13,7 +13,7 @@ export default function HomeNav() {
 
   const links = [
     { href: "/players/new", label: "新規選手登録", auth: true },
-    { href: "/players", label: "選手一覧を編集" },
+    { href: "/players", label: "選手一覧を編集", auth: true },
     { href: "/jfa-import", label: "JFAメンバーインポート", auth: true },
     { href: "/contact", label: "お問い合わせ" },
   ];
