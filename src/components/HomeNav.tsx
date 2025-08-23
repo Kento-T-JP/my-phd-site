@@ -15,7 +15,7 @@ export default function HomeNav({ isAdmin = false }: HomeNavProps) {
   const links = [
     { href: "/players/new", label: "新規選手登録" },
     { href: "/players", label: "選手一覧を編集" },
-    { href: "/admin/jfa-import", label: "JFAメンバーインポート" },
+    { href: "/jfa-import", label: "JFAメンバーインポート" },
     { href: "/contact", label: "お問い合わせ" },
   ];
 

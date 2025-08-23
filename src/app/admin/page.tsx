@@ -8,7 +8,6 @@ export default function AdminPage() {
         <AdminCard href="/admin/users" title="Users" icon="👥" />
         <AdminCard href="/admin/formations" title="Formations" icon="📝" />
         <AdminCard href="/admin/stats" title="Stats" icon="📊" />
-        <AdminCard href="/admin/jfa-import" title="JFA Import" icon="⬇️" />
       </div>
     </main>
   );

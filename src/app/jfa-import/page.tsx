@@ -25,14 +25,6 @@ export default function JfaImportPage() {
     );
   }
 
-  if (!session.user?.isAdmin) {
-    return (
-      <main className="p-8 max-w-md mx-auto">
-        <p>Unauthorized</p>
-      </main>
-    );
-  }
-
   return (
     <main className="p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">JFAメンバーインポート</h1>
