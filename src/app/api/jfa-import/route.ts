@@ -9,7 +9,7 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

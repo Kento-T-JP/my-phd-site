@@ -46,9 +46,9 @@ describe('admin API authorization', () => {
     sessionSpy.mockReset();
   });
 
-  it('blocks non-admin from jfa import', async () => {
+  it('blocks unauthenticated from jfa import', async () => {
     const { POST } = await import('../src/app/api/jfa-import/route');
-    sessionSpy.mockResolvedValue({ user: { email: 'u@test.com', isAdmin: false } });
+    sessionSpy.mockResolvedValue(null);
     const res = await POST(new Request('http://test', {
       method: 'POST',
       body: JSON.stringify({ url: 'http://example.com' }),
