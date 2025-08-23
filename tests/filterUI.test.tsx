@@ -4,7 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import RosterTypeahead from '@/components/RosterTypeahead';
 import PlayersPage from '@/app/players/page';
 
-vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({
+    data: { user: { id: 1 } },
+    status: 'authenticated',
+  }),
+}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const rosters = [
