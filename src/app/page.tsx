@@ -1,11 +1,8 @@
 import Formation from "@/components/Formation";
 import JfaImportForm from "@/components/JfaImportForm";
-import HomeNav from "@/components/HomeNav";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 async function fetchPlayers(): Promise<Player[]> {
   const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
@@ -55,13 +52,9 @@ export default async function Home({
     );
   }
 
-  // Note: Ensure authOptions is compatible with server-side environment to avoid warnings
-  const session = await getServerSession(authOptions);
-
   return (
     <main className="p-8">
       <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
-      <HomeNav isAdmin={session?.user?.isAdmin ?? false} />
       <Formation initialFormation={initialFormation} />
     </main>
   );
