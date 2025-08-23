@@ -4,12 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
-interface HomeNavProps {
-  isAdmin?: boolean;
-}
-
-export default function HomeNav({ isAdmin = false }: HomeNavProps) {
+export default function HomeNav() {
   const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
