@@ -21,7 +21,7 @@ const positionOptions: PositionKey[] = Array.from(
 ) as PositionKey[];
 
 export default function PlayersPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,7 @@ export default function PlayersPage() {
   };
 
   useEffect(() => {
+    if (!session) return;
     async function load() {
       try {
         const res = await fetch("/api/players");
@@ -78,9 +79,10 @@ export default function PlayersPage() {
       }
     }
     load();
-  }, []);
+  }, [session]);
 
   useEffect(() => {
+    if (!session) return;
     async function fetchRosters() {
       try {
         const res = await fetch("/api/rosters");
@@ -91,9 +93,10 @@ export default function PlayersPage() {
       }
     }
     fetchRosters();
-  }, []);
+  }, [session]);
 
   useEffect(() => {
+    if (!session) return;
     async function fetchTournaments() {
       try {
         const res = await fetch("/api/tournaments");
@@ -107,7 +110,13 @@ export default function PlayersPage() {
     const handler = () => fetchTournaments();
     window.addEventListener("tournament-saved", handler);
     return () => window.removeEventListener("tournament-saved", handler);
-  }, []);
+  }, [session]);
+
+  if (status === "loading") return <LoadingSpinner />;
+  if (!session) {
+    router.push("/login");
+    return null;
+  }
 
   useEffect(() => {
     if (!session) return;
