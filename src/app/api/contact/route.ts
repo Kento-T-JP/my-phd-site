@@ -5,6 +5,7 @@ import type { ContactForm } from '@/lib/validation/contact';
 import { randomInt } from 'crypto';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import escapeHtml from 'escape-html';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
@@ -132,6 +133,16 @@ export async function POST(req: Request) {
     userAgent: userAgent ?? 'unknown',
   };
 
+  const escaped = {
+    id: escapeHtml(details.id),
+    name: escapeHtml(details.name),
+    email: escapeHtml(details.email),
+    category: escapeHtml(details.category),
+    message: escapeHtml(details.message),
+    ip: escapeHtml(details.ip),
+    userAgent: escapeHtml(details.userAgent),
+  };
+
   const text = `New contact submission\n\n` +
     `ID: ${details.id}\n` +
     `Name: ${details.name}\n` +
@@ -140,17 +151,15 @@ export async function POST(req: Request) {
     `Message: ${details.message}\n` +
     `IP: ${details.ip}\n` +
     `User Agent: ${details.userAgent}`;
-
-  const html = `<!DOCTYPE html>` +
-    `<html><body>` +
-    `<p><strong>ID:</strong> ${details.id}</p>` +
-    `<p><strong>Name:</strong> ${details.name}</p>` +
-    `<p><strong>Email:</strong> ${details.email}</p>` +
-    `<p><strong>Category:</strong> ${details.category}</p>` +
-    `<p><strong>Message:</strong> ${details.message}</p>` +
-    `<p><strong>IP:</strong> ${details.ip}</p>` +
-    `<p><strong>User Agent:</strong> ${details.userAgent}</p>` +
-    `</body></html>`;
+  const html = `<!DOCTYPE html><html><body>
+    <p><strong>ID:</strong> ${escaped.id}</p>
+    <p><strong>Name:</strong> ${escaped.name}</p>
+    <p><strong>Email:</strong> ${escaped.email}</p>
+    <p><strong>Category:</strong> ${escaped.category}</p>
+    <p><strong>Message:</strong> ${escaped.message}</p>
+    <p><strong>IP:</strong> ${escaped.ip}</p>
+    <p><strong>User Agent:</strong> ${escaped.userAgent}</p>
+  </body></html>`;
 
   const confirmFrom =
     process.env.CONFIRM_FROM_ADDRESS ||
@@ -161,13 +170,12 @@ export async function POST(req: Request) {
     `Category: ${details.category}\n` +
     `Message: ${details.message}\n\n` +
     `Reference ID: ${details.id}`;
-  const confirmHtml = `<!DOCTYPE html>` +
-    `<html><body>` +
-    `<p>We received your message.</p>` +
-    `<p><strong>Category:</strong> ${details.category}</p>` +
-    `<p><strong>Message:</strong> ${details.message}</p>` +
-    `<p><strong>Reference ID:</strong> ${details.id}</p>` +
-    `</body></html>`;
+  const confirmHtml = `<!DOCTYPE html><html><body>
+    <p>We received your message.</p>
+    <p><strong>Category:</strong> ${escaped.category}</p>
+    <p><strong>Message:</strong> ${escaped.message}</p>
+    <p><strong>Reference ID:</strong> ${escaped.id}</p>
+  </body></html>`;
 
   const savePromise = (async () => {
     try {
