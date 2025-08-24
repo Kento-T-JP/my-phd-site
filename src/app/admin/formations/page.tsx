@@ -25,7 +25,7 @@ export default function AdminFormationsPage() {
       const res = await fetch("/api/admin/formations");
       if (!res.ok) throw new Error();
       setFormations(await res.json());
-    } catch (e) {
+    } catch {
       setError("フォーメーションの取得に失敗しました");
     } finally {
       setIsLoading(false);
@@ -40,7 +40,7 @@ export default function AdminFormationsPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <Spinner />
       </main>
     );
@@ -48,7 +48,7 @@ export default function AdminFormationsPage() {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
@@ -58,14 +58,14 @@ export default function AdminFormationsPage() {
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
       </main>
     );
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Formations</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {isLoading ? (

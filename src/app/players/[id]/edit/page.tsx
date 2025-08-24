@@ -71,7 +71,7 @@ export default function EditPlayerPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-8 max-w-md mx-auto">
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
       </main>
     );
@@ -174,14 +174,14 @@ export default function EditPlayerPage() {
 
   if (loading) {
     return (
-      <main className="p-8 max-w-md mx-auto">
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
       </main>
     );
   }
 
   return (
-    <main className="p-8 max-w-md mx-auto">
+    <main className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">
         {ownerId && session?.user?.id === ownerId ? "Edit Player" : "カスタム選手を作成"}
       </h1>

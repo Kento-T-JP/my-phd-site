@@ -49,7 +49,7 @@ export default function ContactPage() {
   const messageValue = watch('message', '');
 
   return (
-    <main className="p-8 max-w-3xl mx-auto">
+    <main className="p-4 sm:p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-cyan-400">Contact</h1>
       <form
         onSubmit={handleSubmit(onSubmit)}

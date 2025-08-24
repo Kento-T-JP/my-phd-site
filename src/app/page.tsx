@@ -49,7 +49,7 @@ export default async function Home({
 
   if (players.length === 0) {
     return (
-      <main className="p-8 max-w-md mx-auto">
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
         <h1 className="text-xl font-bold mb-4">JFAメンバーインポート</h1>
         <JfaImportForm />
       </main>
@@ -57,7 +57,7 @@ export default async function Home({
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
       <Formation initialFormation={initialFormation} />
     </main>

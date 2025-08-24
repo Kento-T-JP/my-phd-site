@@ -43,7 +43,7 @@ export default function StatsPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <Spinner />
       </main>
     );
@@ -51,7 +51,7 @@ export default function StatsPage() {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
@@ -61,14 +61,14 @@ export default function StatsPage() {
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
       </main>
     );
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Stats</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {isLoading ? (
