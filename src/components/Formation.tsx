@@ -200,6 +200,8 @@ export default function Formation({
   const [tempoPulseId, setTempoPulseId] = useState<number | null>(null);
   const tempoPulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [frontmostId, setFrontmostId] = useState<number | null>(null);
+
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [search, setSearch] = useState("");
@@ -468,6 +470,9 @@ export default function Formation({
 
   /* ───────── swap (bench ↔ field) ───────── */
   const handleClick = (id: number, isBench: boolean) => {
+    if (!isBench) {
+      setFrontmostId(id);
+    }
     // Track rapid click sequences for tempo pulse
     if (lastClickedId === id) {
       const newCount = clickCount + 1;
@@ -956,6 +961,7 @@ export default function Formation({
                   top: `${pos.top}%`,
                   left: `${pos.left}%`,
                   transform: "translate(-50%, -50%)",
+                  zIndex: frontmostId === p.id ? 10 : 0,
                 }}
                 onMouseDown={(e) => {
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
