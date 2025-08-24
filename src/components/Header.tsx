@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Header() {
@@ -10,8 +11,9 @@ export default function Header() {
   const showHome = pathname !== "/";
   const homeHref = "/";
   const homeLabel = "Home";
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-[#002D62] text-white flex items-center p-4">
+    <header className="fixed top-0 left-0 w-full z-50 bg-[#002D62] text-white flex items-center p-4 flex-wrap">
       <Image
         src="/emblem.svg"
         alt="Samurai Blue Emblem"
@@ -20,38 +22,67 @@ export default function Header() {
         className="mr-2"
       />
       <span className="text-xl font-bold flex-grow">SAMURAI BLUE</span>
-      {showHome && (
-        <Link href={homeHref} className="underline mr-4">
-          {homeLabel}
-        </Link>
-      )}
-      {session ? (
-        <div className="flex items-center space-x-4">
-          <span className="text-sm">
-            {session.user?.email
-              ? `Logged in as ${session.user.email}`
-              : "Logged in"}
-          </span>
-          <Link href="/formations" className="underline">
-            Formations
-          </Link>
-          <Link href="/mypage" className="underline">
-            My Page
-          </Link>
-          <button onClick={() => signOut()} className="underline">
-            Logout
-          </button>
+      <button
+        className="sm:hidden"
+        onClick={() => setIsMenuOpen((open) => !open)}
+        aria-controls="primary-navigation"
+        aria-expanded={isMenuOpen}
+      >
+        <span className="sr-only">Toggle navigation</span>
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+      <nav
+        id="primary-navigation"
+        className={`${isMenuOpen ? "block" : "hidden"} w-full sm:block sm:w-auto`}
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          {showHome && (
+            <Link href={homeHref} className="underline">
+              {homeLabel}
+            </Link>
+          )}
+          {session ? (
+            <>
+              <span className="text-sm">
+                {session.user?.email
+                  ? `Logged in as ${session.user.email}`
+                  : "Logged in"}
+              </span>
+              <Link href="/formations" className="underline">
+                Formations
+              </Link>
+              <Link href="/mypage" className="underline">
+                My Page
+              </Link>
+              <button onClick={() => signOut()} className="underline">
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="underline">
+                Login
+              </Link>
+              <Link href="/register" className="underline">
+                Register
+              </Link>
+            </>
+          )}
         </div>
-      ) : (
-        <div className="space-x-4">
-          <Link href="/login" className="underline">
-            Login
-          </Link>
-          <Link href="/register" className="underline">
-            Register
-          </Link>
-        </div>
-      )}
+      </nav>
     </header>
   );
 }
