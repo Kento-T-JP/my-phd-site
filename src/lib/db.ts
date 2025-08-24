@@ -81,7 +81,7 @@ export async function getPlayers(rosterId?: number, userId?: number | string) {
         OR: [{ userId: uid }, { userId: null }],
         id: baseIds.length ? { notIn: baseIds } : undefined,
       }
-    : { isDeleted: false };
+    : { isDeleted: false, userId: null };
   if (rosterId) {
     const roster = await prisma.roster.findUnique({
       where: { id: rosterId },
