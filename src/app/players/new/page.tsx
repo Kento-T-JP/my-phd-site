@@ -38,7 +38,7 @@ export default function NewPlayerPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-8 max-w-md mx-auto">
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
       </main>
     );
@@ -123,7 +123,7 @@ export default function NewPlayerPage() {
   };
 
   return (
-    <main className="p-8 max-w-md mx-auto">
+    <main className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">新しい選手を追加</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -33,7 +33,7 @@ export default function FormationDetailPage({ params }: Props) {
 
   if (status === "loading") {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Loading...</p>
       </main>
     );
@@ -41,7 +41,7 @@ export default function FormationDetailPage({ params }: Props) {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
@@ -51,7 +51,7 @@ export default function FormationDetailPage({ params }: Props) {
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
       </main>
     );
@@ -64,7 +64,7 @@ export default function FormationDetailPage({ params }: Props) {
   };
 
   return (
-    <main className="p-8 space-y-4">
+    <main className="p-4 sm:p-8 space-y-4">
       {formation ? (
         <>
           <h1 className="text-xl font-bold">{formation.name}</h1>

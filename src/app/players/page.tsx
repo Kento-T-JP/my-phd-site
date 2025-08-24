@@ -111,13 +111,6 @@ export default function PlayersPage() {
     window.addEventListener("tournament-saved", handler);
     return () => window.removeEventListener("tournament-saved", handler);
   }, [session]);
-
-  if (status === "loading") return <LoadingSpinner />;
-  if (!session) {
-    router.push("/login");
-    return null;
-  }
-
   useEffect(() => {
     if (!session) return;
     async function loadFavorites() {
@@ -148,9 +141,15 @@ export default function PlayersPage() {
     });
   }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
 
+  if (status === "loading") return <LoadingSpinner />;
+  if (!session) {
+    router.push("/login");
+    return null;
+  }
+
   if (loading) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <LoadingSpinner />
       </main>
     );
@@ -158,14 +157,14 @@ export default function PlayersPage() {
 
   if (error) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p className="text-red-500">{error}</p>
       </main>
     );
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold mb-4">選手一覧を編集</h1>
       <div className="flex gap-2 mb-4">
         <input

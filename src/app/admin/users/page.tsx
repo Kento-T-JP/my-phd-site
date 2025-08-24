@@ -25,7 +25,7 @@ export default function UsersPage() {
       const res = await fetch("/api/admin/users");
       if (!res.ok) throw new Error("Failed to fetch users");
       setUsers(await res.json());
-    } catch (e) {
+    } catch {
       setError("ユーザーの取得に失敗しました");
     } finally {
       setIsLoading(false);
@@ -40,7 +40,7 @@ export default function UsersPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <Spinner />
       </main>
     );
@@ -48,7 +48,7 @@ export default function UsersPage() {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
@@ -58,7 +58,7 @@ export default function UsersPage() {
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
       </main>
     );
@@ -74,7 +74,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error();
       alert("更新しました");
       await load();
-    } catch (e) {
+    } catch {
       alert("更新に失敗しました");
     }
   }
@@ -86,13 +86,13 @@ export default function UsersPage() {
       if (!res.ok) throw new Error();
       alert("削除しました");
       await load();
-    } catch (e) {
+    } catch {
       alert("削除に失敗しました");
     }
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">ユーザー一覧</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {isLoading ? (

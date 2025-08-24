@@ -55,7 +55,7 @@ export default function FormationsPage() {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view your formations.
         </p>
@@ -64,7 +64,7 @@ export default function FormationsPage() {
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Saved Formations</h1>
       {loading ? (
         <LoadingSpinner />

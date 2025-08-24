@@ -29,7 +29,7 @@ export default function AdminInquiriesPage() {
       const res = await fetch("/api/admin/inquiries");
       if (!res.ok) throw new Error();
       setInquiries((await res.json()) as Inquiry[]);
-    } catch (e) {
+    } catch {
       setError("問い合わせの取得に失敗しました");
     } finally {
       setIsLoading(false);
@@ -53,7 +53,7 @@ export default function AdminInquiriesPage() {
       if (!res.ok) throw new Error();
       alert("更新しました");
       await load();
-    } catch (e) {
+    } catch {
       alert("更新に失敗しました");
     }
   };
@@ -65,14 +65,14 @@ export default function AdminInquiriesPage() {
       if (!res.ok) throw new Error();
       alert("削除しました");
       await load();
-    } catch (e) {
+    } catch {
       alert("削除に失敗しました");
     }
   };
 
   if (status === "loading") {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <Spinner />
       </main>
     );
@@ -80,7 +80,7 @@ export default function AdminInquiriesPage() {
 
   if (!session) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
@@ -90,14 +90,14 @@ export default function AdminInquiriesPage() {
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-8">
+      <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
       </main>
     );
   }
 
   return (
-    <main className="p-8">
+    <main className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Inquiries</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {isLoading ? (

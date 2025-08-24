@@ -1,9 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +25,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="p-8 max-w-md mx-auto">
+    <main className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">Register</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
