@@ -4,8 +4,12 @@ import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
 
-async function fetchPlayers(): Promise<Player[]> {
-  const res = await fetch(`${getBaseUrl()}/api/players`, { cache: "no-store" });
+export async function fetchPlayers(): Promise<Player[]> {
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${getBaseUrl()}/api/players`, {
+    cache: "no-store",
+    headers: { cookie: cookieHeader },
+  });
   if (!res.ok) {
     console.error(`Failed to fetch players: ${res.status} ${res.statusText}`);
     throw new Error("Failed to fetch players");
