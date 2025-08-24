@@ -82,7 +82,7 @@ body {
 }
 
 .player-card {
-  @apply relative w-32 max-w-32 max-h-32 p-2 rounded cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50;
+  @apply relative w-24 h-24 sm:w-32 sm:h-32 p-2 rounded cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50;
 }
 
 /* ───── Player selection effects ───── */
