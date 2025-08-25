@@ -1,19 +1,38 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken, type JWT } from 'next-auth/jwt';
 
+const securityHeaders: Record<string, string> = {
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+};
+
+const applySecurityHeaders = (res: NextResponse) => {
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    res.headers.set(key, value);
+  });
+  return res;
+};
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     const token: (JWT & { isAdmin?: boolean }) | null = await getToken({ req });
     if (token?.isAdmin !== true) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return applySecurityHeaders(
+          NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+        );
       }
       const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
   }
-  return NextResponse.next();
+  return applySecurityHeaders(NextResponse.next());
 }
 
 export const config = {
