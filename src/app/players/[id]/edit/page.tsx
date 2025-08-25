@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, getCsrfToken } from "next-auth/react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
@@ -19,6 +19,7 @@ export default function EditPlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [csrf, setCsrf] = useState("");
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
@@ -69,6 +70,10 @@ export default function EditPlayerPage() {
     prevTournament.current = tournamentName;
   }, [tournamentName]);
 
+  useEffect(() => {
+    getCsrfToken().then((token) => setCsrf(token ?? ""));
+  }, []);
+
   if (status === "loading") {
     return (
       <main className="p-4 sm:p-8 max-w-md mx-auto">
@@ -90,7 +95,10 @@ export default function EditPlayerPage() {
 
   const handleDelete = async () => {
     if (!confirm("削除してもよろしいですか？")) return;
-    const res = await fetch(`/api/players/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/players/${id}`, {
+      method: "DELETE",
+      headers: { "X-CSRF-Token": csrf },
+    });
     setErrors({});
     setMessage([]);
     setSuccessMessage("");
@@ -129,6 +137,7 @@ export default function EditPlayerPage() {
 
     const res = await fetch(`/api/players/${id}`, {
       method: "PUT",
+      headers: { "X-CSRF-Token": csrf },
       body: form,
     });
 

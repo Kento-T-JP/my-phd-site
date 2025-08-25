@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useSession, getCsrfToken } from "next-auth/react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ const positionOptions: PositionKey[] = Array.from(
 export default function NewPlayerPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [csrf, setCsrf] = useState("");
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
   const [otherPosition, setOtherPosition] = useState("");
@@ -35,6 +36,10 @@ export default function NewPlayerPage() {
     image?: string;
     tournament?: string;
   }>({});
+
+  useEffect(() => {
+    getCsrfToken().then((token) => setCsrf(token ?? ""));
+  }, []);
 
   if (status === "loading") {
     return (
@@ -80,6 +85,7 @@ export default function NewPlayerPage() {
 
     const res = await fetch("/api/players", {
       method: "POST",
+      headers: { "X-CSRF-Token": csrf },
       body: form,
     });
 
