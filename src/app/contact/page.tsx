@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ContactSchema, type ContactForm } from '@/lib/validation/contact';
+import { getCsrfToken } from 'next-auth/react';
 
 export default function ContactPage() {
   const [result, setResult] = useState<{ id: string } | { error: string } | null>(null);
+  const [csrf, setCsrf] = useState('');
   const {
     register,
     handleSubmit,
@@ -26,12 +28,19 @@ export default function ContactPage() {
     },
   });
 
+  useEffect(() => {
+    getCsrfToken().then((token) => setCsrf(token ?? ''));
+  }, []);
+
   const onSubmit = async (data: ContactForm) => {
     setResult(null);
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrf,
+        },
         body: JSON.stringify(data),
       });
       const json = await res.json();

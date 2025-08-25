@@ -6,6 +6,7 @@ import { randomInt } from 'crypto';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import escapeHtml from 'escape-html';
+import { verifyCsrfToken } from '@/lib/csrf';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
@@ -82,6 +83,9 @@ async function verifyToken(token: string | undefined, ip: string) {
 }
 
 export async function POST(req: Request) {
+  if (!verifyCsrfToken(req)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
