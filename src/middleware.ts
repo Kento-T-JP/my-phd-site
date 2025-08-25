@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken, type JWT } from 'next-auth/jwt';
+import { chain, csp, nextSafe } from '@next-safe/middleware';
 
-export async function middleware(req: NextRequest) {
+const authMiddleware = async (req: NextRequest) => {
   const { pathname } = req.nextUrl;
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     const token: (JWT & { isAdmin?: boolean }) | null = await getToken({ req });
@@ -14,8 +15,44 @@ export async function middleware(req: NextRequest) {
     }
   }
   return NextResponse.next();
-}
+};
+
+export const middleware = chain(
+  authMiddleware,
+  nextSafe({
+    disableCsp: true,
+    frameOptions: 'DENY',
+    contentTypeOptions: 'nosniff',
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    isDev: process.env.NODE_ENV === 'development',
+  }),
+  csp({
+    directives: {
+      'default-src': ['self'],
+      'frame-ancestors': ['self'],
+      'img-src': ['self', 'data:', 'blob:'],
+      'script-src': [
+        'self',
+        ...(process.env.NODE_ENV === 'development'
+          ? ['unsafe-eval', 'unsafe-inline']
+          : []),
+      ],
+      'style-src': [
+        'self',
+        ...(process.env.NODE_ENV === 'development' ? ['unsafe-inline'] : []),
+      ],
+      'connect-src': [
+        'self',
+        ...(process.env.NODE_ENV === 'development'
+          ? ['ws://localhost:*', 'http://localhost:*']
+          : []),
+      ],
+    },
+    isDev: process.env.NODE_ENV === 'development',
+  }),
+);
 
 export const config = {
   matcher: ['/admin/:path*', '/api/admin/:path*'],
 };
+
