@@ -35,7 +35,9 @@ function mockFetch() {
 }
 
 describe('Roster filter UI', () => {
+  const originalFetch = global.fetch;
   afterEach(() => {
+    global.fetch = originalFetch;
     vi.restoreAllMocks();
     cleanup();
   });
