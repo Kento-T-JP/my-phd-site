@@ -14,9 +14,34 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
+        captcha: { label: "Captcha", type: "text" },
       },
       async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials.password) return null;
+
+        const secret = process.env.RECAPTCHA_SECRET;
+        if (secret) {
+          if (!credentials.captcha) return null;
+          try {
+            const params = new URLSearchParams();
+            params.append("secret", secret);
+            params.append("response", credentials.captcha);
+            const verifyRes = await fetch(
+              "https://www.google.com/recaptcha/api/siteverify",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params,
+              }
+            );
+            const verifyData = await verifyRes.json();
+            if (!verifyData.success) {
+              throw new Error("InvalidCaptcha");
+            }
+          } catch {
+            throw new Error("InvalidCaptcha");
+          }
+        }
 
         const adminEmail = process.env.ADMIN_EMAIL || "";
         const adminPassword = process.env.ADMIN_PASSWORD || "";

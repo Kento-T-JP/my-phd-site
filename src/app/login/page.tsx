@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [captcha, setCaptcha] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +17,7 @@ export default function LoginPage() {
       redirect: false,
       email,
       password,
+      captcha,
     });
     if (res?.ok) {
       const session = await getSession();
@@ -24,7 +27,11 @@ export default function LoginPage() {
         router.push("/");
       }
     } else {
-      setError("メールアドレスまたはパスワードが正しくありません");
+      if (res?.error === "InvalidCaptcha") {
+        setError("CAPTCHA 認証に失敗しました");
+      } else {
+        setError("メールアドレスまたはパスワードが正しくありません");
+      }
     }
   };
 
@@ -53,6 +60,10 @@ export default function LoginPage() {
           />
         </div>
         {error && <p className="text-red-600">{error}</p>}
+        <ReCAPTCHA
+          sitekey={process.env.RECAPTCHA_SITE_KEY ?? ""}
+          onChange={(token) => setCaptcha(token || "")}
+        />
         <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
           Sign In
         </button>
