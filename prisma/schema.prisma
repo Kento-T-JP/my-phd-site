@@ -114,6 +114,7 @@ model ContactSubmission {
   ip        String?
   userAgent String?
   status    String   @default("received")
+  isBot     Boolean  @default(false)
 }
 
 model EmailVerificationToken {
@@ -129,4 +130,5 @@ model Visit {
   ip        String?
   userAgent String?
   createdAt DateTime @default(now())
+  isBot     Boolean  @default(false)
 }

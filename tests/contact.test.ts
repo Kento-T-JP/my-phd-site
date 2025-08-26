@@ -88,6 +88,7 @@ describe('contact API route', () => {
         message: 'Hello',
         ip: '1.1.1.1',
         userAgent: 'test-agent',
+        isBot: false,
       }),
     });
     expect(sendMailMock).toHaveBeenCalledTimes(1);
@@ -153,6 +154,28 @@ describe('contact API route', () => {
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
     expect(sendGridSendMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects submissions from bots', async () => {
+    const { POST } = await import('../src/app/api/contact/route');
+    const req = new Request('http://test', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'Googlebot',
+      },
+      body: JSON.stringify({
+        name: 'Bot',
+        email: 'bot@example.com',
+        message: 'Hi',
+        consent: true,
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(prisma.contactSubmission.create).not.toHaveBeenCalled();
+    expect(sendMailMock).not.toHaveBeenCalled();
+    expect(resendSendMock).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when honeypot field is filled', async () => {

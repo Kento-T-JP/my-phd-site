@@ -7,6 +7,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import escapeHtml from 'escape-html';
 import { verifyCsrfToken } from '@/lib/csrf';
+import isBot from '@/lib/isBot';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
@@ -90,6 +91,11 @@ export async function POST(req: Request) {
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     'unknown';
+  const userAgent = req.headers.get('user-agent') || undefined;
+
+  if (isBot(userAgent)) {
+    return NextResponse.json({ error: 'Invalid submission' }, { status: 400 });
+  }
 
   if (checkRateLimit(ip)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
@@ -125,7 +131,6 @@ export async function POST(req: Request) {
   }
 
   const id = `C-${randomInt(1000, 10000)}`;
-  const userAgent = req.headers.get('user-agent');
 
   const details = {
     id,
@@ -192,6 +197,7 @@ export async function POST(req: Request) {
           message: details.message,
           ip,
           userAgent,
+          isBot: false,
         },
       });
     } catch (err) {
