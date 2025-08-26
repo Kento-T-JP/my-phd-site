@@ -2,9 +2,12 @@ import prisma, { upsertTournament, upsertRoster, addRosterPlayers } from '../src
 
 async function main() {
   // fetch players that still have a tournament value
-  const players: { id: number; tournament: string }[] = await prisma.$queryRaw`
-    SELECT id, tournament FROM "Player" WHERE tournament IS NOT NULL AND tournament <> ''
-  `;
+  const players: { id: number; tournament: string }[] = await prisma.player.findMany({
+    where: {
+      tournament: { not: null, not: '' },
+    },
+    select: { id: true, tournament: true },
+  });
   const groups = new Map<string, number[]>();
   for (const { id, tournament } of players) {
     if (!groups.has(tournament)) groups.set(tournament, []);
