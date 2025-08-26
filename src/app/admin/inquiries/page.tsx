@@ -10,6 +10,7 @@ interface Inquiry {
   id: string;
   name: string;
   email: string;
+  isBot: boolean;
   category: string | null;
   message: string;
   status: string;
@@ -109,6 +110,7 @@ export default function AdminInquiriesPage() {
               <th className="border px-2 py-1">ID</th>
               <th className="border px-2 py-1">Name</th>
               <th className="border px-2 py-1">Email</th>
+              <th className="border px-2 py-1">Bot</th>
               <th className="border px-2 py-1">Category</th>
               <th className="border px-2 py-1">Message</th>
               <th className="border px-2 py-1">Timestamp</th>
@@ -122,6 +124,7 @@ export default function AdminInquiriesPage() {
                 <td className="border px-2 py-1">{q.id}</td>
                 <td className="border px-2 py-1">{q.name}</td>
                 <td className="border px-2 py-1">{q.email}</td>
+                <td className="border px-2 py-1">{q.isBot ? "Yes" : "No"}</td>
                 <td className="border px-2 py-1">{q.category ?? ""}</td>
                 <td className="border px-2 py-1">
                   <MessageCell message={q.message} className="max-w-xs" />
