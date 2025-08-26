@@ -35,6 +35,7 @@ describe('admin inquiries page', () => {
         id: '123',
         name: 'Alice',
         email: 'alice@example.com',
+        isBot: false,
         category: 'General',
         message: 'Hello',
         status: 'received',
@@ -47,7 +48,9 @@ describe('admin inquiries page', () => {
     render(<AdminInquiriesPage />);
     await screen.findByText('123');
     expect(screen.getByRole('columnheader', { name: 'ID' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Bot' })).toBeInTheDocument();
     const firstRow = screen.getAllByRole('row')[1];
     expect(firstRow).toHaveTextContent('123');
+    expect(firstRow).toHaveTextContent('No');
   });
 });
