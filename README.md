@@ -70,7 +70,7 @@ npm run deploy:migrate
 Next run the migration script to copy existing data into the new tables:
 
 ```bash
-npx tsx scripts/migratePlayersToTournaments.ts
+npx ts-node scripts/migratePlayersToTournaments.ts
 ```
 
 After verifying the results, apply the remaining migration to drop the legacy

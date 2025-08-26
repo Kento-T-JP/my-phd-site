@@ -9,8 +9,8 @@
     "lint": "next lint",
     "migrate": "prisma migrate dev",
     "deploy:migrate": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts",
-    "update:images": "tsx scripts/updatePlayerImages.ts",
+    "seed": "ts-node prisma/seed.ts",
+    "update:images": "ts-node scripts/updatePlayerImages.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -39,6 +39,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/bcrypt": "^5.0.2",
     "@types/cheerio": "^0.22.33",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -51,7 +52,6 @@
     "prisma": "^6.11.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.1",
     "typescript": "^5",
     "vitest": "^3.2.4"
   },
@@ -59,6 +59,6 @@
     "node": ">=20"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts"
   }
 }

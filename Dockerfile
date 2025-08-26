@@ -13,7 +13,7 @@ RUN apk add --no-cache bash
 RUN npm install
 
 # Prisma CLI をグローバルにインストール
-RUN npm install -g prisma ts-node tsx @types/node
+RUN npm install -g prisma ts-node @types/node
 
 # Prisma スキーマをコピー
 COPY prisma ./prisma
