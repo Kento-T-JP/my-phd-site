@@ -1,9 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken, type JWT } from 'next-auth/jwt';
 
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https://www.gstatic.com/recaptcha/;
+  font-src 'self';
+  frame-src 'self' https://www.google.com/recaptcha/;
+`;
+
 const securityHeaders: Record<string, string> = {
-  'Content-Security-Policy':
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
+  'Content-Security-Policy': ContentSecurityPolicy.replace(/\n/g, ' '),
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
