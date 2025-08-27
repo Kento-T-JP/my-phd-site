@@ -1086,12 +1086,12 @@ export default function Formation({
         </button>
       </div>
 
-      <footer className="fixed bottom-0 left-0 w-full z-50 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center">
+      <footer className="fixed bottom-0 left-0 w-full z-40 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center">
         {session ? (
           <>
             <input
               type="text"
-              className="border p-2 flex-1 w-full text-white"
+              className="border border-white/40 bg-white/10 backdrop-blur-sm p-2 flex-1 w-full text-white placeholder-white/70 focus:bg-white/20"
               placeholder="Formation name"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}

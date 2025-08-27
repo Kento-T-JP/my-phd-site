@@ -23,18 +23,18 @@ export default function CanvasParticles() {
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    const particleCount = Math.floor(Math.min(width, height) / 7);
+    const particleCount = Math.floor(Math.min(width, height) / 5);
     const particles: { x: number; y: number; vx: number; vy: number }[] = [];
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
       });
     }
 
-    const maxDist = 100;
+    const maxDist = 150;
     let frame: number | null = null;
     let running = true;
 
@@ -52,7 +52,7 @@ export default function CanvasParticles() {
       for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
         ctx.beginPath();
-        ctx.arc(p1.x, p1.y, 2, 0, Math.PI * 2);
+        ctx.arc(p1.x, p1.y, 3, 0, Math.PI * 2);
         ctx.fill();
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
@@ -61,6 +61,7 @@ export default function CanvasParticles() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < maxDist) {
             ctx.strokeStyle = `rgba(140,218,243,${(1 - dist / maxDist) * 0.6})`;
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
