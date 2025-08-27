@@ -54,7 +54,7 @@ export default function FormationScreenshotPage() {
   }, []);
 
   return (
-    <main className="p-4">
+    <main className="min-h-screen p-4 flex items-center justify-center">
       <div className="mb-4 flex items-center gap-4">
         <Link href="/formations" className="text-blue-500 underline">
           ← 戻る
@@ -71,7 +71,8 @@ export default function FormationScreenshotPage() {
         <p>Loading...</p>
       )}
       <style jsx>{`
-        .screenshot-wrapper > div > :not(#field-bench) {
+        .screenshot-wrapper > :not(#field-bench),
+        main > :not(.screenshot-wrapper) {
           display: none;
         }
       `}</style>
