@@ -2,19 +2,27 @@
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  if (!siteKey) {
+    console.warn("ReCAPTCHA site key is not configured.");
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) return;
     const res = await signIn("credentials", {
       redirect: false,
       email,
       password,
+      captcha: captchaToken,
     });
     if (res?.ok) {
       const session = await getSession();
@@ -52,6 +60,13 @@ export default function LoginPage() {
             required
           />
         </div>
+        {siteKey ? (
+          <ReCAPTCHA sitekey={siteKey} onChange={setCaptchaToken} />
+        ) : (
+          <div className="p-2 text-yellow-700 border border-yellow-500 rounded">
+            reCAPTCHA site key is not configured
+          </div>
+        )}
         {error && <p className="text-red-600">{error}</p>}
         <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
           Sign In
