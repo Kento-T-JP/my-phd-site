@@ -897,7 +897,7 @@ export default function Formation({
       )}
       {!screenshotMode && (
         <div
-        className="sticky top-16 z-40 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center mb-4"
+        className="z-10 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center mb-4"
       >
         {session ? (
           <>
