@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Formation from "@/components/Formation";
 import type { SavedFormation } from "@/types/formation";
 
@@ -55,27 +54,13 @@ export default function FormationScreenshotPage() {
 
   return (
     <main className="min-h-screen p-4 flex items-center justify-center">
-      <div className="mb-4 flex items-center gap-4">
-        <Link href="/formations" className="text-blue-500 underline">
-          ← 戻る
-        </Link>
-        <p>端末のスクショ機能を使って撮影してください</p>
-      </div>
       {formation ? (
-        <div className="screenshot-wrapper">
-          <Formation initialFormation={formation} />
-        </div>
+        <Formation initialFormation={formation} screenshotMode />
       ) : error ? (
         <p>{error}</p>
       ) : (
         <p>Loading...</p>
       )}
-      <style jsx>{`
-        .screenshot-wrapper > :not(#field-bench),
-        main > :not(.screenshot-wrapper) {
-          display: none;
-        }
-      `}</style>
     </main>
   );
 }

@@ -159,10 +159,12 @@ export default function Formation({
   initialFormation: initialFormationProp,
   onSaved,
   onUpdated,
+  screenshotMode = false,
 }: {
   initialFormation?: InitialFormation;
   onSaved?: (saved: SavedFormation) => void;
   onUpdated?: () => void;
+  screenshotMode?: boolean;
 }) {
   const [initialFormation, setInitialFormation] = useState<
     InitialFormation | undefined
@@ -823,7 +825,8 @@ export default function Formation({
   return (
     <div className="p-4 pb-8">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
-      <div className="flex gap-2 mb-4">
+      {!screenshotMode && (
+        <div className="flex gap-2 mb-4">
         <input
           type="text"
           className="border p-1 flex-1"
@@ -890,8 +893,10 @@ export default function Formation({
         >
           Apply Filters
         </button>
-      </div>
-      <div
+        </div>
+      )}
+      {!screenshotMode && (
+        <div
         className="sticky top-16 z-40 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center mb-4"
       >
         {session ? (
@@ -946,7 +951,8 @@ export default function Formation({
         >
           Screenshot
         </Link>
-      </div>
+        </div>
+      )}
 
       <div id="field-bench" className="flex flex-col sm:flex-row">
       {/* bench */}
