@@ -19,6 +19,12 @@ describe("admin authentication", () => {
     const bcrypt = await import("bcrypt");
     compareSpy = bcrypt.compare as any;
     compareSpy.mockReset();
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ success: true }),
+      }) as any
+    );
   });
 
   it("injects isAdmin into token and session", async () => {
@@ -38,6 +44,7 @@ describe("admin authentication", () => {
     const user = await provider.options.authorize({
       email: "admin@test.com",
       password: "pw",
+      captcha: "test",
     } as any);
     expect(user.isAdmin).toBe(true);
 
