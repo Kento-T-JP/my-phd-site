@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -12,7 +12,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
   }
@@ -63,7 +69,9 @@ export default function LoginPage() {
           />
         </div>
         {siteKey ? (
-          <ReCAPTCHA sitekey={siteKey} onChange={setCaptchaToken} />
+          isMounted ? (
+            <ReCAPTCHA sitekey={siteKey} onChange={setCaptchaToken} />
+          ) : null
         ) : (
           <div className="p-2 text-yellow-700 border border-yellow-500 rounded">
             reCAPTCHA site key is not configured
