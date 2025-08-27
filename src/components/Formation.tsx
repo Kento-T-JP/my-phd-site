@@ -826,7 +826,7 @@ export default function Formation({
       <div className="flex gap-2 mb-4">
         <input
           type="text"
-          className="border p-1 flex-1"
+          className="border p-2 flex-1 w-full text-white bg-white/20 placeholder-white/60"
           placeholder="Filter players..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -1091,7 +1091,7 @@ export default function Formation({
           <>
             <input
               type="text"
-              className="border p-2 flex-1 w-full text-white"
+              className="border p-2 flex-1 w-full text-white bg-white/20 placeholder-white/60"
               placeholder="Formation name"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
