@@ -43,6 +43,19 @@ This project uses [Prisma](https://www.prisma.io/) with a local Postgres databas
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
 ```
 
+### reCAPTCHA
+
+To protect forms from automated submissions, obtain Google reCAPTCHA keys and
+add the following variables to your `.env` file:
+
+```dotenv
+RECAPTCHA_SITE_KEY=your_site_key
+RECAPTCHA_SECRET_KEY=your_secret_key
+```
+
+The site key is used on the registration page and the secret key verifies the
+token server-side.
+
 ### Migrations & seeding
 
 Player data is not stored in the repository. Instead, the seed script

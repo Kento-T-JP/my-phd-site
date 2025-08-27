@@ -1,6 +1,8 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 
 let resendSendMock: any;
+let fetchMock: any;
+const originalFetch = global.fetch;
 
 vi.mock('resend', () => {
   resendSendMock = vi.fn().mockResolvedValue({});
@@ -42,6 +44,16 @@ beforeEach(async () => {
   prisma.emailVerificationToken.create.mockReset();
   process.env.NEXTAUTH_URL = 'http://localhost:3000';
   process.env.CONFIRM_FROM_ADDRESS = 'no-reply@test';
+  process.env.RECAPTCHA_SECRET_KEY = 'secret';
+  fetchMock = vi.fn(async () => ({ json: async () => ({ success: true }) }));
+  // @ts-ignore
+  global.fetch = fetchMock;
+});
+
+afterEach(() => {
+  // @ts-ignore
+  global.fetch = originalFetch;
+  delete process.env.RECAPTCHA_SECRET_KEY;
 });
 
 describe('register API', () => {
@@ -56,7 +68,11 @@ describe('register API', () => {
     const req = new Request('http://test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@example.com', password: 'pass' }),
+      body: JSON.stringify({
+        email: 'test@example.com',
+        password: 'pass',
+        recaptchaToken: 'token',
+      }),
     });
     const res = await POST(req);
     expect(res.status).toBe(200);
@@ -68,5 +84,25 @@ describe('register API', () => {
     const payload = resendSendMock.mock.calls[0][0];
     expect(payload.to).toBe('test@example.com');
     expect(payload.html).toContain(tokenHex);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 400 if captcha verification fails', async () => {
+    fetchMock.mockResolvedValueOnce({ json: async () => ({ success: false }) });
+    const { POST } = await import('../src/app/api/register/route');
+    prisma.user.findUnique.mockResolvedValue(null);
+    const req = new Request('http://test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'test@example.com',
+        password: 'pass',
+        recaptchaToken: 'bad',
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(resendSendMock).not.toHaveBeenCalled();
   });
 });

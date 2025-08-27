@@ -5,13 +5,36 @@ import { randomBytes } from "crypto";
 import { Resend } from "resend";
 
 export async function POST(req: Request) {
-  const { email, password, isAdmin = false } = await req.json();
+  const { email, password, isAdmin = false, recaptchaToken } = await req.json();
   if (
     typeof email !== "string" ||
     typeof password !== "string" ||
-    typeof isAdmin !== "boolean"
+    typeof isAdmin !== "boolean" ||
+    typeof recaptchaToken !== "string"
   ) {
     return NextResponse.json({ error: "無効な入力です" }, { status: 400 });
+  }
+
+  try {
+    const params = new URLSearchParams({
+      secret: process.env.RECAPTCHA_SECRET_KEY || "",
+      response: recaptchaToken,
+    });
+    const verify = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      { method: "POST", body: params }
+    ).then((res) => res.json());
+    if (!verify.success) {
+      return NextResponse.json(
+        { error: "Failed captcha verification" },
+        { status: 400 }
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { error: "Failed captcha verification" },
+      { status: 400 }
+    );
   }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
