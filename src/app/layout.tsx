@@ -5,6 +5,7 @@ import AuthProvider from "@/components/AuthProvider";
 import CanvasParticles from "@/components/CanvasParticles";
 import Analytics from "@/components/Analytics";
 import HomeNav from "@/components/HomeNav";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,6 +42,7 @@ export default function RootLayout({
           <div className="mt-16">
             <Analytics />
             {children}
+            <Footer />
           </div>
         </AuthProvider>
       </body>
