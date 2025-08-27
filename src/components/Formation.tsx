@@ -954,9 +954,9 @@ export default function Formation({
         </div>
       )}
 
-      <div id="field-bench" className="flex flex-col sm:flex-row">
+      <div id="field-bench" className="flex flex-col sm:flex-row mt-8 sm:mt-12 gap-6">
       {/* bench */}
-      <div id="bench" className="w-full sm:w-[264px] mb-4 sm:mb-0">
+      <div id="bench" className="w-full sm:w-[264px]">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
         <div className="grid grid-cols-2 gap-2">
           {benchPlayers.map(renderBenchCard)}
