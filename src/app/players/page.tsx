@@ -11,6 +11,7 @@ import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PageMain from "@/components/PageMain";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -149,22 +150,22 @@ export default function PlayersPage() {
 
   if (loading) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <LoadingSpinner />
-      </main>
+      </PageMain>
     );
   }
 
   if (error) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <p className="text-red-500">{error}</p>
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
+    <PageMain className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold mb-4">選手一覧を編集</h1>
       <div className="flex gap-2 mb-4">
         <input
@@ -298,6 +299,6 @@ export default function PlayersPage() {
       <div className="mt-4">
         <BackButton />
       </div>
-    </main>
+    </PageMain>
   );
 }

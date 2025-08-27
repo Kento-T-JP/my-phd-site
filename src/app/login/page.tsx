@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
+import PageMain from "@/components/PageMain";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -29,7 +30,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="p-4 sm:p-8 max-w-md mx-auto">
+    <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -57,7 +58,7 @@ export default function LoginPage() {
           Sign In
         </button>
       </form>
-    </main>
+    </PageMain>
   );
 }
 

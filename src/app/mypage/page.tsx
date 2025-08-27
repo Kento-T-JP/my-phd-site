@@ -8,6 +8,7 @@ import type { Player } from "@/types/player";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PageMain from "@/components/PageMain";
 
 export default function MyPage() {
   const { data: session, status } = useSession();
@@ -48,24 +49,24 @@ export default function MyPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <LoadingSpinner />
-      </main>
+      </PageMain>
     );
   }
 
   if (!session) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
+    <PageMain className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">My Page</h1>
       <p className="mb-4">Email: {session.user?.email}</p>
       <h2 className="text-lg font-bold mb-2">Saved Formations</h2>
@@ -131,6 +132,6 @@ export default function MyPage() {
       <div className="mt-4">
         <BackButton />
       </div>
-    </main>
+    </PageMain>
   );
 }

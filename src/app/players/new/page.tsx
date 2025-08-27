@@ -6,6 +6,7 @@ import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
+import PageMain from "@/components/PageMain";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -43,9 +44,9 @@ export default function NewPlayerPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
+      <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
-      </main>
+      </PageMain>
     );
   }
 
@@ -129,7 +130,7 @@ export default function NewPlayerPage() {
   };
 
   return (
-    <main className="p-4 sm:p-8 max-w-md mx-auto">
+    <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">新しい選手を追加</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -235,22 +236,22 @@ export default function NewPlayerPage() {
           {message.map((m, idx) => (
             <p key={idx}>{m}</p>
           ))}
-          </div>
-        )}
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          送信
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-4 py-2 bg-gray-300 text-black rounded"
-        >
-          戻る
-        </button>
-      </form>
-    </main>
+        </div>
+      )}
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-500 text-white rounded"
+      >
+        送信
+      </button>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="px-4 py-2 bg-gray-300 text-black rounded"
+      >
+        戻る
+      </button>
+    </form>
+    </PageMain>
   );
 }

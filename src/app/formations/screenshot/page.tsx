@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Formation from "@/components/Formation";
 import type { SavedFormation } from "@/types/formation";
+import PageMain from "@/components/PageMain";
 
 export default function FormationScreenshotPage() {
   const searchParams = useSearchParams();
@@ -54,7 +55,7 @@ export default function FormationScreenshotPage() {
   }, []);
 
   return (
-    <main className="p-4">
+    <PageMain className="p-4">
       <div className="mb-4 flex items-center gap-4">
         <Link href="/formations" className="text-blue-500 underline">
           ← 戻る
@@ -75,7 +76,7 @@ export default function FormationScreenshotPage() {
           display: none;
         }
       `}</style>
-    </main>
+    </PageMain>
   );
 }
 

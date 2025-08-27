@@ -1,5 +1,6 @@
 import Formation from "@/components/Formation";
 import JfaImportForm from "@/components/JfaImportForm";
+import PageMain from "@/components/PageMain";
 import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
@@ -49,17 +50,17 @@ export default async function Home({
 
   if (players.length === 0) {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
+      <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
         <h1 className="text-xl font-bold mb-4">JFAメンバーインポート</h1>
         <JfaImportForm />
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
+    <PageMain className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
       <Formation initialFormation={initialFormation} />
-    </main>
+    </PageMain>
   );
 }

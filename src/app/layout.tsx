@@ -38,7 +38,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <HomeNav />
-          <div className="mt-16">
+          <div className="mt-16 bg-black/20 backdrop-blur-sm rounded-md">
             <Analytics />
             {children}
           </div>

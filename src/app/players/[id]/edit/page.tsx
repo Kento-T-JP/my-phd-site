@@ -6,6 +6,7 @@ import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
+import PageMain from "@/components/PageMain";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -76,9 +77,9 @@ export default function EditPlayerPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
+      <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
-      </main>
+      </PageMain>
     );
   }
 
@@ -183,14 +184,14 @@ export default function EditPlayerPage() {
 
   if (loading) {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
+      <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
         <p>Loading...</p>
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8 max-w-md mx-auto">
+    <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">
         {ownerId && session?.user?.id === ownerId ? "Edit Player" : "カスタム選手を作成"}
       </h1>
@@ -298,30 +299,30 @@ export default function EditPlayerPage() {
           {message.map((m, idx) => (
             <p key={idx}>{m}</p>
           ))}
-          </div>
-        )}
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-          disabled={loading}
-        >
-          {ownerId && session?.user?.id === ownerId ? "送信" : "カスタム作成"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-4 py-2 bg-gray-300 text-black rounded"
-        >
-          戻る
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="px-4 py-2 bg-red-500 text-white rounded"
-        >
-          削除
-        </button>
-      </form>
-    </main>
+        </div>
+      )}
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+        disabled={loading}
+      >
+        {ownerId && session?.user?.id === ownerId ? "送信" : "カスタム作成"}
+      </button>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="px-4 py-2 bg-gray-300 text-black rounded"
+      >
+        戻る
+      </button>
+      <button
+        type="button"
+        onClick={handleDelete}
+        className="px-4 py-2 bg-red-500 text-white rounded"
+      >
+        削除
+      </button>
+    </form>
+    </PageMain>
   );
 }

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
 import Formation from "@/components/Formation";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PageMain from "@/components/PageMain";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
@@ -55,16 +56,16 @@ export default function FormationsPage() {
 
   if (!session) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view your formations.
         </p>
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
+    <PageMain className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Saved Formations</h1>
       {loading ? (
         <LoadingSpinner />
@@ -106,6 +107,6 @@ export default function FormationsPage() {
           )}
         </>
       )}
-    </main>
+    </PageMain>
   );
 }

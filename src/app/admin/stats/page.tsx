@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
+import PageMain from "@/components/PageMain";
 
 type Stats = {
   totalUsers: number;
@@ -43,32 +44,32 @@ export default function StatsPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <Spinner />
-      </main>
+      </PageMain>
     );
   }
 
   if (!session) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <p>
           Please <Link href="/login">login</Link> to view this page.
         </p>
-      </main>
+      </PageMain>
     );
   }
 
   if (!session.user?.isAdmin) {
     return (
-      <main className="p-4 sm:p-8">
+      <PageMain className="p-4 sm:p-8">
         <p>Unauthorized</p>
-      </main>
+      </PageMain>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
+    <PageMain className="p-4 sm:p-8">
       <h1 className="text-xl font-bold mb-4">Stats</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {isLoading ? (
@@ -90,7 +91,7 @@ export default function StatsPage() {
       <div className="mt-4">
         <BackButton />
       </div>
-    </main>
+    </PageMain>
   );
 }
 

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ContactSchema, type ContactForm } from '@/lib/validation/contact';
 import { getCsrfToken } from 'next-auth/react';
+import PageMain from '@/components/PageMain';
 
 export default function ContactPage() {
   const [result, setResult] = useState<{ id: string } | { error: string } | null>(null);
@@ -58,7 +59,7 @@ export default function ContactPage() {
   const messageValue = watch('message', '');
 
   return (
-    <main className="p-4 sm:p-8 max-w-3xl mx-auto">
+    <PageMain className="p-4 sm:p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-cyan-400">Contact</h1>
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -182,7 +183,7 @@ export default function ContactPage() {
           )}
         </div>
       )}
-    </main>
+    </PageMain>
   );
 }
 

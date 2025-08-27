@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import PageMain from "@/components/PageMain";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="p-4 sm:p-8 max-w-md mx-auto">
+    <PageMain className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">Register</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -54,7 +55,7 @@ export default function RegisterPage() {
           Sign Up
         </button>
       </form>
-    </main>
+    </PageMain>
   );
 }
 
