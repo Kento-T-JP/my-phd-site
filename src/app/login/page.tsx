@@ -10,6 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -60,13 +61,23 @@ export default function LoginPage() {
         </div>
         <div>
           <label className="block mb-1">Password</label>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="flex items-center">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="w-full p-2 border rounded"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              className="ml-2 px-2 py-1 text-sm border rounded"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
         {siteKey ? (
           isMounted ? (
