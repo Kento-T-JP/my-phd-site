@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="text-xs text-center text-gray-400 mt-16 p-4">
+    <footer className="text-xs text-left text-gray-400 mt-16 p-4">
       <p>
         本サイトで使用している一部画像は、公益財団法人 日本サッカー協会（JFA）公式サイト等の公開情報を元に掲載しております。
       </p>
