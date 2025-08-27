@@ -18,6 +18,32 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials.password) return null;
 
+        if (process.env.RECAPTCHA_SECRET_KEY) {
+          const token = credentials.recaptchaToken as string | undefined;
+          if (!token) {
+            throw new Error("reCAPTCHA token missing");
+          }
+          const params = new URLSearchParams({
+            secret: process.env.RECAPTCHA_SECRET_KEY,
+            response: token,
+          });
+          try {
+            const resp = await fetch(
+              "https://www.google.com/recaptcha/api/siteverify",
+              {
+                method: "POST",
+                body: params,
+              },
+            );
+            const data = await resp.json();
+            if (!data.success) {
+              throw new Error("reCAPTCHA verification failed");
+            }
+          } catch {
+            throw new Error("reCAPTCHA verification failed");
+          }
+        }
+
         const adminEmail = process.env.ADMIN_EMAIL || "";
         const adminPassword = process.env.ADMIN_PASSWORD || "";
         const safeCompare = (a: string, b: string) =>

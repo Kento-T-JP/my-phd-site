@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [captcha, setCaptcha] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +17,7 @@ export default function LoginPage() {
       redirect: false,
       email,
       password,
+      recaptchaToken: captcha,
     });
     if (res?.ok) {
       const session = await getSession();
@@ -24,7 +27,11 @@ export default function LoginPage() {
         router.push("/");
       }
     } else {
-      setError("メールアドレスまたはパスワードが正しくありません");
+      if (res?.error && res.error !== "CredentialsSignin") {
+        setError(res.error);
+      } else {
+        setError("メールアドレスまたはパスワードが正しくありません");
+      }
     }
   };
 
@@ -52,8 +59,18 @@ export default function LoginPage() {
             required
           />
         </div>
+        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+          <ReCAPTCHA
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+            onChange={(token) => setCaptcha(token)}
+          />
+        )}
         {error && <p className="text-red-600">{error}</p>}
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+          disabled={Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) && !captcha}
+        >
           Sign In
         </button>
       </form>

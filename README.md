@@ -175,6 +175,15 @@ npm test
 ```
 (runs `vitest run` under the hood)
 
+### reCAPTCHA for login
+
+To enable Google reCAPTCHA on the login page, set the following environment variables in your `.env` file:
+
+```dotenv
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_site_key
+RECAPTCHA_SECRET_KEY=your_secret_key
+```
+
 ## Domain Information
 
 - **Domain name:** `start-xi.com`
