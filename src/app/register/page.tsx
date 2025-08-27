@@ -53,7 +53,7 @@ export default function RegisterPage() {
         {error && <p className="text-red-600">{error}</p>}
         {success && <p className="text-green-600">{success}</p>}
         <ReCAPTCHA
-          sitekey={process.env.RECAPTCHA_SITE_KEY || ""}
+          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
           onChange={setCaptchaToken}
         />
         <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
