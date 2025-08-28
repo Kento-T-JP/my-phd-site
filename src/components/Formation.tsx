@@ -54,7 +54,7 @@ const positionOptions: PositionKey[] = Array.from(
   ])
 ) as PositionKey[];
 
-const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "FW"];
+const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
 const BENCH_LIMIT = 12;
 
 export interface PlayerFilterOptions {
@@ -717,11 +717,18 @@ export default function Formation({
   const benchIds = benchOrder.slice(0, BENCH_LIMIT);
   const benchOutIds = benchOrder.slice(BENCH_LIMIT);
   const benchList = benchIds.map((id) => players.find((p) => p.id === id));
+  const getBenchSortPos = (p: Player) => {
+    const pos = p.position;
+    if (pos.includes("MF/FW") || pos.includes("MF") || pos.includes("FW")) {
+      return "MF/FW";
+    }
+    return pos[0] ?? "";
+  };
   const benchPlayers = benchList
     .filter((p): p is Player => p?.role === "player")
     .sort((a, b) => {
-      const posA = a.position[0] ?? "";
-      const posB = b.position[0] ?? "";
+      const posA = getBenchSortPos(a);
+      const posB = getBenchSortPos(b);
       const idxA = BENCH_POSITION_ORDER.indexOf(posA);
       const idxB = BENCH_POSITION_ORDER.indexOf(posB);
       if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
@@ -734,8 +741,8 @@ export default function Formation({
     .map((id) => players.find((p) => p.id === id))
     .filter((p): p is Player => p?.role === "player")
     .sort((a, b) => {
-      const posA = a.position[0] ?? "";
-      const posB = b.position[0] ?? "";
+      const posA = getBenchSortPos(a);
+      const posB = getBenchSortPos(b);
       const idxA = BENCH_POSITION_ORDER.indexOf(posA);
       const idxB = BENCH_POSITION_ORDER.indexOf(posB);
       if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
