@@ -397,7 +397,9 @@ export default function Formation({
         const res = await fetch('/api/players');
         if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
         const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
-        setPlayers(data);
+        setPlayers(
+          data.filter((p) => p.role === "player" && p.position.length > 0)
+        );
       } catch (err) {
         console.error(err);
         setError('プレイヤーの読み込みに失敗しました');
@@ -725,7 +727,7 @@ export default function Formation({
     return pos[0] ?? "";
   };
   const benchPlayers = benchList
-    .filter((p): p is Player => p?.role === "player")
+    .filter((p): p is Player => p && p.position.length > 0)
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);
@@ -736,10 +738,9 @@ export default function Formation({
       if (idxB === -1) return -1;
       return idxA - idxB;
     });
-  const staff = benchList.filter((p): p is Player => p?.role === "staff");
   const benchOutPlayers = benchOutIds
     .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => p?.role === "player")
+    .filter((p): p is Player => p && p.position.length > 0)
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);
@@ -908,7 +909,6 @@ export default function Formation({
         <h3 className="text-lg font-bold mb-2">Bench</h3>
         <div className="grid grid-cols-2 gap-2">
           {benchPlayers.map(renderBenchCard)}
-          {staff.map(renderBenchCard)}
         </div>
       </div>
 
