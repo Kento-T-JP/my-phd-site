@@ -718,7 +718,9 @@ export default function Formation({
   const staffIds: number[] = [];
   benchOrder.forEach((id) => {
     const p = players.find((pl) => pl.id === id);
-    if (p?.role === "player") {
+    const hasFieldPos =
+      p?.position.some((pos) => BENCH_POSITION_ORDER.includes(pos)) ?? false;
+    if (p?.role === "player" && hasFieldPos) {
       playerBenchIds.push(id);
     } else {
       staffIds.push(id);
