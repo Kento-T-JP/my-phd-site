@@ -397,9 +397,7 @@ export default function Formation({
         const res = await fetch('/api/players');
         if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
         const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
-        setPlayers(
-          data.filter((p) => p.role === "player" && p.position.length > 0)
-        );
+        setPlayers(data.filter((p) => p.position.length > 0));
       } catch (err) {
         console.error(err);
         setError('プレイヤーの読み込みに失敗しました');
@@ -716,9 +714,18 @@ export default function Formation({
     return <LoadingSpinner />;
   }
 
-  const benchIds = benchOrder.slice(0, BENCH_LIMIT);
-  const benchOutIds = benchOrder.slice(BENCH_LIMIT);
-  const benchList = benchIds.map((id) => players.find((p) => p.id === id));
+  const playerBenchIds: number[] = [];
+  const staffIds: number[] = [];
+  benchOrder.forEach((id) => {
+    const p = players.find((pl) => pl.id === id);
+    if (p?.role === "player") {
+      playerBenchIds.push(id);
+    } else {
+      staffIds.push(id);
+    }
+  });
+  const benchIds = playerBenchIds.slice(0, BENCH_LIMIT);
+  const benchOutIds = playerBenchIds.slice(BENCH_LIMIT).concat(staffIds);
   const getBenchSortPos = (p: Player) => {
     const pos = p.position;
     if (pos.includes("MF/FW") || pos.includes("MF") || pos.includes("FW")) {
@@ -726,8 +733,9 @@ export default function Formation({
     }
     return pos[0] ?? "";
   };
-  const benchPlayers = benchList
-    .filter((p): p is Player => p && p.position.length > 0)
+  const benchPlayers = benchIds
+    .map((id) => players.find((p) => p.id === id))
+    .filter((p): p is Player => p)
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);
@@ -740,7 +748,7 @@ export default function Formation({
     });
   const benchOutPlayers = benchOutIds
     .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => p && p.position.length > 0)
+    .filter((p): p is Player => p)
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);
