@@ -337,11 +337,13 @@ export default function Formation({
     loadFavorites();
   }, [session]);
 
-  // restore roster selection from localStorage once
+  // restore roster selection from localStorage once per session
   useEffect(() => {
-    const saved = localStorage.getItem("selectedRoster");
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const saved = localStorage.getItem(`selectedRoster_${userId}`);
     if (saved) setSelectedRoster(saved);
-  }, []);
+  }, [session]);
 
   // ensure stored roster still exists
   useEffect(() => {
@@ -353,8 +355,10 @@ export default function Formation({
   }, [rosters, selectedRoster]);
 
   useEffect(() => {
-    localStorage.setItem("selectedRoster", selectedRoster);
-  }, [selectedRoster]);
+    const userId = session?.user?.id;
+    if (!userId) return;
+    localStorage.setItem(`selectedRoster_${userId}`, selectedRoster);
+  }, [selectedRoster, session]);
 
   useEffect(() => {
     setSearchInput(search);
