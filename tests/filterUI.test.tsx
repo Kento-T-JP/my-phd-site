@@ -65,4 +65,27 @@ describe('Roster filter UI', () => {
       screen.getAllByText('Cup - 2024/01/01-2024/01/10').length
     ).toBeGreaterThan(0);
   });
+
+  it('includes custom player positions in position select', async () => {
+    const players = [
+      { id: 1, name: 'Sam', position: ['Sweeper'], role: 'player' },
+    ];
+    global.fetch = vi.fn((url: string) => {
+      if (url.startsWith('/api/players'))
+        return Promise.resolve({ ok: true, json: async () => players });
+      if (url.startsWith('/api/rosters'))
+        return Promise.resolve({ ok: true, json: async () => rosters });
+      if (url.startsWith('/api/tournaments'))
+        return Promise.resolve({ ok: true, json: async () => tournaments });
+      if (url.startsWith('/api/favorites'))
+        return Promise.resolve({ ok: true, json: async () => [] });
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
+    render(<PlayersPage />);
+    await screen.findByText('Apply Filters');
+    const posSelect = screen.getAllByRole('combobox')[1] as HTMLSelectElement;
+    expect(
+      Array.from(posSelect.options).some((opt) => opt.value === 'Sweeper')
+    ).toBe(true);
+  });
 });

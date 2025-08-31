@@ -12,14 +12,6 @@ import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-const positionOptions: PositionKey[] = Array.from(
-  new Set([
-    ...formations.flatMap((f) => Object.keys(f.positions)),
-    "DF",
-    "MF/FW",
-  ])
-) as PositionKey[];
-
 export default function PlayersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -39,6 +31,16 @@ export default function PlayersPage() {
   const [subRosterInput, setSubRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+
+  const positionOptions = useMemo(() => {
+    const defaultPositions = formations.flatMap((f) =>
+      Object.keys(f.positions)
+    );
+    const playerPositions = players.flatMap((p) => p.position);
+    return Array.from(
+      new Set([...defaultPositions, "DF", "MF/FW", ...playerPositions])
+    ) as PositionKey[];
+  }, [players]);
 
   const toggleFavorite = async (id: number) => {
     if (!session) {
