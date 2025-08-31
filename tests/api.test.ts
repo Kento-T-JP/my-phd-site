@@ -289,7 +289,7 @@ describe('roster API routes', () => {
     const res = await GET(new Request('http://test'));
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(rosterSpy).toHaveBeenCalledWith(undefined);
+    expect(rosterSpy).toHaveBeenCalledWith(undefined, 1);
     expect(data[0].id).toBe(1);
   });
 
@@ -298,7 +298,7 @@ describe('roster API routes', () => {
     rosterSpy.mockResolvedValue([{ id: 5 }]);
     const res = await GET(new Request('http://test?slug=abc'));
     expect(res.status).toBe(200);
-    expect(rosterSpy).toHaveBeenCalledWith('abc');
+    expect(rosterSpy).toHaveBeenCalledWith('abc', 1);
     const data = await res.json();
     expect(data[0].id).toBe(5);
   });
@@ -340,6 +340,10 @@ describe('lookup API routes', () => {
     allTSpy.mockReset();
     rTitlesSpy.mockReset();
     upsertTournamentSpy.mockReset();
+    const auth = await import('next-auth/next');
+    sessionSpy = auth.getServerSession as any;
+    sessionSpy.mockReset();
+    sessionSpy.mockResolvedValue({ user: { email: 'a@test.com', isAdmin: true, id: 1 } });
   });
 
   it('GET tournament names', async () => {
@@ -365,7 +369,7 @@ describe('lookup API routes', () => {
     allTSpy.mockResolvedValue([{ id: 3, name: 'Cup', slug: 'cup' }]);
     const res = await GET(new Request('http://test'));
     expect(res.status).toBe(200);
-    expect(allTSpy).toHaveBeenCalled();
+    expect(allTSpy).toHaveBeenCalledWith(1);
     const data = await res.json();
     expect(data[0].slug).toBe('cup');
   });

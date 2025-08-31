@@ -6,7 +6,9 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]';
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug') || undefined;
-  const rosters = await getRosters(slug || undefined);
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id ? Number(session.user.id) : undefined;
+  const rosters = await getRosters(slug, userId);
   return NextResponse.json(rosters);
 }
 

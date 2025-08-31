@@ -367,9 +367,17 @@ export async function upsertTournamentRosterPlayersBySlug(
 }
 
 /** Get all rosters ordered by date. */
-export async function getRosters(slug?: string) {
+export async function getRosters(slug?: string, userId?: number) {
+  const uid =
+    typeof userId === 'number' && Number.isFinite(userId) ? userId : undefined;
+  const where: Prisma.RosterWhereInput = {
+    ...(slug ? { tournament: { slug } } : {}),
+    ...(uid !== undefined
+      ? { OR: [{ userId: uid }, { userId: null }] }
+      : { userId: null }),
+  };
   return prisma.roster.findMany({
-    where: slug ? { tournament: { slug } } : undefined,
+    where,
     orderBy: { date: 'asc' },
     select: {
       id: true,
@@ -383,8 +391,15 @@ export async function getRosters(slug?: string) {
 }
 
 /** Get all tournaments. */
-export async function getTournaments() {
+export async function getTournaments(userId?: number) {
+  const uid =
+    typeof userId === 'number' && Number.isFinite(userId) ? userId : undefined;
+  const where: Prisma.TournamentWhereInput =
+    uid !== undefined
+      ? { rosters: { some: { OR: [{ userId: uid }, { userId: null }] } } }
+      : { rosters: { some: { userId: null } } };
   return prisma.tournament.findMany({
+    where,
     orderBy: { name: 'asc' },
     select: { id: true, name: true, slug: true },
   });
