@@ -223,6 +223,10 @@ export default function Formation({
   const { data: session } = useSession();
   const router = useRouter();
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const storageKey = session?.user?.id
+    ? `selectedRoster_${session.user.id}`
+    : "";
+  const prevStorageKeyRef = useRef<string>("");
 
   const positionOptions = useMemo(() => {
     const defaultPositions = formations.flatMap((f) =>
@@ -337,11 +341,15 @@ export default function Formation({
     loadFavorites();
   }, [session]);
 
-  // restore roster selection from localStorage once
+  // restore roster selection when user changes
   useEffect(() => {
-    const saved = localStorage.getItem("selectedRoster");
-    if (saved) setSelectedRoster(saved);
-  }, []);
+    if (!storageKey) {
+      setSelectedRoster("");
+      return;
+    }
+    const saved = localStorage.getItem(storageKey);
+    setSelectedRoster(saved ?? "");
+  }, [storageKey]);
 
   // ensure stored roster still exists
   useEffect(() => {
@@ -353,8 +361,20 @@ export default function Formation({
   }, [rosters, selectedRoster]);
 
   useEffect(() => {
-    localStorage.setItem("selectedRoster", selectedRoster);
-  }, [selectedRoster]);
+    if (!storageKey && prevStorageKeyRef.current) {
+      localStorage.removeItem(prevStorageKeyRef.current);
+    }
+    prevStorageKeyRef.current = storageKey;
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    if (selectedRoster) {
+      localStorage.setItem(storageKey, selectedRoster);
+    } else {
+      localStorage.removeItem(storageKey);
+    }
+  }, [selectedRoster, storageKey]);
 
   useEffect(() => {
     setSearchInput(search);
