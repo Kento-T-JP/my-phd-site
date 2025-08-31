@@ -46,14 +46,6 @@ const getNameClass = (name: string) => {
   return "";
 };
 
-const positionOptions: PositionKey[] = Array.from(
-  new Set([
-    ...formations.flatMap((f) => Object.keys(f.positions)),
-    "DF",
-    "MF/FW",
-  ])
-) as PositionKey[];
-
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
 const BENCH_LIMIT = 12;
 
@@ -231,6 +223,16 @@ export default function Formation({
   const { data: session } = useSession();
   const router = useRouter();
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+
+  const positionOptions = useMemo(() => {
+    const defaultPositions = formations.flatMap((f) =>
+      Object.keys(f.positions)
+    );
+    const playerPositions = players.flatMap((p) => p.position);
+    return Array.from(
+      new Set([...defaultPositions, "DF", "MF/FW", ...playerPositions])
+    ) as PositionKey[];
+  }, [players]);
 
   const toggleFavorite = async (id: number) => {
     if (!session) {

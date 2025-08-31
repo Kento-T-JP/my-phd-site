@@ -35,6 +35,11 @@ const mixedPlayers = [
   { id: 4, name: 'Dave', position: ['MF'], role: 'player' },
 ];
 
+const playersWithCustom = [
+  ...players,
+  { id: 4, name: 'Eve', position: ['Sweeper'], role: 'player' },
+];
+
 describe('filterPlayers', () => {
   it('filters by name substring', () => {
     expect(filterPlayers(players, { name: 'al' })).toEqual([players[0]]);
@@ -65,5 +70,11 @@ describe('filterPlayers', () => {
   it('filters by position', () => {
     expect(filterPlayers(players, { position: 'GK' })).toEqual([players[0]]);
     expect(filterPlayers(players, { position: 'FW' })).toEqual([players[2]]);
+  });
+
+  it('filters by custom position', () => {
+    expect(filterPlayers(playersWithCustom, { position: 'Sweeper' })).toEqual([
+      playersWithCustom[3],
+    ]);
   });
 });
