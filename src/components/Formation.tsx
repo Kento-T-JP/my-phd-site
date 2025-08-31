@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
@@ -229,10 +229,19 @@ export default function Formation({
       Object.keys(f.positions)
     );
     const playerPositions = players.flatMap((p) => p.position);
+    const rosterPositions = rosters.flatMap(
+      (r) => r.players?.flatMap((rp) => rp.position ?? []) ?? []
+    );
     return Array.from(
-      new Set([...defaultPositions, "DF", "MF/FW", ...playerPositions])
+      new Set([
+        ...defaultPositions,
+        "DF",
+        "MF/FW",
+        ...playerPositions,
+        ...rosterPositions,
+      ])
     ) as PositionKey[];
-  }, [players]);
+  }, [players, rosters]);
 
   const toggleFavorite = async (id: number) => {
     if (!session) {
@@ -288,20 +297,20 @@ export default function Formation({
     setSelectedIsBench(null);
   }, [initialFormation]);
 
-  // load roster options once
-  useEffect(() => {
-    async function fetchRosters() {
-      try {
-        const res = await fetch('/api/rosters');
-        if (!res.ok) throw new Error('Failed to fetch rosters');
-        const data: Roster[] = await res.json();
-        setRosters(data);
-      } catch (err) {
-        console.error(err);
-      }
+  const fetchRosters = useCallback(async () => {
+    try {
+      const res = await fetch('/api/rosters');
+      if (!res.ok) throw new Error('Failed to fetch rosters');
+      const data: Roster[] = await res.json();
+      setRosters(data);
+    } catch (err) {
+      console.error(err);
     }
-    fetchRosters();
   }, []);
+
+  useEffect(() => {
+    fetchRosters();
+  }, [fetchRosters]);
 
   // load tournament options once
   useEffect(() => {
@@ -396,23 +405,39 @@ export default function Formation({
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
-  // fetch players once
-  useEffect(() => {
-    async function fetchPlayers() {
-      try {
-        const res = await fetch('/api/players');
-        if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
-        const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
-        setPlayers(data.filter((p) => p.position.length > 0));
-      } catch (err) {
-        console.error(err);
-        setError('プレイヤーの読み込みに失敗しました');
-      } finally {
-        setLoading(false);
-      }
+  const fetchPlayers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/players');
+      if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
+      const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
+      setPlayers(data.filter((p) => p.position.length > 0));
+    } catch (err) {
+      console.error(err);
+      setError('プレイヤーの読み込みに失敗しました');
+    } finally {
+      setLoading(false);
     }
-    fetchPlayers();
   }, []);
+
+  useEffect(() => {
+    fetchPlayers();
+  }, [fetchPlayers]);
+
+  const refetchPlayersAndRosters = useCallback(() => {
+    fetchPlayers();
+    fetchRosters();
+  }, [fetchPlayers, fetchRosters]);
+
+  useEffect(() => {
+    const handlePositionAdded = () => {
+      refetchPlayersAndRosters();
+    };
+    window.addEventListener('position-added', handlePositionAdded);
+    return () => {
+      window.removeEventListener('position-added', handlePositionAdded);
+    };
+  }, [refetchPlayersAndRosters]);
 
   // initialize ids when players or formation change and no initial lineup
   useEffect(() => {
