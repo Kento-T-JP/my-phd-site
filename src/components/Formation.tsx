@@ -8,9 +8,9 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
-import { rosterDisplayTitle } from "@/lib/format";
 import { formations } from "@/data/formations";
 import type { Formation, SavedFormation } from "@/types/formation";
+import PlayerFilter from "@/components/PlayerFilter";
 
 export interface InitialFormation {
   id?: number;
@@ -198,14 +198,7 @@ export default function Formation({
 
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selectedRoster, setSelectedRoster] = useState<string>("");
-  const [selectedPosition, setSelectedPosition] = useState<string>("");
-  const [selectedTournament, setSelectedTournament] = useState<string>("");
-  const [searchInput, setSearchInput] = useState("");
-  const [filterInput, setFilterInput] = useState("");
-  const [subRosterInput, setSubRosterInput] = useState("");
-  const [positionInput, setPositionInput] = useState("");
+  const [filter, setFilter] = useState<PlayerFilterOptions>({});
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
@@ -345,63 +338,9 @@ export default function Formation({
     }
     loadFavorites();
   }, [session]);
-
-  // restore roster selection from localStorage once per session
-  useEffect(() => {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    const saved = localStorage.getItem(`selectedRoster_${userId}`);
-    if (saved) setSelectedRoster(saved);
-  }, [session]);
-
-  // ensure stored roster still exists
-  useEffect(() => {
-    if (!selectedRoster || rosters.length === 0) return;
-    const exists = rosters.some(r => r.id === Number(selectedRoster));
-    if (!exists) {
-      setSelectedRoster("");
-    }
-  }, [rosters, selectedRoster]);
-
-  useEffect(() => {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    localStorage.setItem(`selectedRoster_${userId}`, selectedRoster);
-  }, [selectedRoster, session]);
-
-  useEffect(() => {
-    setSearchInput(search);
-  }, [search]);
-
-  useEffect(() => {
-    if (selectedRoster) {
-      setFilterInput(`r:${selectedRoster}`);
-      setSubRosterInput('');
-    } else if (selectedTournament) {
-      setFilterInput(`t:${selectedTournament}`);
-    } else {
-      setFilterInput('');
-      setSubRosterInput('');
-    }
-  }, [selectedRoster, selectedTournament]);
-
-  useEffect(() => {
-    setPositionInput(selectedPosition);
-  }, [selectedPosition]);
-
   const filteredPlayers = useMemo(() => {
-    const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
-    const tournamentId =
-      rosterId === undefined && selectedTournament
-        ? Number(selectedTournament)
-        : undefined;
-    return filterPlayers(players, {
-      name: search,
-      rosterId,
-      tournamentId,
-      position: selectedPosition,
-    });
-  }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
+    return filterPlayers(players, filter);
+  }, [players, filter]);
 
   let orderIndex = 0; // そのまま利用（変更不要）
 
@@ -729,7 +668,7 @@ export default function Formation({
   useEffect(() => {
     handleReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedRoster, selectedPosition]);
+  }, [filter]);
 
   /* ───────── render helpers ───────── */
   // track which IDs have already been drawn this frame
@@ -875,74 +814,12 @@ export default function Formation({
     <div className="p-4 pb-8">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
       {!screenshotMode && (
-        <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          className="border p-1 flex-1"
-          placeholder="Filter players..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
+        <PlayerFilter
+          rosters={rosters}
+          tournaments={tournaments}
+          positionOptions={positionOptions}
+          onApply={setFilter}
         />
-        <select
-          className="border p-1"
-          value={filterInput}
-          onChange={(e) => {
-            const val = e.target.value;
-            setFilterInput(val);
-            setSubRosterInput('');
-          }}
-        >
-          <option value="">All tournaments</option>
-          {tournaments.map((t) => (
-            <option key={`t-${t.id}`} value={`t:${t.id}`}> {t.name} </option>
-          ))}
-        </select>
-        {filterInput.startsWith('t:') && (
-          <select
-            className="border p-1"
-            value={subRosterInput}
-            onChange={(e) => setSubRosterInput(e.target.value)}
-          >
-            <option value="">All rosters</option>
-            {rosters
-              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {rosterDisplayTitle(r)}
-                </option>
-              ))}
-          </select>
-        )}
-        <select
-          className="border p-1"
-          value={positionInput}
-          onChange={(e) => setPositionInput(e.target.value)}
-        >
-          <option value="">All positions</option>
-          {positionOptions.map((pos) => (
-            <option key={pos} value={pos}>
-              {pos}
-            </option>
-          ))}
-        </select>
-        <button
-          className="px-2 py-1 bg-blue-500 text-white rounded"
-          onClick={() => {
-            setSearch(searchInput);
-            setSelectedPosition(positionInput);
-            if (filterInput.startsWith('t:')) {
-              const tid = filterInput.slice(2);
-              setSelectedTournament(tid);
-              setSelectedRoster(subRosterInput);
-            } else {
-              setSelectedTournament('');
-              setSelectedRoster('');
-            }
-          }}
-        >
-          Apply Filters
-        </button>
-        </div>
       )}
       <div id="field-bench" className="flex flex-col sm:flex-row mt-8 sm:mt-12 gap-6">
       {/* bench */}
