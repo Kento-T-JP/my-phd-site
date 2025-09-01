@@ -6,6 +6,7 @@ const ContentSecurityPolicy = `
   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
   style-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
   img-src 'self' data: https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
+  connect-src 'self' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
   font-src 'self';
   frame-src 'self' https://www.google.com https://www.recaptcha.net;
 `;
