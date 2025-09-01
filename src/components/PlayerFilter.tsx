@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import type { PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
@@ -22,6 +22,22 @@ export default function PlayerFilter({
   const [tournamentInput, setTournamentInput] = useState("");
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
+  const previousUserIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    const prevId = previousUserIdRef.current;
+    const currentId = session?.user?.id;
+    if (prevId === currentId) return;
+    if (prevId) {
+      localStorage.removeItem(`selectedRoster_${prevId}`);
+    }
+    setSearchInput("");
+    setTournamentInput("");
+    setRosterInput("");
+    setPositionInput("");
+    onApply({});
+    previousUserIdRef.current = currentId;
+  }, [session?.user?.id, onApply]);
 
   useEffect(() => {
     const userId = session?.user?.id;
