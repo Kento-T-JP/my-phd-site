@@ -363,6 +363,12 @@ export default function Formation({
     fetchPlayers();
   }, [fetchPlayers]);
 
+  useEffect(() => {
+    fetchPlayers();
+    fetchRosters();
+    setFilter({});
+  }, [session?.user?.id, fetchPlayers, fetchRosters]);
+
   const refetchPlayersAndRosters = useCallback(() => {
     fetchPlayers();
     fetchRosters();
