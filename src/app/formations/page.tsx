@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
 import Formation from "@/components/Formation";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import useClickSound from "@/lib/useClickSound";
 
 export default function FormationsPage() {
   const { data: session } = useSession();
@@ -14,6 +15,7 @@ export default function FormationsPage() {
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | "">("");
+  const { play } = useClickSound();
 
   const loadList = useCallback(async () => {
     const res = await fetch("/api/formations");
@@ -90,7 +92,10 @@ export default function FormationsPage() {
             </select>
             {selectedId && (
               <button
-                onClick={() => handleDelete(Number(selectedId))}
+                onClick={() => {
+                  play();
+                  handleDelete(Number(selectedId));
+                }}
                 className="ml-2 text-red-500 underline"
               >
                 Delete
