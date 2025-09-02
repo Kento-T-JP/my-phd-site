@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
+import useClickSound from "@/lib/useClickSound";
 
 type User = {
   id: number;
@@ -17,6 +18,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { play } = useClickSound();
 
   async function load() {
     setIsLoading(true);
@@ -117,13 +119,19 @@ export default function UsersPage() {
                 <td className="border px-2 py-1">{u.isAdmin ? "Yes" : "No"}</td>
                 <td className="border px-2 py-1 space-x-2">
                   <button
-                    onClick={() => updateAdmin(u.id, !u.isAdmin)}
+                    onClick={() => {
+                      play();
+                      updateAdmin(u.id, !u.isAdmin);
+                    }}
                     className="underline text-blue-600"
                   >
                     {u.isAdmin ? "Demote" : "Promote"}
                   </button>
                   <button
-                    onClick={() => deleteUser(u.id)}
+                    onClick={() => {
+                      play();
+                      deleteUser(u.id);
+                    }}
                     className="underline text-red-600"
                   >
                     Delete
