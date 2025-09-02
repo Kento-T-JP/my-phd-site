@@ -831,7 +831,7 @@ export default function Formation({
       {/* bench */}
       <div id="bench" className="w-full sm:w-[264px]">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-0">
           {benchPlayers.map(renderBenchCard)}
         </div>
       </div>
@@ -991,7 +991,7 @@ export default function Formation({
       {benchOutPlayers.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-bold mb-2">Off Bench</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-x-2 gap-y-0">
             {benchOutPlayers.map(renderBenchCard)}
           </div>
         </div>
