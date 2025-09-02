@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
+import Button from "./ui/Button";
 
 export default function Header() {
   const { data: session } = useSession();
@@ -22,11 +23,12 @@ export default function Header() {
         className="mr-2"
       />
       <span className="text-xl font-bold flex-grow">SAMURAI BLUE</span>
-      <button
+      <Button
         className="sm:hidden"
         onClick={() => setIsMenuOpen((open) => !open)}
         aria-controls="primary-navigation"
         aria-expanded={isMenuOpen}
+        type="button"
       >
         <span className="sr-only">Toggle navigation</span>
         <svg
@@ -43,7 +45,7 @@ export default function Header() {
             d="M4 6h16M4 12h16M4 18h16"
           />
         </svg>
-      </button>
+      </Button>
       <nav
         id="primary-navigation"
         className={`${isMenuOpen ? "block" : "hidden"} w-full sm:block sm:w-auto`}
@@ -67,9 +69,9 @@ export default function Header() {
               <Link href="/mypage" className="underline">
                 My Page
               </Link>
-              <button onClick={() => signOut()} className="underline">
+              <Button onClick={() => signOut()} className="underline" type="button">
                 Logout
-              </button>
+              </Button>
             </>
           ) : (
             <>

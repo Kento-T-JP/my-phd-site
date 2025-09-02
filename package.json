@@ -21,6 +21,7 @@
     "bcrypt": "^6.0.0",
     "cheerio": "^1.0.0-rc.12",
     "escape-html": "^1.0.3",
+    "framer-motion": "^12.23.12",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
     "nodemailer": "^6.10.1",
