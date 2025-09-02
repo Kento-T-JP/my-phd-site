@@ -137,7 +137,15 @@ body {
   animation: tempo-pulse 1s ease-in-out;
 }
 
-@media (orientation: portrait) {
+#field-bench {
+  flex-direction: row;
+}
+
+#bench {
+  width: 264px;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
   #field-bench {
     flex-direction: column;
   }
@@ -146,7 +154,7 @@ body {
   }
 }
 
-@media (orientation: landscape) {
+@media (max-width: 768px) and (orientation: landscape) {
   #field-bench {
     flex-direction: row;
   }
