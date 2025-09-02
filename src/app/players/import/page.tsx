@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
@@ -201,9 +201,9 @@ export default function ImportPlayersPage() {
             </thead>
             <tbody>
               {players.map((p, idx) => (
-                <>
+                <Fragment key={idx}>
                   <tr
-                    key={idx}
+                    key={`row-${idx}`}
                     onClick={() => toggleExtra(idx)}
                     className="cursor-pointer"
                   >
@@ -222,7 +222,7 @@ export default function ImportPlayersPage() {
                     </td>
                   </tr>
                   {expanded === idx && Object.keys(p.extra).length > 0 && (
-                    <tr className="bg-gray-50">
+                    <tr key={`extra-${idx}`} className="bg-gray-50">
                       <td colSpan={4} className="border px-2 py-1 text-sm">
                         <pre className="whitespace-pre-wrap break-words">
                           {JSON.stringify(p.extra, null, 2)}
@@ -230,7 +230,7 @@ export default function ImportPlayersPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
