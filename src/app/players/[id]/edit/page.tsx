@@ -105,7 +105,7 @@ export default function EditPlayerPage() {
     if (res.ok) {
       setSuccessMessage("選手を削除しました");
       setTimeout(() => {
-        router.push("/");
+        router.push("/players");
       }, 1500);
     } else {
       const err = await res.json();
@@ -152,7 +152,7 @@ export default function EditPlayerPage() {
       const msg = ownerId && session?.user?.id === ownerId ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
       setSuccessMessage(msg);
       setTimeout(() => {
-        router.push("/");
+        router.push("/players");
       }, 1500);
     } else {
       const err = await res.json();
