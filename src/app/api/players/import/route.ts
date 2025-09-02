@@ -36,42 +36,46 @@ export async function POST(req: Request) {
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
       defval: '',
     });
-    const players: ImportedPlayer[] = rows
-      .map((row) => {
-        const {
-          name,
-          名前,
-          positions,
-          position,
-          ポジション,
-          ...extra
-        } = row as Record<string, unknown>;
-        const nm =
-          typeof name === 'string'
-            ? name.trim()
-            : typeof 名前 === 'string'
-              ? 名前.trim()
+    const players: ImportedPlayer[] = [];
+    const errors: { row: number; message: string }[] = [];
+    rows.forEach((row, i) => {
+      const {
+        name,
+        名前,
+        positions,
+        position,
+        ポジション,
+        ...extra
+      } = row as Record<string, unknown>;
+      const nm =
+        typeof name === 'string'
+          ? name.trim()
+          : typeof 名前 === 'string'
+            ? 名前.trim()
+            : '';
+      const posSrc =
+        typeof positions === 'string'
+          ? positions
+          : typeof position === 'string'
+            ? position
+            : typeof ポジション === 'string'
+              ? ポジション
               : '';
-        const posSrc =
-          typeof positions === 'string'
-            ? positions
-            : typeof position === 'string'
-              ? position
-              : typeof ポジション === 'string'
-                ? ポジション
-                : '';
-        const pos = Array.from(
-          new Set(
-            posSrc
-              .split(/[ ,\s]+/)
-              .map((p) => normalizePosition(p))
-              .filter((p) => p.length > 0),
-          ),
-        );
-        return { name: nm, position: pos, extra };
-      })
-      .filter((p) => p.name);
-    return NextResponse.json({ players });
+      const pos = Array.from(
+        new Set(
+          posSrc
+            .split(/[ ,\s]+/)
+            .map((p) => normalizePosition(p))
+            .filter((p) => p.length > 0),
+        ),
+      );
+      if (!nm || pos.length === 0) {
+        errors.push({ row: i, message: '名前またはポジションが見つかりません' });
+        return;
+      }
+      players.push({ name: nm, position: pos, extra });
+    });
+    return NextResponse.json({ players, errors });
   } catch (err) {
     const msg = err instanceof Error ? err.message : '解析に失敗しました';
     return NextResponse.json({ error: msg }, { status: 500 });

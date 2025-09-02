@@ -22,7 +22,7 @@ export default function ImportPlayersPage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [, setRowErrors] = useState<string[]>([]);
+  const [rowErrors, setRowErrors] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (status === "loading") {
@@ -63,8 +63,16 @@ export default function ImportPlayersPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "ファイルの解析に失敗しました");
       }
-      const data = (await res.json()) as { players: ImportedPlayer[] };
+      const data = (await res.json()) as {
+        players: ImportedPlayer[];
+        errors?: unknown;
+      };
       setPlayers(data.players.map((p) => ({ ...p, selected: true })));
+      if ("errors" in data) {
+        setRowErrors(parseRowErrors(data.errors));
+      } else {
+        setRowErrors([]);
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -88,6 +96,17 @@ export default function ImportPlayersPage() {
 
   const parseRowErrors = (errors: unknown): string[] => {
     if (Array.isArray(errors)) {
+      if (errors.every((e) => e && typeof e === "object" && "row" in e)) {
+        const arr: string[] = [];
+        for (const e of errors as any[]) {
+          const idx = Number((e as any).row);
+          const msg = (e as any).message;
+          if (!Number.isNaN(idx)) {
+            arr[idx] = typeof msg === "string" ? msg : String(msg);
+          }
+        }
+        return arr;
+      }
       return errors.map((e) => (typeof e === "string" ? e : String(e)));
     }
     if (errors && typeof errors === "object") {
@@ -191,6 +210,15 @@ export default function ImportPlayersPage() {
       </div>
       {error && <p className="text-red-600">{error}</p>}
       {message && <p className="text-green-600">{message}</p>}
+      {rowErrors.length > 0 && (
+        <ul className="text-red-600 list-disc pl-5">
+          {rowErrors.map((e, i) =>
+            e ? (
+              <li key={i}>{`Row ${i + 1}: ${e}`}</li>
+            ) : null,
+          )}
+        </ul>
+      )}
       {players.length > 0 && (
         <div>
           <table className="w-full border border-collapse">
