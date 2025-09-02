@@ -23,6 +23,7 @@ export default function ImportPlayersPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rowErrors, setRowErrors] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   if (status === "loading") {
     return (
@@ -79,6 +80,10 @@ export default function ImportPlayersPage() {
     setPlayers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, selected: !p.selected } : p)),
     );
+  };
+
+  const toggleExtra = (index: number) => {
+    setExpanded((prev) => (prev === index ? null : index));
   };
 
   const parseRowErrors = (errors: unknown): string[] => {
@@ -154,6 +159,10 @@ export default function ImportPlayersPage() {
         Upload an Excel file (.xlsx) with columns <code>name</code> and
         <code>position</code> or <code>positions</code>. List multiple positions
         separated by commas or spaces.
+        <br />
+        エクセルファイル（.xlsx）の列に<code>name</code>と<code>position</code>
+        （または<code>positions</code>）を含めてください。複数のポジションはカンマや空白で区切ります。
+        日本語の列<code>名前</code>と<code>ポジション</code>も使用できます。
       </p>
       <div className="flex items-center gap-2">
         <input
@@ -192,20 +201,36 @@ export default function ImportPlayersPage() {
             </thead>
             <tbody>
               {players.map((p, idx) => (
-                <tr key={idx}>
-                  <td className="border px-2 py-1 text-center">
-                    <input
-                      type="checkbox"
-                      checked={p.selected}
-                      onChange={() => togglePlayer(idx)}
-                    />
-                  </td>
-                  <td className="border px-2 py-1">{p.name}</td>
-                  <td className="border px-2 py-1">{p.position.join(", ")}</td>
-                  <td className="border px-2 py-1 text-red-600">
-                    {rowErrors[idx] ?? ""}
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={idx}
+                    onClick={() => toggleExtra(idx)}
+                    className="cursor-pointer"
+                  >
+                    <td className="border px-2 py-1 text-center">
+                      <input
+                        type="checkbox"
+                        checked={p.selected}
+                        onChange={() => togglePlayer(idx)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">{p.name}</td>
+                    <td className="border px-2 py-1">{p.position.join(", ")}</td>
+                    <td className="border px-2 py-1 text-red-600">
+                      {rowErrors[idx] ?? ""}
+                    </td>
+                  </tr>
+                  {expanded === idx && Object.keys(p.extra).length > 0 && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={4} className="border px-2 py-1 text-sm">
+                        <pre className="whitespace-pre-wrap break-words">
+                          {JSON.stringify(p.extra, null, 2)}
+                        </pre>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

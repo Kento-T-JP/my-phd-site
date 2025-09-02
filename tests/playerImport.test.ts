@@ -78,6 +78,25 @@ describe('player import API', () => {
     ]);
   });
 
+  it('parses Japanese column headers', async () => {
+    const { POST } = await import('../src/app/api/players/import/route');
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet([
+      { 名前: 'C', ポジション: 'センターバック 左サイドハーフ', note: 'jp' },
+    ]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const file = new File([buf], 'players.xlsx');
+    (file as any).arrayBuffer = async () => buf;
+    const req = { formData: async () => ({ get: () => file }) } as any;
+    const res = await POST(req);
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data.players).toEqual([
+      { name: 'C', position: ['CB', 'LM'], extra: { note: 'jp' } },
+    ]);
+  });
+
   it('persists selected players with extras', async () => {
     const { PUT } = await import('../src/app/api/players/import/route');
     const body = {
