@@ -5,10 +5,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ContactSchema, type ContactForm } from '@/lib/validation/contact';
 import { getCsrfToken } from 'next-auth/react';
+import useClickSound from '@/lib/useClickSound';
 
 export default function ContactPage() {
   const [result, setResult] = useState<{ id: string } | { error: string } | null>(null);
   const [csrf, setCsrf] = useState('');
+  const { play } = useClickSound();
   const {
     register,
     handleSubmit,
@@ -157,6 +159,7 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={isSubmitting}
+            onClick={play}
             className="px-4 py-2 bg-cyan-600 text-blue-950 font-semibold rounded hover:bg-cyan-500 disabled:opacity-50"
           >
             {isSubmitting ? 'Sending…' : 'Send'}
@@ -173,7 +176,10 @@ export default function ContactPage() {
             <p className="text-red-400">
               {result.error}{' '}
               <button
-                onClick={() => setResult(null)}
+                onClick={() => {
+                  play();
+                  setResult(null);
+                }}
                 className="underline text-cyan-400"
               >
                 Retry
