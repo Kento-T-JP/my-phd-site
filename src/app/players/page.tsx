@@ -140,7 +140,7 @@ export default function PlayersPage() {
       rosterId,
       tournamentId,
       position: selectedPosition,
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
 
   if (status === "loading") return <LoadingSpinner />;
