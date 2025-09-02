@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import useClickSound from "@/lib/useClickSound";
 
 type Formation = {
   id: number;
@@ -18,6 +19,7 @@ export default function FormationDetailPage({ params }: Props) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [formation, setFormation] = useState<Formation | null>(null);
+  const { play } = useClickSound();
   const { id } = use(params);
   const formationId = Number(id);
 
@@ -58,6 +60,7 @@ export default function FormationDetailPage({ params }: Props) {
   }
 
   const handleDelete = async () => {
+    play();
     if (!confirm("削除してもよろしいですか？")) return;
     await fetch(`/api/admin/formations/${formationId}`, { method: "DELETE" });
     router.push("/admin/formations");

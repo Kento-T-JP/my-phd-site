@@ -5,6 +5,7 @@ import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
 import MessageCell from "@/components/MessageCell";
+import useClickSound from "@/lib/useClickSound";
 
 interface Inquiry {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminInquiriesPage() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { play } = useClickSound();
 
   async function load() {
     setIsLoading(true);
@@ -135,13 +137,19 @@ export default function AdminInquiriesPage() {
                 <td className="border px-2 py-1 space-x-2">
                   <button
                     className="bg-blue-500 text-white px-2 py-1 rounded"
-                    onClick={() => toggleHandled(q.id, q.status)}
+                    onClick={() => {
+                      play();
+                      toggleHandled(q.id, q.status);
+                    }}
                   >
                     {q.status === "handled" ? "Unmark handled" : "Mark handled"}
                   </button>
                   <button
                     className="bg-red-500 text-white px-2 py-1 rounded"
-                    onClick={() => removeInquiry(q.id)}
+                    onClick={() => {
+                      play();
+                      removeInquiry(q.id);
+                    }}
                   >
                     Delete
                   </button>
