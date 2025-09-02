@@ -44,7 +44,7 @@ beforeEach(async () => {
   prisma.emailVerificationToken.create.mockReset();
   process.env.NEXTAUTH_URL = 'http://localhost:3000';
   process.env.CONFIRM_FROM_ADDRESS = 'no-reply@test';
-  process.env.RECAPTCHA_SECRET_KEY = 'secret';
+  process.env.RECAPTCHA_SECRET = 'secret';
   fetchMock = vi.fn(async () => ({ json: async () => ({ success: true }) }));
   // @ts-ignore
   global.fetch = fetchMock;
@@ -53,7 +53,7 @@ beforeEach(async () => {
 afterEach(() => {
   // @ts-ignore
   global.fetch = originalFetch;
-  delete process.env.RECAPTCHA_SECRET_KEY;
+  delete process.env.RECAPTCHA_SECRET;
 });
 
 describe('register API', () => {

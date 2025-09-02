@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   try {
     const params = new URLSearchParams({
-      secret: process.env.RECAPTCHA_SECRET_KEY || "",
+      secret: process.env.RECAPTCHA_SECRET || "",
       response: recaptchaToken,
     });
     const verify = await fetch(
