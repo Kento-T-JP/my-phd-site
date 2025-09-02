@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
@@ -192,18 +192,19 @@ export default function ImportPlayersPage() {
         <div>
           <table className="w-full border border-collapse">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-gray-100 text-gray-800">
                 <th className="border px-2 py-1">選択</th>
                 <th className="border px-2 py-1">名前</th>
                 <th className="border px-2 py-1">ポジション</th>
+                <th className="border px-2 py-1">詳細</th>
                 <th className="border px-2 py-1">エラー</th>
               </tr>
             </thead>
             <tbody>
               {players.map((p, idx) => (
-                <>
+                <Fragment key={idx}>
                   <tr
-                    key={idx}
+                    key={`row-${idx}`}
                     onClick={() => toggleExtra(idx)}
                     className="cursor-pointer"
                   >
@@ -217,20 +218,26 @@ export default function ImportPlayersPage() {
                     </td>
                     <td className="border px-2 py-1">{p.name}</td>
                     <td className="border px-2 py-1">{p.position.join(", ")}</td>
+                    <td className="border px-2 py-1 text-center">
+                      {Object.keys(p.extra).length > 0 && (expanded === idx ? "▲" : "▼")}
+                    </td>
                     <td className="border px-2 py-1 text-red-600">
                       {rowErrors[idx] ?? ""}
                     </td>
                   </tr>
                   {expanded === idx && Object.keys(p.extra).length > 0 && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={4} className="border px-2 py-1 text-sm">
+                    <tr key={`extra-${idx}`} className="bg-gray-50">
+                      <td
+                        colSpan={5}
+                        className="border px-2 py-1 text-sm text-gray-800"
+                      >
                         <pre className="whitespace-pre-wrap break-words">
                           {JSON.stringify(p.extra, null, 2)}
                         </pre>
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
