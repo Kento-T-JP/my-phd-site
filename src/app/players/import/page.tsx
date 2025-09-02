@@ -128,6 +128,12 @@ export default function ImportPlayersPage() {
         >
           インポート
         </button>
+        {uploading && (
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+            アップロード中…
+          </div>
+        )}
       </div>
       {error && <p className="text-red-600">{error}</p>}
       {message && <p className="text-green-600">{message}</p>}
@@ -157,13 +163,21 @@ export default function ImportPlayersPage() {
               ))}
             </tbody>
           </table>
-          <button
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-            onClick={handleSubmit}
-            disabled={saving}
-          >
-            インポートを確定
-          </button>
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+              onClick={handleSubmit}
+              disabled={saving}
+            >
+              インポートを確定
+            </button>
+            {saving && (
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                保存中…
+              </div>
+            )}
+          </div>
         </div>
       )}
       <BackButton />
