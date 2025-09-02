@@ -197,7 +197,6 @@ export default function ImportPlayersPage() {
                 <th className="border px-2 py-1">名前</th>
                 <th className="border px-2 py-1">ポジション</th>
                 <th className="border px-2 py-1">詳細</th>
-                <th className="border px-2 py-1">エラー</th>
               </tr>
             </thead>
             <tbody>
@@ -221,14 +220,11 @@ export default function ImportPlayersPage() {
                     <td className="border px-2 py-1 text-center">
                       {Object.keys(p.extra).length > 0 && (expanded === idx ? "▲" : "▼")}
                     </td>
-                    <td className="border px-2 py-1 text-red-600">
-                      {rowErrors[idx] ?? ""}
-                    </td>
                   </tr>
                   {expanded === idx && Object.keys(p.extra).length > 0 && (
                     <tr key={`extra-${idx}`} className="bg-gray-50">
                       <td
-                        colSpan={5}
+                        colSpan={4}
                         className="border px-2 py-1 text-sm text-gray-800"
                       >
                         <pre className="whitespace-pre-wrap break-words">
@@ -262,4 +258,3 @@ export default function ImportPlayersPage() {
     </main>
   );
 }
-
