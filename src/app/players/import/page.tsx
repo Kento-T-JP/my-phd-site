@@ -22,6 +22,7 @@ export default function ImportPlayersPage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rowErrors, setRowErrors] = useState<string[]>([]);
 
   if (status === "loading") {
     return (
@@ -42,6 +43,7 @@ export default function ImportPlayersPage() {
     setPlayers([]);
     setError("");
     setMessage("");
+    setRowErrors([]);
   };
 
   const handleImport = async () => {
@@ -63,7 +65,11 @@ export default function ImportPlayersPage() {
       const data = (await res.json()) as { players: ImportedPlayer[] };
       setPlayers(data.players.map((p) => ({ ...p, selected: true })));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "アップロードに失敗しました");
+      setError(
+        err instanceof Error
+          ? `解析失敗: ${err.message}`
+          : "解析失敗: アップロードに失敗しました",
+      );
     } finally {
       setUploading(false);
     }
@@ -75,9 +81,27 @@ export default function ImportPlayersPage() {
     );
   };
 
+  const parseRowErrors = (errors: unknown): string[] => {
+    if (Array.isArray(errors)) {
+      return errors.map((e) => (typeof e === "string" ? e : String(e)));
+    }
+    if (errors && typeof errors === "object") {
+      const arr: string[] = [];
+      for (const [k, v] of Object.entries(errors)) {
+        const idx = Number(k);
+        if (!Number.isNaN(idx)) {
+          arr[idx] = typeof v === "string" ? v : String(v);
+        }
+      }
+      return arr;
+    }
+    return [];
+  };
+
   const handleSubmit = async () => {
     setError("");
     setMessage("");
+    setRowErrors([]);
     const selected = players
       .filter((p) => p.selected)
       .map((p) => ({ name: p.name, position: p.position, extra: p.extra }));
@@ -92,19 +116,32 @@ export default function ImportPlayersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ players: selected }),
       });
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "保存に失敗しました");
+        if ("errors" in data) {
+          setRowErrors(parseRowErrors((data.errors as unknown)));
+        }
+        const msg = typeof data.error === "string" ? data.error : "保存に失敗しました";
+        throw new Error(msg);
       }
-      const data = await res.json();
-      setMessage(`${data.count}件の選手を保存しました`);
+      if ("errors" in data) {
+        setRowErrors(parseRowErrors((data.errors as unknown)));
+      } else {
+        setRowErrors([]);
+      }
+      const count = typeof data.count === "number" ? data.count : 0;
+      setMessage(`${count}件の選手を保存しました`);
       setPlayers([]);
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存に失敗しました");
+      setError(
+        err instanceof Error
+          ? `保存失敗: ${err.message}`
+          : "保存失敗: 保存に失敗しました",
+      );
     } finally {
       setSaving(false);
     }
@@ -150,6 +187,7 @@ export default function ImportPlayersPage() {
                 <th className="border px-2 py-1">選択</th>
                 <th className="border px-2 py-1">名前</th>
                 <th className="border px-2 py-1">ポジション</th>
+                <th className="border px-2 py-1">エラー</th>
               </tr>
             </thead>
             <tbody>
@@ -164,6 +202,9 @@ export default function ImportPlayersPage() {
                   </td>
                   <td className="border px-2 py-1">{p.name}</td>
                   <td className="border px-2 py-1">{p.position.join(", ")}</td>
+                  <td className="border px-2 py-1 text-red-600">
+                    {rowErrors[idx] ?? ""}
+                  </td>
                 </tr>
               ))}
             </tbody>
