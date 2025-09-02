@@ -38,9 +38,28 @@ export async function POST(req: Request) {
     });
     const players: ImportedPlayer[] = rows
       .map((row) => {
-        const { name, positions, position, ...extra } = row as Record<string, unknown>;
-        const nm = typeof name === 'string' ? name.trim() : '';
-        const posSrc = typeof positions === 'string' ? positions : (typeof position === 'string' ? position : '');
+        const {
+          name,
+          名前,
+          positions,
+          position,
+          ポジション,
+          ...extra
+        } = row as Record<string, unknown>;
+        const nm =
+          typeof name === 'string'
+            ? name.trim()
+            : typeof 名前 === 'string'
+              ? 名前.trim()
+              : '';
+        const posSrc =
+          typeof positions === 'string'
+            ? positions
+            : typeof position === 'string'
+              ? position
+              : typeof ポジション === 'string'
+                ? ポジション
+                : '';
         const pos = Array.from(
           new Set(
             posSrc
