@@ -827,15 +827,7 @@ export default function Formation({
           onApply={setFilter}
         />
       )}
-      <div id="field-bench" className="flex flex-col sm:flex-row sm:items-center mt-8 sm:mt-12 gap-6">
-      {/* bench */}
-      <div id="bench" className="w-full sm:w-[264px]">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="grid grid-cols-2 gap-0">
-          {benchPlayers.map(renderBenchCard)}
-        </div>
-      </div>
-
+      <div id="field-bench" className="flex flex-col items-center mt-8 sm:mt-12 gap-6">
       {/* field */}
       <div
         id="field"
@@ -985,8 +977,16 @@ export default function Formation({
             );
           });
         })}
+      </div>
+
+      {/* bench */}
+      <div id="bench" className="w-full">
+        <h3 className="text-lg font-bold mb-2">Bench</h3>
+        <div className="grid grid-cols-2 gap-0">
+          {benchPlayers.map(renderBenchCard)}
         </div>
-        </div>
+      </div>
+      </div>
 
       {benchOutPlayers.length > 0 && (
         <div className="mt-8">
