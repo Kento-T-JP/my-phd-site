@@ -156,13 +156,16 @@ export default function ImportPlayersPage() {
     <main className="p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
       <h1 className="text-xl font-bold">選手インポート</h1>
       <p className="text-sm text-white-600">
-        Upload an Excel file (.xlsx) with columns <code>name</code> and
-        <code>position</code> or <code>positions</code>. List multiple positions
-        separated by commas or spaces.
+        Upload an Excel file (<code>.xlsx</code>) that includes the required columns:
+        <code>name</code> (Japanese: 名前) and <code>position</code> or <code>positions</code>
+        (Japanese: ポジション). Multiple positions should be separated by commas or spaces.
         <br />
-        エクセルファイル（.xlsx）の列に<code>name</code>と<code>position</code>
-        （または<code>positions</code>）を含めてください。複数のポジションはカンマや空白で区切ります。
-        日本語の列<code>名前</code>と<code>ポジション</code>も使用できます。
+        <br />
+        エクセルファイル（<code>.xlsx</code>）には、必ず列（カラム）として
+        <code>name</code>（日本語：名前）と <code>position</code> または
+        <code>positions</code>（日本語：ポジション）を含めてください。
+        複数のポジションはカンマまたは空白で区切って入力できます。
+        日本語の列名 <code>名前</code> と <code>ポジション</code> も使用できます。
       </p>
       <div className="flex items-center gap-2">
         <input
