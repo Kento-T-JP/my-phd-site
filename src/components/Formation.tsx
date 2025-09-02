@@ -827,7 +827,7 @@ export default function Formation({
           onApply={setFilter}
         />
       )}
-      <div id="field-bench" className="flex flex-col sm:flex-row sm:items-center mt-8 sm:mt-12 gap-6">
+      <div id="field-bench" className="flex flex-col-reverse sm:flex-row sm:items-center mt-8 sm:mt-12 gap-6">
       {/* bench */}
       <div id="bench" className="w-full sm:w-[264px]">
         <h3 className="text-lg font-bold mb-2">Bench</h3>
