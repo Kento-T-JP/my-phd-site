@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+  useTransition,
+  Profiler,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WikiLink from "@/components/WikiLink";
@@ -200,6 +208,8 @@ export default function Formation({
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [filter, setFilter] = useState<PlayerFilterOptions>({});
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
+
+  const [, startTransition] = useTransition();
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
     initialFormation
@@ -448,115 +458,129 @@ export default function Formation({
 
   /* ───────── swap (bench ↔ field) ───────── */
   const handleClick = (id: number, isBench: boolean) => {
-    if (!isBench) {
-      setFrontmostId(id);
-    }
-    // Track rapid click sequences for tempo pulse
-    if (lastClickedId === id) {
-      const newCount = clickCount + 1;
-      if (newCount >= 11) {
-        setTempoPulseId(id);
-        setClickCount(0);
-        setLastClickedId(null);
-        if (clickTimeoutRef.current) {
-          clearTimeout(clickTimeoutRef.current);
-          clickTimeoutRef.current = null;
+    const t0 = performance.now();
+    startTransition(() => {
+      if (!isBench) {
+        setFrontmostId(id);
+      }
+      // Track rapid click sequences for tempo pulse
+      if (lastClickedId === id) {
+        const newCount = clickCount + 1;
+        if (newCount >= 11) {
+          setTempoPulseId(id);
+          setClickCount(0);
+          setLastClickedId(null);
+          if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = null;
+          }
+          if (tempoPulseTimeoutRef.current)
+            clearTimeout(tempoPulseTimeoutRef.current);
+          tempoPulseTimeoutRef.current = setTimeout(() => {
+            setTempoPulseId(null);
+          }, 1000);
+        } else {
+          setClickCount(newCount);
+          if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = setTimeout(() => {
+            setClickCount(0);
+            setLastClickedId(null);
+          }, 5000);
         }
-        if (tempoPulseTimeoutRef.current)
-          clearTimeout(tempoPulseTimeoutRef.current);
-        tempoPulseTimeoutRef.current = setTimeout(() => {
-          setTempoPulseId(null);
-        }, 1000);
       } else {
-        setClickCount(newCount);
+        setLastClickedId(id);
+        setClickCount(1);
         if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
         clickTimeoutRef.current = setTimeout(() => {
           setClickCount(0);
           setLastClickedId(null);
         }, 5000);
       }
-    } else {
-      setLastClickedId(id);
-      setClickCount(1);
-      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = setTimeout(() => {
-        setClickCount(0);
-        setLastClickedId(null);
-      }, 5000);
-    }
 
-    if (selectedId === null) {
-      setSelectedId(id);
-      setSelectedIsBench(isBench);
-      return;
-    }
-    if (selectedId === id) {
+      if (selectedId === null) {
+        setSelectedId(id);
+        setSelectedIsBench(isBench);
+        return;
+      }
+      if (selectedId === id) {
+        setSelectedId(null);
+        setSelectedIsBench(null);
+        return;
+      }
+      if (selectedIsBench === isBench) {
+        if (isBench) {
+          /* --- Bench↔Bench: swap order in benchOrder --- */
+          const a = selectedId;
+          const b = id;
+          setBenchOrder((prev) => {
+            const arr = [...prev];
+            const ia = arr.indexOf(a);
+            const ib = arr.indexOf(b);
+            if (ia !== -1 && ib !== -1) {
+              [arr[ia], arr[ib]] = [arr[ib], arr[ia]];
+            }
+            return arr;
+          });
+        } else {
+          /* --- Field↔Field: swap coordinates --- */
+          setPlayerPositions((prev) => {
+            const posA = prev[selectedId] ?? { ...prev[id] };
+            const posB = prev[id] ?? { ...prev[selectedId] };
+            return {
+              ...prev,
+              [selectedId]: posB,
+              [id]: posA,
+            };
+          });
+        }
+        setSelectedId(null);
+        setSelectedIsBench(null);
+        return;
+      }
+
+      const benchId = selectedIsBench ? selectedId : id;
+      const fieldId = selectedIsBench ? id : selectedId;
+
+      // swap lists
+
+      /* --- update benchOrder: replace benchId with fieldId --- */
+      setBenchOrder((prev) => {
+        const arr = [...prev];
+        const idx = arr.indexOf(benchId);
+        if (idx !== -1) {
+          arr[idx] = fieldId; // 出て行く fieldId がベンチ側へ
+        }
+        return arr;
+      });
+
+      setLineupOrder((prev) => prev.map((x) => (x === fieldId ? benchId : x)));
+
+      // pos swap (bench gets field coord, field coord removed)
+      setPlayerPositions((prev) => {
+        const fieldPos = prev[fieldId] ?? { top: 50, left: 50 };
+        const copy = { ...prev };
+        copy[benchId] = fieldPos;
+        delete copy[fieldId];
+        return copy;
+      });
+
+      if (!customMode)
+        freezeDefaults(
+          defaultsFrozen,
+          setDefaultsFrozen,
+          lineupOrder,
+          formation,
+          playerPositions,
+          setPlayerPositions
+        );
+      setCustomMode(true);
+
       setSelectedId(null);
       setSelectedIsBench(null);
-      return;
-    }
-    if (selectedIsBench === isBench) {
-      if (isBench) {
-        /* --- Bench↔Bench: swap order in benchOrder --- */
-        const a = selectedId;
-        const b = id;
-        setBenchOrder((prev) => {
-          const arr = [...prev];
-          const ia = arr.indexOf(a);
-          const ib = arr.indexOf(b);
-          if (ia !== -1 && ib !== -1) {
-            [arr[ia], arr[ib]] = [arr[ib], arr[ia]];
-          }
-          return arr;
-        });
-      } else {
-        /* --- Field↔Field: swap coordinates --- */
-        setPlayerPositions((prev) => {
-          const posA = prev[selectedId] ?? { ...prev[id] };
-          const posB = prev[id] ?? { ...prev[selectedId] };
-          return {
-            ...prev,
-            [selectedId]: posB,
-            [id]: posA,
-          };
-        });
-      }
-      setSelectedId(null);
-      setSelectedIsBench(null);
-      return;
-    }
-
-    const benchId = selectedIsBench ? selectedId : id;
-    const fieldId = selectedIsBench ? id : selectedId;
-
-    // swap lists
-
-    /* --- update benchOrder: replace benchId with fieldId --- */
-    setBenchOrder((prev) => {
-      const arr = [...prev];
-      const idx = arr.indexOf(benchId);
-      if (idx !== -1) {
-        arr[idx] = fieldId;   // 出て行く fieldId がベンチ側へ
-      }
-      return arr;
     });
-
-    setLineupOrder((prev) => prev.map((x) => (x === fieldId ? benchId : x)));
-
-    // pos swap (bench gets field coord, field coord removed)
-    setPlayerPositions((prev) => {
-      const fieldPos = prev[fieldId] ?? { top: 50, left: 50 };
-      const copy = { ...prev };
-      copy[benchId] = fieldPos;
-      delete copy[fieldId];
-      return copy;
-    });
-
-    if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
-    setCustomMode(true);
-
-    setSelectedId(null);
-    setSelectedIsBench(null);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`handleClick ${(performance.now() - t0).toFixed(2)}ms`);
+    }
   };
 
   const handleFormationChange = (f: Formation) => {
@@ -615,7 +639,8 @@ export default function Formation({
     if (!window.confirm('Save formation "' + name + '"?')) {
       return;
     }
-    setIsSaving(true);
+    const t0 = performance.now();
+    startTransition(() => setIsSaving(true));
     try {
       const res = await fetch("/api/formations", {
         method: "POST",
@@ -628,7 +653,7 @@ export default function Formation({
       if (res.ok) {
         const saved = (await res.json()) as SavedFormation;
         alert("保存しました");
-        setInitialFormation(saved);
+        startTransition(() => setInitialFormation(saved));
         onSaved?.(saved);
       } else {
         const data = await res.json();
@@ -637,7 +662,10 @@ export default function Formation({
     } catch {
       alert("保存に失敗しました");
     } finally {
-      setIsSaving(false);
+      startTransition(() => setIsSaving(false));
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`handleSave ${(performance.now() - t0).toFixed(2)}ms`);
+      }
     }
   };
 
@@ -670,6 +698,15 @@ export default function Formation({
       alert("更新に失敗しました");
     }
   };
+
+  const handleProfilerRender = useCallback(
+    (id: string, phase: "mount" | "update", actualDuration: number) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`Profiler:${id} ${phase} ${actualDuration.toFixed(2)}ms`);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     handleReset();
@@ -817,7 +854,8 @@ export default function Formation({
     : "#";
 
   return (
-    <div className="p-4 pb-8">
+    <Profiler id="Formation" onRender={handleProfilerRender}>
+      <div className="p-4 pb-8">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
       {!screenshotMode && (
         <PlayerFilter
@@ -1076,6 +1114,7 @@ export default function Formation({
           </Link>
         </div>
       )}
-    </div>
+      </div>
+    </Profiler>
   );
 }
