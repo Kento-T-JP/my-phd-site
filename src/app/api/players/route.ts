@@ -157,6 +157,7 @@ export async function POST(req: Request) {
           rosterTitle,
           tx,
           tournamentDate,
+          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           roster.id,
@@ -175,6 +176,7 @@ export async function POST(req: Request) {
           tournamentName,
           tx,
           tournamentDate,
+          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           rosterInfo.id,

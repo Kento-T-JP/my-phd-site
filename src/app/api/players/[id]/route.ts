@@ -151,6 +151,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           tx,
         );
       }
+      const rosterUserId = overrideUserId ?? player.userId ?? undefined;
       if (rosterId) {
         await addRosterPlayers(
           rosterId,
@@ -174,6 +175,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           rosterTitle,
           tx,
           tournamentDate,
+          rosterUserId,
         );
         await addRosterPlayers(
           roster.id,
@@ -195,6 +197,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           tournamentName,
           tx,
           tournamentDate,
+          rosterUserId,
         );
         await addRosterPlayers(
           rosterInfo.id,

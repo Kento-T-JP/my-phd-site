@@ -12,6 +12,8 @@ export async function POST(req: Request) {
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const rawId = session.user?.id;
+  const userId = rawId === undefined ? undefined : Number(rawId);
   try {
     const { url } = await req.json();
     if (typeof url !== 'string' || !validateJfaUrl(url)) {
@@ -49,6 +51,7 @@ export async function POST(req: Request) {
           rosterEntries,
           rosterDate,
           tx,
+          Number.isFinite(userId) ? userId : undefined,
         );
       });
 

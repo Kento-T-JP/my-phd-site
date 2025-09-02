@@ -362,9 +362,10 @@ export async function upsertTournamentRosterPlayers(
   players: { playerId: number; number?: number; position?: string[] }[],
   client: Prisma.TransactionClient | PrismaClient = prisma,
   date?: Date,
+  userId?: number,
 ) {
   const t = await upsertTournament(tournament, client);
-  const r = await upsertRoster(t.id, rosterTitle, client, date);
+  const r = await upsertRoster(t.id, rosterTitle, client, date, userId);
   await addRosterPlayers(r.id, players, client);
   return r;
 }
@@ -377,9 +378,10 @@ export async function upsertTournamentRosterPlayersBySlug(
   players: { playerId: number; number?: number; position?: string[] }[],
   date?: Date,
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  userId?: number,
 ) {
   const t = await upsertTournamentBySlug(slug, tournament, client);
-  const r = await upsertRoster(t.id, rosterTitle, client, date);
+  const r = await upsertRoster(t.id, rosterTitle, client, date, userId);
   await addRosterPlayers(r.id, players, client);
   return r;
 }
