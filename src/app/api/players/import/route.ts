@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import prisma, { upsertPlayer } from '@/lib/db';
+import { normalizePosition } from '@/lib/positions';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -40,10 +41,14 @@ export async function POST(req: Request) {
         const { name, positions, position, ...extra } = row as Record<string, unknown>;
         const nm = typeof name === 'string' ? name.trim() : '';
         const posSrc = typeof positions === 'string' ? positions : (typeof position === 'string' ? position : '');
-        const pos = posSrc
-          .split(/[,\s]+/)
-          .map((p) => p.trim())
-          .filter((p) => p.length > 0);
+        const pos = Array.from(
+          new Set(
+            posSrc
+              .split(/[ ,\s]+/)
+              .map((p) => normalizePosition(p))
+              .filter((p) => p.length > 0),
+          ),
+        );
         return { name: nm, position: pos, extra };
       })
       .filter((p) => p.name);
