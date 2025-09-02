@@ -136,3 +136,21 @@ body {
   background: radial-gradient(circle, rgba(56,189,248,0.5) 25%, rgba(59,130,246,0.2) 55%, transparent 70%);
   animation: tempo-pulse 1s ease-in-out;
 }
+
+@media (orientation: portrait) {
+  #field-bench {
+    flex-direction: column;
+  }
+  #bench {
+    width: 100%;
+  }
+}
+
+@media (orientation: landscape) {
+  #field-bench {
+    flex-direction: row;
+  }
+  #bench {
+    width: 264px;
+  }
+}
