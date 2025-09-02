@@ -113,6 +113,11 @@ export default function ImportPlayersPage() {
   return (
     <main className="p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
       <h1 className="text-xl font-bold">選手インポート</h1>
+      <p className="text-sm text-gray-600">
+        Upload an Excel file (.xlsx) with columns <code>name</code> and
+        <code>position</code> or <code>positions</code>. List multiple positions
+        separated by commas or spaces.
+      </p>
       <div className="flex items-center gap-2">
         <input
           ref={fileInputRef}
