@@ -982,7 +982,7 @@ export default function Formation({
         {/* bench */}
         <div id="bench" className="w-full sm:w-[264px] shrink-0">
           <h3 className="text-lg font-bold mb-2">Bench</h3>
-          <div className="grid grid-cols-2 gap-0">
+          <div className="flex flex-wrap gap-0 sm:grid sm:grid-cols-2">
             {benchPlayers.map(renderBenchCard)}
           </div>
         </div>
