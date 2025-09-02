@@ -49,7 +49,6 @@ export default function PlayersPage() {
     setFavorites(new Set());
     setError("");
     setLoading(true);
-
     setSearch("");
     setSelectedRoster("");
     setSelectedTournament("");
