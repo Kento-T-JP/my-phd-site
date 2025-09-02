@@ -56,7 +56,7 @@ export default function Header() {
           )}
           {session ? (
             <>
-                <span className="text-sm max-w-[200px] truncate">
+                <span className="text-sm max-w-[300px] truncate">
                 {session.user?.email
                   ? `Logged in as ${session.user.email}`
                   : "Logged in"}
