@@ -13,7 +13,7 @@ export default function Header() {
   const homeLabel = "Home";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-transparent backdrop-blur-md border-b border-white/20 transition-colors text-white flex items-center p-4 flex-wrap">
+    <header className="fixed top-0 left-0 w-full z-50 bg-transparent backdrop-blur-md border-b border-white/20 transition-colors text-white flex items-center p-4 flex-wrap sm:flex-nowrap">
       <Image
         src="/emblem.svg"
         alt="Samurai Blue Emblem"
@@ -56,7 +56,7 @@ export default function Header() {
           )}
           {session ? (
             <>
-              <span className="text-sm">
+                <span className="text-sm max-w-[200px] truncate">
                 {session.user?.email
                   ? `Logged in as ${session.user.email}`
                   : "Logged in"}
