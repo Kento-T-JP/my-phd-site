@@ -831,7 +831,7 @@ export default function Formation({
       {/* field */}
       <div
         id="field"
-        className="field formation-field relative flex-1 sm:h-[600px] h-screen border border-cyan-400/10 rounded overflow-hidden"
+        className="field formation-field relative flex-none w-full h-screen sm:flex-1 sm:h-[600px] border border-cyan-400/10 rounded overflow-hidden"
       >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
