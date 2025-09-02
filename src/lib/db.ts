@@ -135,10 +135,10 @@ export async function createPlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const { role, ...rest } = data;
+  const { role, extra, ...rest } = data;
   void role;
   const player = await client.player.create({
-    data: { ...rest, userId },
+    data: { ...rest, userId, extra: extra as Prisma.JsonValue | undefined },
   });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
@@ -157,13 +157,18 @@ export async function upsertPlayer(
   const existing = await client.player.findFirst({ where: { name: data.name } });
   let player;
   if (existing) {
-    const { role, ...rest } = data;
+    const { role, extra, ...rest } = data;
     void role;
-    player = await client.player.update({ where: { id: existing.id }, data: rest });
+    player = await client.player.update({
+      where: { id: existing.id },
+      data: { ...rest, extra: extra as Prisma.JsonValue | undefined },
+    });
   } else {
-    const { role, ...rest } = data;
+    const { role, extra, ...rest } = data;
     void role;
-    player = await client.player.create({ data: rest });
+    player = await client.player.create({
+      data: { ...rest, extra: extra as Prisma.JsonValue | undefined },
+    });
   }
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
@@ -195,11 +200,11 @@ export async function updatePlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const { role, ...rest } = data;
+  const { role, extra, ...rest } = data;
   void role;
   const player = await client.player.update({
     where: { id },
-    data: { ...rest, userId },
+    data: { ...rest, userId, extra: extra as Prisma.JsonValue | undefined },
   });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);

@@ -24,6 +24,7 @@ model Player {
   children        Player[]         @relation("PlayerBase")
   user            User?            @relation(fields: [userId], references: [id])
   rosterPlayers   RosterPlayer[]
+  extra           Json?
 
   @@unique([userId, name])
 }
