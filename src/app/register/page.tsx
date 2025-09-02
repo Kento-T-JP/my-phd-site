@@ -41,23 +41,25 @@ export default function RegisterPage() {
             required
           />
         </div>
-        <div className="relative">
+        <div>
           <label className="block mb-1">Password</label>
-          <input
-            type={showPassword ? "text" : "password"}
-            className="w-full p-2 pr-10 border rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute inset-y-0 right-0 px-2 text-sm text-gray-600"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
+          <div className="flex items-center">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="w-full p-2 border rounded"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              className="ml-2 px-2 py-1 text-sm border rounded"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
         {error && <p className="text-red-600">{error}</p>}
         {success && <p className="text-green-600">{success}</p>}
