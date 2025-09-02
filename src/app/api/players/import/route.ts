@@ -107,6 +107,7 @@ export async function PUT(req: Request) {
           },
           undefined,
           tx,
+          session.user.id,
         );
         inserted += 1;
       }
