@@ -14,6 +14,7 @@ export interface Player {
   userId?: number;
   basePlayerId?: number;
   isDeleted?: boolean;
+  extra?: Record<string, unknown>;
   role: "player" | "staff"; // default is "player"
   rosterPlayers?: RosterPlayer[];
 }
