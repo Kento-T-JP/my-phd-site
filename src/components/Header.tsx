@@ -67,9 +67,6 @@ export default function Header() {
               <Link href="/mypage" className="underline">
                 My Page
               </Link>
-              <Link href="/players/import" className="underline">
-                Excel Import
-              </Link>
               <button onClick={() => signOut()} className="underline">
                 Logout
               </button>
