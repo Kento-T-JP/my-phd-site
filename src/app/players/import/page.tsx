@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
@@ -15,6 +15,8 @@ interface ImportedPlayer {
 export default function ImportPlayersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [players, setPlayers] = useState<ImportedPlayer[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -34,10 +36,15 @@ export default function ImportPlayersPage() {
     return null;
   }
 
-  const handleFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    setPlayers([]);
+    setError("");
+    setMessage("");
+  };
+
+  const handleImport = async () => {
     if (!file) return;
     setError("");
     setMessage("");
@@ -92,6 +99,10 @@ export default function ImportPlayersPage() {
       const data = await res.json();
       setMessage(`${data.count}件の選手を保存しました`);
       setPlayers([]);
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     } finally {
@@ -102,13 +113,21 @@ export default function ImportPlayersPage() {
   return (
     <main className="p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
       <h1 className="text-xl font-bold">選手インポート</h1>
-      <div>
+      <div className="flex items-center gap-2">
         <input
+          ref={fileInputRef}
           type="file"
           accept=".xlsx"
           onChange={handleFileChange}
-          disabled={uploading}
+          disabled={uploading || saving}
         />
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          onClick={handleImport}
+          disabled={!file || uploading}
+        >
+          インポート
+        </button>
       </div>
       {error && <p className="text-red-600">{error}</p>}
       {message && <p className="text-green-600">{message}</p>}
