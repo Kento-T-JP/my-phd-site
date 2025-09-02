@@ -22,7 +22,7 @@ export default function ImportPlayersPage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [rowErrors, setRowErrors] = useState<string[]>([]);
+  const [, setRowErrors] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (status === "loading") {

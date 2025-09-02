@@ -26,6 +26,7 @@ export default function EditPlayerPage() {
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [wikiUrl, setWikiUrl] = useState("");
+  const [extra, setExtra] = useState<Record<string, unknown>>({});
   const [message, setMessage] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,7 @@ export default function EditPlayerPage() {
     tournament?: string;
   }>({});
   const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const prevTournament = useRef("");
 
@@ -52,6 +54,7 @@ export default function EditPlayerPage() {
         setPositions(p.position as PositionKey[]);
         setNumber(p.number ? String(p.number) : "");
         setWikiUrl(p.wikiUrl ?? "");
+        setExtra(p.extra ?? {});
         if (p.rosterPlayers?.length) {
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
@@ -290,6 +293,23 @@ export default function EditPlayerPage() {
             )}
           </div>
         </fieldset>
+        {Object.keys(extra).length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="flex items-center gap-1 text-blue-600"
+            >
+              <span>詳細</span>
+              <span>{expanded ? "▲" : "▼"}</span>
+            </button>
+            {expanded && (
+              <pre className="mt-2 whitespace-pre-wrap break-words">
+                {JSON.stringify(extra, null, 2)}
+              </pre>
+            )}
+          </div>
+        )}
       {successMessage && (
         <div className="text-green-600">{successMessage}</div>
       )}
