@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import type { PositionKey, Roster, Tournament } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import type { PlayerFilterOptions } from "./Formation";
+import useClickSound from "@/lib/useClickSound";
 
 interface Props {
   rosters: Roster[];
@@ -23,6 +24,7 @@ export default function PlayerFilter({
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const previousUserIdRef = useRef<string | undefined>();
+  const { play } = useClickSound();
 
   useEffect(() => {
     const prevId = previousUserIdRef.current;
@@ -136,7 +138,10 @@ export default function PlayerFilter({
       </select>
       <button
         className="px-2 py-1 bg-blue-500 text-white rounded"
-        onClick={handleApply}
+        onClick={() => {
+          play();
+          handleApply();
+        }}
       >
         Apply Filters
       </button>

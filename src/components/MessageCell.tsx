@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import useClickSound from "@/lib/useClickSound";
 
 interface MessageCellProps {
   message: string;
@@ -12,6 +13,7 @@ export default function MessageCell({ message, className = "" }: MessageCellProp
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const { play } = useClickSound();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -36,7 +38,10 @@ export default function MessageCell({ message, className = "" }: MessageCellProp
       <button
         ref={triggerRef}
         className={`text-left w-full truncate underline ${className}`.trim()}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          play();
+          setOpen(true);
+        }}
         aria-haspopup="dialog"
         aria-label="全文を表示"
       >
@@ -52,7 +57,10 @@ export default function MessageCell({ message, className = "" }: MessageCellProp
       >
         <p className="mb-4 whitespace-pre-wrap">{message}</p>
         <button
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            play();
+            setOpen(false);
+          }}
           className="bg-blue-500 text-white px-2 py-1 rounded"
         >
           Close

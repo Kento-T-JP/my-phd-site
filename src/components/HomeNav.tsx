@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import useClickSound from "@/lib/useClickSound";
 
 export default function HomeNav() {
   const { data: session } = useSession();
@@ -10,6 +11,7 @@ export default function HomeNav() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { play } = useClickSound();
 
   const links = [
     { href: "/players/new", label: "新規選手登録", auth: true },
@@ -46,7 +48,10 @@ export default function HomeNav() {
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => {
+          play();
+          setIsOpen((prev) => !prev);
+        }}
       >
         <span className="sr-only">メニュー</span>
         <svg

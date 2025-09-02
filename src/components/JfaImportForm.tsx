@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import useClickSound from "@/lib/useClickSound";
 
 export default function JfaImportForm() {
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+  const { play } = useClickSound();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ export default function JfaImportForm() {
         <button
           type="submit"
           className="px-4 py-2 bg-yellow-400 text-blue-900 rounded"
+          onClick={play}
         >
           Fetch
         </button>
