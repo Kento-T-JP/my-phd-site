@@ -827,19 +827,11 @@ export default function Formation({
           onApply={setFilter}
         />
       )}
-      <div id="field-bench" className="flex flex-col-reverse sm:flex-row sm:items-center mt-8 sm:mt-12 gap-6">
-      {/* bench */}
-      <div id="bench" className="w-full sm:w-[264px]">
-        <h3 className="text-lg font-bold mb-2">Bench</h3>
-        <div className="grid grid-cols-2 gap-0">
-          {benchPlayers.map(renderBenchCard)}
-        </div>
-      </div>
-
+      <div id="field-bench" className="flex flex-col sm:flex-row-reverse sm:items-center mt-8 sm:mt-12 gap-6">
       {/* field */}
       <div
         id="field"
-        className="field formation-field relative flex-1 h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+        className="field formation-field relative flex-1 sm:h-[600px] h-screen border border-cyan-400/10 rounded overflow-hidden"
       >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
@@ -986,7 +978,15 @@ export default function Formation({
           });
         })}
         </div>
+
+        {/* bench */}
+        <div id="bench" className="w-full sm:w-[264px] shrink-0">
+          <h3 className="text-lg font-bold mb-2">Bench</h3>
+          <div className="grid grid-cols-2 gap-0">
+            {benchPlayers.map(renderBenchCard)}
+          </div>
         </div>
+      </div>
 
       {benchOutPlayers.length > 0 && (
         <div className="mt-8">
