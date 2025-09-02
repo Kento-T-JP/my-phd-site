@@ -53,7 +53,7 @@ export default function FormationScreenshotPage() {
   }, []);
 
   return (
-    <main className="min-h-screen p-4 flex items-center justify-center">
+    <main className="min-h-screen p-4 flex items-center justify-center [&_.player-filter]:hidden">
       {formation ? (
         <Formation initialFormation={formation} screenshotMode />
       ) : error ? (

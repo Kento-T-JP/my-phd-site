@@ -83,7 +83,7 @@ export default function PlayerFilter({
   };
 
   return (
-    <div className="flex gap-2 mb-4">
+    <div className="player-filter flex gap-2 mb-4">
       <input
         type="text"
         className="border p-1 flex-1"

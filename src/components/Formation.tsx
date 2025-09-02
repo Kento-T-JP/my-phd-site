@@ -819,14 +819,12 @@ export default function Formation({
   return (
     <div className="p-4 pb-8">
       <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
-      {!screenshotMode && (
-        <PlayerFilter
-          rosters={rosters}
-          tournaments={tournaments}
-          positionOptions={positionOptions}
-          onApply={setFilter}
-        />
-      )}
+      <PlayerFilter
+        rosters={rosters}
+        tournaments={tournaments}
+        positionOptions={positionOptions}
+        onApply={setFilter}
+      />
       <div id="field-bench" className="flex flex-col items-center mt-8 sm:mt-12 gap-6">
       {/* field */}
       <div
