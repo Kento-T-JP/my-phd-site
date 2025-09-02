@@ -58,10 +58,10 @@ async function verifyToken(token: string | undefined, ip: string) {
       return false;
     }
   }
-  if (process.env.RECAPTCHA_SECRET_KEY) {
+  if (process.env.RECAPTCHA_SECRET) {
     try {
       const params = new URLSearchParams({
-        secret: process.env.RECAPTCHA_SECRET_KEY,
+        secret: process.env.RECAPTCHA_SECRET,
         response: token,
         remoteip: ip,
       });
