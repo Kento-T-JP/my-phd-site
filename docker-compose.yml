@@ -6,7 +6,6 @@ services:
       - "5555:5555"
     volumes:
       - .:/app
-      - /app/node_modules
     # prisma は npx で、sh -lc でエラー時に即落ちるように
     command: ["./wait-for-it.sh", "db:5432", "--", "sh", "-lc", "npx prisma migrate deploy && npx prisma db seed && npm run dev"]
     environment:

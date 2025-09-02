@@ -9,11 +9,8 @@ COPY package*.json ./
 
 RUN apk add --no-cache bash
 
-# 依存をインストール
-RUN npm install
-
-# Prisma CLI をグローバルにインストール
-RUN npm install -g prisma ts-node tsx @types/node
+# 依存をインストール（lockfile に基づく）
+RUN npm ci
 
 # Prisma スキーマをコピー
 COPY prisma ./prisma
@@ -31,4 +28,4 @@ COPY . .
 EXPOSE 3000
 
 # マイグレーション → シード → 開発サーバーを起動
-CMD ["sh", "-c", "./wait-for-it.sh db:5432 -- prisma migrate deploy && prisma db seed && npm run dev"]
+CMD ["sh", "-c", "./wait-for-it.sh db:5432 -- npx prisma migrate deploy && npx prisma db seed && npm run dev"]
