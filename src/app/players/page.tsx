@@ -43,6 +43,12 @@ export default function PlayersPage() {
     }
     localStorage.removeItem("selectedRoster");
 
+    setPlayers([]);
+    setRosters([]);
+    setTournaments([]);
+    setFavorites(new Set());
+    setError("");
+    setLoading(true);
     setSearch("");
     setSelectedRoster("");
     setSelectedTournament("");

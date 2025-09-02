@@ -98,9 +98,10 @@ export default function ImportPlayersPage() {
     if (Array.isArray(errors)) {
       if (errors.every((e) => e && typeof e === "object" && "row" in e)) {
         const arr: string[] = [];
-        for (const e of errors as any[]) {
-          const idx = Number((e as any).row);
-          const msg = (e as any).message;
+        type RowError = { row?: unknown; message?: unknown };
+        for (const e of errors as RowError[]) {
+          const idx = Number(e.row);
+          const msg = e.message;
           if (!Number.isNaN(idx)) {
             arr[idx] = typeof msg === "string" ? msg : String(msg);
           }
