@@ -168,6 +168,7 @@ describe('player import API', () => {
       { name: 'A', position: ['GK'], role: 'player', extra: { note: 'x' } },
       undefined,
       prisma,
+      1,
     );
     const data = await res.json();
     expect(data.count).toBe(1);

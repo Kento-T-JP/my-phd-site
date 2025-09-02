@@ -153,21 +153,34 @@ export async function upsertPlayer(
   data: Omit<Player, 'id'>,
   rosterId?: number,
   client: Prisma.TransactionClient | PrismaClient = prisma,
+  userId?: number | string,
 ) {
-  const existing = await client.player.findFirst({ where: { name: data.name } });
+  const rawUid = userId ?? (data.userId as unknown);
+  const uid = typeof rawUid === 'string' ? Number(rawUid) : rawUid;
+  const uidNum =
+    typeof uid === 'number' && Number.isFinite(uid) ? uid : undefined;
+  const existing = await client.player.findFirst({
+    where: { name: data.name, userId: uidNum ?? null },
+  });
   let player;
+  const { role, extra, ...rest } = data;
+  void role;
   if (existing) {
-    const { role, extra, ...rest } = data;
-    void role;
     player = await client.player.update({
       where: { id: existing.id },
-      data: { ...rest, extra: extra as Prisma.JsonValue | undefined },
+      data: {
+        ...rest,
+        userId: uidNum,
+        extra: extra as Prisma.JsonValue | undefined,
+      },
     });
   } else {
-    const { role, extra, ...rest } = data;
-    void role;
     player = await client.player.create({
-      data: { ...rest, extra: extra as Prisma.JsonValue | undefined },
+      data: {
+        ...rest,
+        userId: uidNum,
+        extra: extra as Prisma.JsonValue | undefined,
+      },
     });
   }
   if (rosterId) {
