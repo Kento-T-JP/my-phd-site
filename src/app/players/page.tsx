@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,29 @@ export default function PlayersPage() {
   const [subRosterInput, setSubRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const previousUserIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    const prevId = previousUserIdRef.current;
+    const currentId = session?.user?.id;
+    if (prevId === currentId) return;
+
+    if (prevId) {
+      localStorage.removeItem(`selectedRoster_${prevId}`);
+    }
+    localStorage.removeItem("selectedRoster");
+
+    setSearch("");
+    setSelectedRoster("");
+    setSelectedTournament("");
+    setSelectedPosition("");
+    setSearchInput("");
+    setFilterInput("");
+    setSubRosterInput("");
+    setPositionInput("");
+
+    previousUserIdRef.current = currentId;
+  }, [session?.user?.id]);
 
   const positionOptions = useMemo(() => {
     const defaultPositions = formations.flatMap((f) =>
