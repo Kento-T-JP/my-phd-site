@@ -298,8 +298,9 @@ export default function EditPlayerPage() {
           {message.map((m, idx) => (
             <p key={idx}>{m}</p>
           ))}
-          </div>
-        )}
+        </div>
+      )}
+      <div className="flex gap-2">
         <button
           type="submit"
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
@@ -309,18 +310,19 @@ export default function EditPlayerPage() {
         </button>
         <button
           type="button"
-          onClick={() => router.back()}
-          className="px-4 py-2 bg-gray-300 text-black rounded"
-        >
-          戻る
-        </button>
-        <button
-          type="button"
           onClick={handleDelete}
           className="px-4 py-2 bg-red-500 text-white rounded"
         >
           削除
         </button>
+      </div>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="px-4 py-2 bg-gray-300 text-black rounded"
+      >
+        戻る
+      </button>
       </form>
     </main>
   );
