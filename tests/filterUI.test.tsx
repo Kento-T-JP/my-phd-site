@@ -1,16 +1,21 @@
 import React from 'react';
 import { render, fireEvent, screen, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('next-auth/react', async () => {
+  const mod = await vi.importActual<any>('next-auth/react');
+  return {
+    ...mod,
+    useSession: () => ({
+      data: { user: { id: 1 } },
+      status: 'authenticated',
+    }),
+  };
+});
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 import RosterTypeahead from '@/components/RosterTypeahead';
 import PlayersPage from '@/app/players/page';
-
-vi.mock('next-auth/react', () => ({
-  useSession: () => ({
-    data: { user: { id: 1 } },
-    status: 'authenticated',
-  }),
-}));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const rosters = [
   {
