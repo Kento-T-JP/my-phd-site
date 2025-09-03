@@ -6,6 +6,7 @@ import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
+import useClickSound from "@/lib/useClickSound";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -18,6 +19,7 @@ const positionOptions: PositionKey[] = Array.from(
 export default function NewPlayerPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { play } = useClickSound();
   const [csrf, setCsrf] = useState("");
   const [name, setName] = useState("");
   const [positions, setPositions] = useState<PositionKey[]>([]);
@@ -240,12 +242,16 @@ export default function NewPlayerPage() {
         <button
           type="submit"
           className="px-4 py-2 bg-blue-500 text-white rounded"
+          onClick={play}
         >
           送信
         </button>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            play();
+            router.back();
+          }}
           className="px-4 py-2 bg-gray-300 text-black rounded"
         >
           戻る
