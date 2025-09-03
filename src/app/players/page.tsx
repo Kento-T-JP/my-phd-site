@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, getCsrfToken } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
 import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
@@ -32,6 +32,8 @@ export default function PlayersPage() {
   const [subRosterInput, setSubRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [csrf, setCsrf] = useState("");
   const previousUserIdRef = useRef<string | undefined>();
   const { play } = useClickSound();
 
@@ -116,6 +118,10 @@ export default function PlayersPage() {
   }, [session]);
 
   useEffect(() => {
+    getCsrfToken().then((token) => setCsrf(token ?? ""));
+  }, []);
+
+  useEffect(() => {
     if (!session) return;
     async function fetchRosters() {
       try {
@@ -175,6 +181,59 @@ export default function PlayersPage() {
     }).sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
 
+  const allSelected =
+    filteredPlayers.length > 0 &&
+    filteredPlayers.every((p) => selectedIds.has(p.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      if (allSelected) {
+        filteredPlayers.forEach((p) => s.delete(p.id));
+      } else {
+        filteredPlayers.forEach((p) => s.add(p.id));
+      }
+      return s;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm("選択した選手を削除しますか？")) return;
+    const ids = Array.from(selectedIds);
+    const deleted: number[] = [];
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/players/${id}`, {
+          method: "DELETE",
+          headers: { "X-CSRF-Token": csrf },
+        });
+        if (res.ok) {
+          deleted.push(id);
+        } else {
+          throw new Error("Failed to delete");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to delete selected players");
+        break;
+      }
+    }
+    if (deleted.length > 0) {
+      setPlayers((prev) => prev.filter((p) => !deleted.includes(p.id)));
+    }
+    setSelectedIds(new Set());
+  };
+
   if (status === "loading") return <LoadingSpinner />;
   if (!session) {
     router.push("/login");
@@ -200,6 +259,15 @@ export default function PlayersPage() {
   return (
     <main className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold mb-4">選手一覧を編集</h1>
+      <div className="mb-2">
+        <button
+          className="px-2 py-1 bg-red-500 text-white rounded disabled:opacity-50"
+          disabled={selectedIds.size === 0}
+          onClick={handleDeleteSelected}
+        >
+          Delete selected
+        </button>
+      </div>
       <div className="flex gap-2 mb-4">
         <input
           type="text"
@@ -274,6 +342,14 @@ export default function PlayersPage() {
       <table className="w-full table-auto border-collapse">
         <thead>
           <tr>
+            <th className="border-b px-2 py-1 text-center">
+              <input
+                type="checkbox"
+                aria-label="Select all"
+                checked={allSelected}
+                onChange={toggleSelectAll}
+              />
+            </th>
             <th className="border-b px-2 py-1 text-left">背番号</th>
             <th className="border-b px-2 py-1 text-left">名前</th>
             <th className="border-b px-2 py-1 text-center">★</th>
@@ -283,6 +359,14 @@ export default function PlayersPage() {
         <tbody>
           {filteredPlayers.map((p) => (
             <tr key={p.id} className="border-b">
+              <td className="px-2 py-1 text-center">
+                <input
+                  type="checkbox"
+                  aria-label={`Select player ${p.id}`}
+                  checked={selectedIds.has(p.id)}
+                  onChange={() => toggleSelect(p.id)}
+                />
+              </td>
               <td className="px-2 py-1">{p.number ?? "-"}</td>
               <td className="px-2 py-1 text-white">
                 <div className="flex items-center gap-2">
