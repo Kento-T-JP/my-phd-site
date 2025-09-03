@@ -21,6 +21,7 @@ export default function useClickSound() {
 
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const muted =
       (typeof window !== 'undefined' && localStorage.getItem('mute') === 'true') ||

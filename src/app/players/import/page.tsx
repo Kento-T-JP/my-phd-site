@@ -4,6 +4,7 @@ import { Fragment, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
+import useClickSound from "@/lib/useClickSound";
 
 interface ImportedPlayer {
   name: string;
@@ -15,6 +16,7 @@ interface ImportedPlayer {
 export default function ImportPlayersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { play } = useClickSound();
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [players, setPlayers] = useState<ImportedPlayer[]>([]);
@@ -197,7 +199,10 @@ export default function ImportPlayersPage() {
         />
         <button
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-          onClick={handleImport}
+          onClick={() => {
+            play();
+            void handleImport();
+          }}
           disabled={!file || uploading}
         >
           インポート
@@ -236,14 +241,20 @@ export default function ImportPlayersPage() {
                 <Fragment key={idx}>
                   <tr
                     key={`row-${idx}`}
-                    onClick={() => toggleExtra(idx)}
+                    onClick={() => {
+                      play();
+                      toggleExtra(idx);
+                    }}
                     className="cursor-pointer"
                   >
                     <td className="border px-2 py-1 text-center">
                       <input
                         type="checkbox"
                         checked={p.selected}
-                        onChange={() => togglePlayer(idx)}
+                        onChange={() => {
+                          play();
+                          togglePlayer(idx);
+                        }}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
@@ -272,7 +283,10 @@ export default function ImportPlayersPage() {
           <div className="mt-4 flex items-center gap-2">
             <button
               className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-              onClick={handleSubmit}
+              onClick={() => {
+                play();
+                void handleSubmit();
+              }}
               disabled={saving}
             >
               インポートを確定
