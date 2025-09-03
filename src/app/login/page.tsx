@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import useClickSound from "@/lib/useClickSound";
 
 const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false });
 
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const { play } = useClickSound();
 
   useEffect(() => {
     setIsMounted(true);
@@ -72,7 +74,10 @@ export default function LoginPage() {
             <button
               type="button"
               className="ml-2 px-2 py-1 text-sm border rounded"
-              onClick={() => setShowPassword((prev) => !prev)}
+              onClick={() => {
+                play();
+                setShowPassword((prev) => !prev);
+              }}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide" : "Show"}
@@ -89,7 +94,11 @@ export default function LoginPage() {
           </div>
         )}
         {error && <p className="text-red-600">{error}</p>}
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+          onClick={play}
+        >
           Sign In
         </button>
       </form>
