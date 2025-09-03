@@ -19,6 +19,7 @@ import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
+import useClickSound from "@/lib/useClickSound";
 
 export interface InitialFormation {
   id?: number;
@@ -225,6 +226,7 @@ export default function Formation({
 
   const { data: session } = useSession();
   const router = useRouter();
+  const { play } = useClickSound();
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
   const positionOptions = useMemo(() => {
@@ -247,6 +249,7 @@ export default function Formation({
   }, [players, rosters]);
 
   const toggleFavorite = async (id: number) => {
+    play();
     if (!session) {
       router.push("/login");
       return;
@@ -458,6 +461,7 @@ export default function Formation({
 
   /* ───────── swap (bench ↔ field) ───────── */
   const handleClick = (id: number, isBench: boolean) => {
+    play();
     const t0 = performance.now();
     startTransition(() => {
       if (!isBench) {
@@ -584,6 +588,7 @@ export default function Formation({
   };
 
   const handleFormationChange = (f: Formation) => {
+    play();
     // save current state for existing formation
     setFormationStates((prev) => ({
       ...prev,
@@ -631,6 +636,7 @@ export default function Formation({
   };
 
   const handleSave = async () => {
+    play();
     if (!session) {
       alert("Please log in to save your formation.");
       return;
@@ -670,6 +676,7 @@ export default function Formation({
   };
 
   const handleUpdate = async () => {
+    play();
     if (!session || !initialFormation?.id) {
       alert("更新するフォーメーションがありません");
       return;
@@ -829,7 +836,10 @@ export default function Formation({
             href="/login"
             className="ml-1 text-yellow-300"
             aria-label="Login to favorite"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              play();
+              e.stopPropagation();
+            }}
           >
             ☆
           </Link>
@@ -928,6 +938,7 @@ export default function Formation({
                   zIndex: frontmostId === p.id ? 10 : 0,
                 }}
                 onMouseDown={(e) => {
+                  play();
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setDragging({
                     id: p.id,
@@ -993,7 +1004,10 @@ export default function Formation({
                         href="/login"
                         className="ml-1 text-yellow-300"
                         aria-label="Login to favorite"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          play();
+                          e.stopPropagation();
+                        }}
                       >
                         ☆
                       </Link>
@@ -1052,7 +1066,10 @@ export default function Formation({
         ))}
         <button
           className="px-3 py-1 border rounded"
-          onClick={handleReset}
+          onClick={() => {
+            play();
+            handleReset();
+          }}
         >
           Reset
         </button>
@@ -1101,6 +1118,7 @@ export default function Formation({
             href={screenshotHref}
             aria-disabled={!initialFormation?.id}
             onClick={(e) => {
+              play();
               if (!initialFormation?.id) {
                 e.preventDefault();
                 alert("Save the formation first");
