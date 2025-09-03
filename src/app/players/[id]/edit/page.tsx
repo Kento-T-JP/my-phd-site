@@ -6,6 +6,7 @@ import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
+import useClickSound from "@/lib/useClickSound";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -41,6 +42,7 @@ export default function EditPlayerPage() {
   }>({});
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const { play } = useClickSound();
 
   const prevTournament = useRef("");
 
@@ -97,6 +99,7 @@ export default function EditPlayerPage() {
   };
 
   const handleDelete = async () => {
+    play();
     if (!confirm("削除してもよろしいですか？")) return;
     const res = await fetch(`/api/players/${id}`, {
       method: "DELETE",
@@ -119,6 +122,7 @@ export default function EditPlayerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    play();
     const allPositions = otherPosition
       ? [...positions, otherPosition.trim()]
       : positions;
@@ -297,7 +301,10 @@ export default function EditPlayerPage() {
           <div>
             <button
               type="button"
-              onClick={() => setExpanded((prev) => !prev)}
+              onClick={() => {
+                play();
+                setExpanded((prev) => !prev);
+              }}
               className="flex items-center gap-1 text-blue-600"
             >
               <span>詳細</span>
@@ -338,7 +345,10 @@ export default function EditPlayerPage() {
       </div>
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={() => {
+          play();
+          router.back();
+        }}
         className="px-4 py-2 bg-gray-300 text-black rounded"
       >
         戻る
