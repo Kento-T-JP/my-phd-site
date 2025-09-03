@@ -8,6 +8,7 @@ import type { Player } from "@/types/player";
 import BackButton from "@/components/BackButton";
 import WikiLink from "@/components/WikiLink";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import useClickSound from "@/lib/useClickSound";
 
 export default function MyPage() {
   const { data: session, status } = useSession();
@@ -15,6 +16,7 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<Player[]>([]);
   const [favLoading, setFavLoading] = useState(true);
+  const { play } = useClickSound();
 
   useEffect(() => {
     if (!session) return;
@@ -84,7 +86,10 @@ export default function MyPage() {
                 {f.name}
               </Link>
               <button
-                onClick={() => handleDelete(f.id)}
+                onClick={() => {
+                  play();
+                  void handleDelete(f.id);
+                }}
                 className="text-red-500 underline"
               >
                 Delete
