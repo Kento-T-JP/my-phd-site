@@ -11,6 +11,7 @@ import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import useClickSound from "@/lib/useClickSound";
 
 export default function PlayersPage() {
   const { data: session, status } = useSession();
@@ -32,6 +33,7 @@ export default function PlayersPage() {
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const previousUserIdRef = useRef<string | undefined>();
+  const { play } = useClickSound();
 
   useEffect(() => {
     const prevId = previousUserIdRef.current;
@@ -72,6 +74,7 @@ export default function PlayersPage() {
   }, [players]);
 
   const toggleFavorite = async (id: number) => {
+    play();
     if (!session) {
       router.push("/login");
       return;
@@ -252,6 +255,7 @@ export default function PlayersPage() {
         <button
           className="px-2 py-1 bg-blue-500 text-white rounded"
           onClick={() => {
+            play();
             setSearch(searchInput);
             setSelectedPosition(positionInput);
             if (filterInput.startsWith("t:")) {
