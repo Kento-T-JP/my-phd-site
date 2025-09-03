@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
+import useClickSound from "@/lib/useClickSound";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,8 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  const { play } = useClickSound();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +57,10 @@ export default function RegisterPage() {
             <button
               type="button"
               className="ml-2 px-2 py-1 text-sm border rounded"
-              onClick={() => setShowPassword((prev) => !prev)}
+              onClick={() => {
+                play();
+                setShowPassword((prev) => !prev);
+              }}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide" : "Show"}
@@ -67,7 +73,11 @@ export default function RegisterPage() {
           sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
           onChange={setCaptchaToken}
         />
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+          onClick={play}
+        >
           Sign Up
         </button>
       </form>
