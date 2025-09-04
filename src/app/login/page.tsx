@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getSession, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import useClickSound from "@/lib/useClickSound";
@@ -17,10 +17,28 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   const { play } = useClickSound();
+  const { status } = useSession();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  if (status !== "authenticated") {
+    return (
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
+        <h1 className="text-xl font-bold mb-4">Login</h1>
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+          onClick={() => {
+            play();
+            signIn("google");
+          }}
+        >
+          Sign in with Google
+        </button>
+      </main>
+    );
+  }
 
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
