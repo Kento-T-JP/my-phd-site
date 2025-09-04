@@ -1,6 +1,7 @@
 import NextAuth, { type NextAuthOptions, type Session, type User } from "next-auth";
 import { type JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/db";
 import { compare } from "bcrypt";
@@ -65,21 +66,45 @@ export const authOptions: NextAuthOptions = {
         return dbUser;
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
+    async signIn({ user }: { user: User }) {
+      const allowedEmails =
+        process.env.GATE_ALLOWED_EMAILS?.split(",").map((e) => e.trim()) ?? [];
+      if (!user.email) return false;
+      return allowedEmails.includes(user.email);
+    },
+    async jwt({
+      token,
+      user,
+    }: {
+      token: JWT & { id?: string; isAdmin?: boolean; isGatePassed?: boolean };
+      user?: User;
+    }) {
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
+        token.isGatePassed = true;
       }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT & { id?: string; isAdmin?: boolean } }) {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session & { isGatePassed?: boolean };
+      token: JWT & { id?: string; isAdmin?: boolean; isGatePassed?: boolean };
+    }) {
       if (session.user) {
         session.user.id = token.id!;
         session.user.isAdmin = token.isAdmin;
       }
+      session.isGatePassed = token.isGatePassed;
       return session;
     },
   },
