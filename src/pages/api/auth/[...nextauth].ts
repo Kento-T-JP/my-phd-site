@@ -1,10 +1,16 @@
 import NextAuth, { type NextAuthOptions, type Session, type User } from "next-auth";
 import { type JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/db";
 import { compare } from "bcrypt";
 import { timingSafeEqual } from "crypto";
+
+const ALLOWED_EMAILS = (process.env.GOOGLE_ALLOWED_EMAILS || "")
+  .split(",")
+  .map((email) => email.trim())
+  .filter(Boolean);
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -65,9 +71,19 @@ export const authOptions: NextAuthOptions = {
         return dbUser;
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
+    async signIn({ account, profile }) {
+      if (account.provider === "google") {
+        return ALLOWED_EMAILS.includes(profile?.email ?? "");
+      }
+      return true; // allow credentials login
+    },
     async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
       if (user) {
         token.id = user.id;
