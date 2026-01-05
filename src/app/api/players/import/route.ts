@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma, { upsertPlayer } from '@/lib/db';
 import { normalizePosition } from '@/lib/positions';
 

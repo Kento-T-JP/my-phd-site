@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import AdminNav from "@/components/AdminNav";
 
 export default async function AdminLayout({

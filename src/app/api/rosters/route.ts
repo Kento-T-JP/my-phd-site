@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, { getRosters, ensureTournamentRoster } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
