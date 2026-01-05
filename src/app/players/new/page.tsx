@@ -101,7 +101,7 @@ export default function NewPlayerPage() {
       }
       setSuccessMessage("選手を登録しました！");
       setTimeout(() => {
-        router.push("/");
+        router.push("/home");
       }, 1500);
     } else {
       const err = await res.json();

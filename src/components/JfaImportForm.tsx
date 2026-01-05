@@ -19,12 +19,12 @@ export default function JfaImportForm() {
       body: JSON.stringify({ url }),
     });
     const data = await res.json();
-    if (res.ok) {
-      setMessage(`${data.count}人登録しました`);
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
-    } else {
+      if (res.ok) {
+        setMessage(`${data.count}人登録しました`);
+        setTimeout(() => {
+        router.push("/home");
+        }, 1500);
+      } else {
       setMessage(data.error || "エラーが発生しました");
     }
   };
