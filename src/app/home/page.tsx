@@ -6,7 +6,7 @@ import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function fetchPlayers(): Promise<Player[]> {
   const cookieHeader = cookies().toString();

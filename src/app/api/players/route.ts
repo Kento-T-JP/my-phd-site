@@ -8,7 +8,7 @@ import prisma, {
   upsertRoster,
 } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';

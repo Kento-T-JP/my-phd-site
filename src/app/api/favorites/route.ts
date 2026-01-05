@@ -6,7 +6,7 @@ import prisma, {
 } from '@/lib/db';
 import type { Player } from '@/types/player';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 
 const FavoritePlayerSchema = z.object({

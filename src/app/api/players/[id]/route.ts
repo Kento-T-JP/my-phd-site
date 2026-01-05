@@ -9,7 +9,7 @@ import prisma, {
   upsertRoster,
 } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { PlayerSchema } from '../route';
 import { promises as fs } from 'fs';
 import path from 'path';
