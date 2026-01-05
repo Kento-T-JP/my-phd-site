@@ -1,14 +1,35 @@
 import NextAuth, { type NextAuthOptions, type Session, type User } from "next-auth";
 import { type JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/db";
 import { compare } from "bcrypt";
-import { timingSafeEqual } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
+
+const allowedGoogleEmail = "japan.start11@gmail.com";
+
+const prismaAdapter = PrismaAdapter(prisma);
+const adapter = {
+  ...prismaAdapter,
+  async createUser(user) {
+    return prisma.user.create({
+      data: {
+        ...user,
+        hashedPassword: randomUUID(),
+        emailVerified: user.emailVerified ?? new Date(),
+      },
+    });
+  },
+};
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter,
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -68,6 +89,12 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        return user.email?.toLowerCase() === allowedGoogleEmail.toLowerCase();
+      }
+      return true;
+    },
     async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
       if (user) {
         token.id = user.id;
@@ -88,4 +115,3 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 export default handler;
-
