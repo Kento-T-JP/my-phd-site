@@ -40,7 +40,7 @@ export default function LoginPage() {
       if (session?.user?.isAdmin) {
         router.push("/admin");
       } else {
-        router.push("/");
+        router.push("/home");
       }
     } else {
       setError("メールアドレスまたはパスワードが正しくありません");
@@ -105,4 +105,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

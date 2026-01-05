@@ -9,8 +9,8 @@ import Button from "./ui/Button";
 export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const showHome = pathname !== "/";
-  const homeHref = "/";
+  const showHome = pathname !== "/home";
+  const homeHref = "/home";
   const homeLabel = "Home";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   return (
@@ -88,4 +88,3 @@ export default function Header() {
     </header>
   );
 }
-
