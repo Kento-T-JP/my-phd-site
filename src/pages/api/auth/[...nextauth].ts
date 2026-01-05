@@ -7,8 +7,6 @@ import prisma from "@/lib/db";
 import { compare } from "bcrypt";
 import { randomUUID, timingSafeEqual } from "crypto";
 
-const allowedGoogleEmail = "japan.start11@gmail.com";
-
 const prismaAdapter = PrismaAdapter(prisma);
 const adapter = {
   ...prismaAdapter,
@@ -90,12 +88,17 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        return user.email?.toLowerCase() === allowedGoogleEmail.toLowerCase();
-      }
       return true;
     },
-    async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
+    async jwt({
+      token,
+      user,
+      account,
+    }: {
+      token: JWT & { id?: string; isAdmin?: boolean; loginStage?: string };
+      user?: User;
+      account?: { provider?: string };
+    }) {
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
