@@ -75,7 +75,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Link href="/login" className="underline">
+              <Link href="/" className="underline">
                 Login
               </Link>
               <Link href="/register" className="underline">

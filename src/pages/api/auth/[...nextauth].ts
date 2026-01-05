@@ -100,13 +100,23 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
       }
+      if (account?.provider) {
+        token.loginStage = account.provider;
+      }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT & { id?: string; isAdmin?: boolean } }) {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT & { id?: string; isAdmin?: boolean; loginStage?: string };
+    }) {
       if (session.user) {
         session.user.id = token.id!;
         session.user.isAdmin = token.isAdmin;
       }
+      session.loginStage = token.loginStage ?? "credentials";
       return session;
     },
   },

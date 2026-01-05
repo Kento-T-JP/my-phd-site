@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getSession, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import useClickSound from "@/lib/useClickSound";
@@ -9,6 +9,7 @@ const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false }
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,8 +23,32 @@ export default function LoginPage() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/");
+      return;
+    }
+    if (status === "authenticated") {
+      if (session?.loginStage === "credentials") {
+        router.replace("/home");
+        return;
+      }
+      if (session?.loginStage !== "google") {
+        router.replace("/");
+      }
+    }
+  }, [router, session?.loginStage, status]);
+
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
+  }
+
+  if (status === "loading") {
+    return (
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
+        <p>Loading...</p>
+      </main>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
