@@ -75,6 +75,11 @@ export default function LoginPage() {
   return (
     <main className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">Login</h1>
+      {session?.loginStage === "google" && (
+        <p className="mb-4 text-sm text-white/80">
+          Google認証が完了しました。続いて既存のログイン方法でサインインしてください。
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-1">Email</label>
