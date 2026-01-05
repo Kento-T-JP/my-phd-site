@@ -27,7 +27,7 @@ export default async function Home({
   searchParams?: { formationId?: string };
 }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.loginStage !== "credentials") {
+  if (!session) {
     redirect("/");
   }
 

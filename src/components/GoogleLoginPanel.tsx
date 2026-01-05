@@ -20,7 +20,7 @@ export default function GoogleLoginPanel() {
         className="w-full px-4 py-2 bg-red-500 text-white rounded"
         onClick={() => {
           play();
-          void signIn("google", { callbackUrl: "/login" });
+          void signIn("google", { callbackUrl: "/home" });
         }}
       >
         Googleアカウントでログイン

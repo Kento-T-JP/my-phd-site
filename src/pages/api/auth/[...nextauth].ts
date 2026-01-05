@@ -95,15 +95,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({
-      token,
-      user,
-      account,
-    }: {
-      token: JWT & { id?: string; isAdmin?: boolean; loginStage?: string };
-      user?: User;
-      account?: { provider?: string | null } | null;
-    }) {
+    async jwt({ token, user }: { token: JWT & { id?: string; isAdmin?: boolean }; user?: User }) {
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
