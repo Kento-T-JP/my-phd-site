@@ -7,6 +7,24 @@ import { timingSafeEqual } from 'crypto';
 
 import prisma from '@/lib/prisma';
 
+const resolveUserStatus = async (user: User): Promise<string> => {
+  if (user.id === 'admin') {
+    return 'active';
+  }
+  if (user.status) {
+    return user.status;
+  }
+  const numericId = Number(user.id);
+  if (Number.isNaN(numericId)) {
+    return 'pending';
+  }
+  const record = await prisma.user.findUnique({
+    where: { id: numericId },
+    select: { status: true },
+  });
+  return record?.status ?? 'pending';
+};
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -51,6 +69,7 @@ export const authOptions: NextAuthOptions = {
             id: 'admin',
             email: adminEmail,
             isAdmin: true,
+            status: 'active',
           };
           return adminUser;
         }
@@ -66,6 +85,7 @@ export const authOptions: NextAuthOptions = {
           id: userRecord.id.toString(),
           email: userRecord.email,
           isAdmin: userRecord.isAdmin,
+          status: userRecord.status,
         };
         return dbUser;
       },
@@ -73,10 +93,18 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: 'jwt' },
   callbacks: {
+    async signIn({ user, account }) {
+      const status = await resolveUserStatus(user);
+      if (account?.provider && status !== 'active') {
+        return `/access-status?status=${encodeURIComponent(status)}`;
+      }
+      return true;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id?.toString();
         token.isAdmin = user.isAdmin;
+        token.userStatus = await resolveUserStatus(user);
       }
       if (account?.provider) {
         token.loginStage = account.provider;
@@ -87,6 +115,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.id) {
         session.user.id = token.id;
         session.user.isAdmin = token.isAdmin;
+        session.user.status = token.userStatus;
       }
       session.loginStage = token.loginStage ?? 'credentials';
       return session;
