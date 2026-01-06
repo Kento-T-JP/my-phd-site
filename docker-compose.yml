@@ -4,16 +4,13 @@ services:
     ports:
       - "3000:3000"
       - "5555:5555"
-    volumes:
-      - .:/app
+    env_file:
+      - .env
     # prisma は npx で、sh -lc でエラー時に即落ちるように
     command: ["./wait-for-it.sh", "db:5432", "--", "sh", "-lc", "npx prisma migrate deploy && npx prisma db seed && npm run dev"]
     environment:
       # ホストに DATABASE_URL があっても、無い場合は db:5432 を使う
       DATABASE_URL: postgresql://postgres:postgres@db:5432/mydb?schema=public
-      JFA_MEMBER_URL: ${JFA_MEMBER_URL}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
     depends_on:
       - db
 
