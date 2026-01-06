@@ -70,6 +70,7 @@ model User {
   hashedPassword     String?
   createdAt          DateTime                 @default(now())
   isAdmin            Boolean                  @default(false)
+  status             String                   @default("pending")
   verificationTokens EmailVerificationToken[]
   favoritePlayers    FavoritePlayer[]
   formations         Formation[]

@@ -29,6 +29,10 @@ export default function LoginPage() {
       return;
     }
     if (status === "authenticated") {
+      if (session?.user?.status && session.user.status !== "active") {
+        router.replace(`/access-status?status=${session.user.status}`);
+        return;
+      }
       if (session?.loginStage === "credentials") {
         router.replace("/home");
         return;
@@ -62,6 +66,10 @@ export default function LoginPage() {
     });
     if (res?.ok) {
       const session = await getSession();
+      if (session?.user?.status && session.user.status !== "active") {
+        router.push(`/access-status?status=${session.user.status}`);
+        return;
+      }
       if (session?.user?.isAdmin) {
         router.push("/admin");
       } else {

@@ -29,8 +29,10 @@ const applySecurityHeaders = (res: NextResponse) => {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const token: (JWT & { isAdmin?: boolean; userStatus?: string }) | null = await getToken({
+    req,
+  });
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    const token: (JWT & { isAdmin?: boolean }) | null = await getToken({ req });
     if (token?.isAdmin !== true) {
       if (pathname.startsWith('/api/')) {
         return applySecurityHeaders(
@@ -41,9 +43,34 @@ export async function middleware(req: NextRequest) {
       return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
   }
+
+  const status = token?.userStatus;
+  if (status && status !== 'active') {
+    const allowedPaths = [
+      '/access-status',
+      '/login',
+      '/register',
+      '/contact',
+      '/api/auth',
+      '/api/register',
+      '/api/verify-email',
+    ];
+    const isAllowed = allowedPaths.some((path) => pathname.startsWith(path));
+    if (!isAllowed) {
+      if (pathname.startsWith('/api/')) {
+        return applySecurityHeaders(
+          NextResponse.json({ error: 'Access denied' }, { status: 403 }),
+        );
+      }
+      const redirectUrl = new URL('/access-status', req.url);
+      redirectUrl.searchParams.set('status', status);
+      return applySecurityHeaders(NextResponse.redirect(redirectUrl));
+    }
+  }
+
   return applySecurityHeaders(NextResponse.next());
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
