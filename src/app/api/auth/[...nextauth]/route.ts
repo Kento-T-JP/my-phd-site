@@ -7,22 +7,46 @@ import { timingSafeEqual } from 'crypto';
 
 import prisma from '@/lib/prisma';
 
-const resolveUserStatus = async (user: User): Promise<string> => {
+const resolveUserMetadata = async (
+  user: User,
+): Promise<{ status: string; googleEmailConsent: boolean }> => {
   if (user.id === 'admin') {
-    return 'active';
-  }
-  if (user.status) {
-    return user.status;
+    return { status: 'active', googleEmailConsent: true };
   }
   const numericId = Number(user.id);
+  const record = Number.isNaN(numericId)
+    ? null
+    : await prisma.user.findUnique({
+        where: { id: numericId },
+        select: { status: true, googleEmailConsent: true },
+      });
+  return {
+    status: user.status ?? record?.status ?? 'pending',
+    googleEmailConsent: user.googleEmailConsent ?? record?.googleEmailConsent ?? false,
+  };
+};
+
+const resolveUserMetadataById = async (
+  id?: string,
+): Promise<{ status: string; googleEmailConsent: boolean }> => {
+  if (!id) {
+    return { status: 'pending', googleEmailConsent: false };
+  }
+  if (id === 'admin') {
+    return { status: 'active', googleEmailConsent: true };
+  }
+  const numericId = Number(id);
   if (Number.isNaN(numericId)) {
-    return 'pending';
+    return { status: 'pending', googleEmailConsent: false };
   }
   const record = await prisma.user.findUnique({
     where: { id: numericId },
-    select: { status: true },
+    select: { status: true, googleEmailConsent: true },
   });
-  return record?.status ?? 'pending';
+  return {
+    status: record?.status ?? 'pending',
+    googleEmailConsent: record?.googleEmailConsent ?? false,
+  };
 };
 
 export const authOptions: NextAuthOptions = {
@@ -94,7 +118,10 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   callbacks: {
     async signIn({ user, account }) {
-      const status = await resolveUserStatus(user);
+      const { status, googleEmailConsent } = await resolveUserMetadata(user);
+      if (account?.provider === 'google' && !googleEmailConsent) {
+        return '/google-consent';
+      }
       if (account?.provider && status !== 'active') {
         return `/access-status?status=${encodeURIComponent(status)}`;
       }
@@ -104,10 +131,17 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id?.toString();
         token.isAdmin = user.isAdmin;
-        token.userStatus = await resolveUserStatus(user);
+        const metadata = await resolveUserMetadata(user);
+        token.userStatus = metadata.status;
+        token.googleEmailConsent = metadata.googleEmailConsent;
       }
       if (account?.provider) {
         token.loginStage = account.provider;
+      }
+      if (token.id && !user) {
+        const metadata = await resolveUserMetadataById(token.id);
+        token.userStatus = metadata.status;
+        token.googleEmailConsent = metadata.googleEmailConsent;
       }
       return token;
     },
@@ -116,6 +150,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.isAdmin = token.isAdmin;
         session.user.status = token.userStatus;
+        session.user.googleEmailConsent = token.googleEmailConsent;
       }
       session.loginStage = token.loginStage ?? 'credentials';
       return session;
