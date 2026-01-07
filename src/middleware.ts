@@ -48,10 +48,12 @@ export async function middleware(req: NextRequest) {
   if (status && status !== 'active') {
     const allowedPaths = [
       '/access-status',
+      '/google-consent',
       '/login',
       '/register',
       '/contact',
       '/api/auth',
+      '/api/auth/google-consent',
       '/api/register',
       '/api/verify-email',
     ];

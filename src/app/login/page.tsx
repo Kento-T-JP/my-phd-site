@@ -29,6 +29,10 @@ export default function LoginPage() {
       return;
     }
     if (status === "authenticated") {
+      if (session?.loginStage === "google" && !session?.user?.googleEmailConsent) {
+        router.replace("/google-consent");
+        return;
+      }
       if (session?.user?.status && session.user.status !== "active") {
         router.replace(`/access-status?status=${session.user.status}`);
         return;

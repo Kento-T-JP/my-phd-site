@@ -71,6 +71,7 @@ model User {
   createdAt          DateTime                 @default(now())
   isAdmin            Boolean                  @default(false)
   status             String                   @default("pending")
+  googleEmailConsent Boolean                  @default(false)
   verificationTokens EmailVerificationToken[]
   favoritePlayers    FavoritePlayer[]
   formations         Formation[]
