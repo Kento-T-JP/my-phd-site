@@ -7,6 +7,20 @@ import { timingSafeEqual } from 'crypto';
 
 import prisma from '@/lib/prisma';
 
+const parseAllowedEmails = (value?: string): string[] =>
+  value
+    ? value
+        .split(',')
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+const isGateEnabled = (value?: string): boolean => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return !['false', '0', 'off', 'no'].includes(normalized);
+};
+
 const resolveUserMetadata = async (
   user: User,
 ): Promise<{ status: string; googleEmailConsent: boolean }> => {
@@ -118,6 +132,21 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   callbacks: {
     async signIn({ user, account }) {
+      if (account?.provider === 'google' && isGateEnabled(process.env.GATE_ENABLED)) {
+        const allowedEmails = parseAllowedEmails(process.env.GATE_ALLOWED_EMAILS);
+        const email = user.email?.trim().toLowerCase();
+        if (!email || !allowedEmails.includes(email)) {
+          return false;
+        }
+        const numericId = Number(user.id);
+        if (!Number.isNaN(numericId)) {
+          await prisma.user.update({
+            where: { id: numericId },
+            data: { status: 'active' },
+          });
+          user.status = 'active';
+        }
+      }
       const { status, googleEmailConsent } = await resolveUserMetadata(user);
       if (account?.provider === 'google' && !googleEmailConsent) {
         return '/google-consent';
