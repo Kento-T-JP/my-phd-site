@@ -6,7 +6,6 @@ declare module "next-auth" {
       id: string;
       isAdmin?: boolean;
       status?: string;
-      googleEmailConsent?: boolean;
     } & DefaultSession["user"];
     loginStage?: string;
   }
@@ -15,7 +14,6 @@ declare module "next-auth" {
     id: string;
     isAdmin?: boolean;
     status?: string;
-    googleEmailConsent?: boolean;
   }
 }
 
@@ -25,6 +23,5 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     loginStage?: string;
     userStatus?: string;
-    googleEmailConsent?: boolean;
   }
 }

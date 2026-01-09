@@ -18,13 +18,13 @@ export default function GoogleLoginPanel() {
         className="w-full px-4 py-2 bg-red-500 text-white rounded"
         onClick={() => {
           play();
-          void signIn("google", { callbackUrl: "/google-consent" });
+          void signIn("google", { callbackUrl: "/" });
         }}
       >
         Googleで認証
       </button>
       <div className="mt-6 text-sm text-white/80">
-        Google認証後にメール利用の確認を行い、既存のログイン方式へ進みます。
+        Google認証後にログインします。
       </div>
     </main>
   );
