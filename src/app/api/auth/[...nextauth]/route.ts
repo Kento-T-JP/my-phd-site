@@ -122,13 +122,16 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === 'google' && isGateEnabled(process.env.GATE_ENABLED)) {
-        const allowedEmails = parseAllowedEmails(process.env.GATE_ALLOWED_EMAILS);
-        const email = user.email?.trim().toLowerCase();
-        if (!email || !allowedEmails.includes(email)) {
-          return false;
-        }
+      if (account?.provider === 'google') {
         const numericId = Number(user.id);
+        const gateEnabled = isGateEnabled(process.env.GATE_ENABLED);
+        if (gateEnabled) {
+          const allowedEmails = parseAllowedEmails(process.env.GATE_ALLOWED_EMAILS);
+          const email = user.email?.trim().toLowerCase();
+          if (!email || !allowedEmails.includes(email)) {
+            return false;
+          }
+        }
         if (!Number.isNaN(numericId)) {
           await prisma.user.update({
             where: { id: numericId },
