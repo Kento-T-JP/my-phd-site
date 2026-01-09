@@ -21,46 +21,36 @@ const isGateEnabled = (value?: string): boolean => {
   return !['false', '0', 'off', 'no'].includes(normalized);
 };
 
-const resolveUserMetadata = async (
-  user: User,
-): Promise<{ status: string; googleEmailConsent: boolean }> => {
+const resolveUserStatus = async (user: User): Promise<string> => {
   if (user.id === 'admin') {
-    return { status: 'active', googleEmailConsent: true };
+    return 'active';
   }
   const numericId = Number(user.id);
   const record = Number.isNaN(numericId)
     ? null
     : await prisma.user.findUnique({
         where: { id: numericId },
-        select: { status: true, googleEmailConsent: true },
+        select: { status: true },
       });
-  return {
-    status: user.status ?? record?.status ?? 'pending',
-    googleEmailConsent: user.googleEmailConsent ?? record?.googleEmailConsent ?? false,
-  };
+  return user.status ?? record?.status ?? 'pending';
 };
 
-const resolveUserMetadataById = async (
-  id?: string,
-): Promise<{ status: string; googleEmailConsent: boolean }> => {
+const resolveUserStatusById = async (id?: string): Promise<string> => {
   if (!id) {
-    return { status: 'pending', googleEmailConsent: false };
+    return 'pending';
   }
   if (id === 'admin') {
-    return { status: 'active', googleEmailConsent: true };
+    return 'active';
   }
   const numericId = Number(id);
   if (Number.isNaN(numericId)) {
-    return { status: 'pending', googleEmailConsent: false };
+    return 'pending';
   }
   const record = await prisma.user.findUnique({
     where: { id: numericId },
-    select: { status: true, googleEmailConsent: true },
+    select: { status: true },
   });
-  return {
-    status: record?.status ?? 'pending',
-    googleEmailConsent: record?.googleEmailConsent ?? false,
-  };
+  return record?.status ?? 'pending';
 };
 
 export const authOptions: NextAuthOptions = {
@@ -147,10 +137,7 @@ export const authOptions: NextAuthOptions = {
           user.status = 'active';
         }
       }
-      const { status, googleEmailConsent } = await resolveUserMetadata(user);
-      if (account?.provider === 'google' && !googleEmailConsent) {
-        return '/google-consent';
-      }
+      const status = await resolveUserStatus(user);
       if (account?.provider && status !== 'active') {
         return `/access-status?status=${encodeURIComponent(status)}`;
       }
@@ -160,17 +147,13 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id?.toString();
         token.isAdmin = user.isAdmin;
-        const metadata = await resolveUserMetadata(user);
-        token.userStatus = metadata.status;
-        token.googleEmailConsent = metadata.googleEmailConsent;
+        token.userStatus = await resolveUserStatus(user);
       }
       if (account?.provider) {
         token.loginStage = account.provider;
       }
       if (token.id && !user) {
-        const metadata = await resolveUserMetadataById(token.id);
-        token.userStatus = metadata.status;
-        token.googleEmailConsent = metadata.googleEmailConsent;
+        token.userStatus = await resolveUserStatusById(token.id);
       }
       return token;
     },
@@ -179,7 +162,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.isAdmin = token.isAdmin;
         session.user.status = token.userStatus;
-        session.user.googleEmailConsent = token.googleEmailConsent;
       }
       session.loginStage = token.loginStage ?? 'credentials';
       return session;
