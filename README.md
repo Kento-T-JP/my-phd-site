@@ -1,217 +1,189 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Start XI
 
-## Getting Started
+サッカーのフォーメーション作成・保存・共有を行う Next.js Web アプリです。  
+本番は Vercel で運用し、カスタムドメイン `start-xi.com` を利用します。
 
-First, run the development server:
+## 主な機能
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- フォーメーション作成（ドラッグ操作）
+- 選手データ管理（管理者）
+- Google / Credentials 認証（NextAuth）
+- お問い合わせフォーム（Gmail + Resend）
+- reCAPTCHA / Turnstile によるスパム対策
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 技術スタック
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Framework: Next.js 16.1.6 (App Router), React 19, TypeScript
+- Styling: Tailwind CSS 4
+- Database / ORM: PostgreSQL, Prisma
+- Authentication: NextAuth (`next-auth`)
+- Mail: Nodemailer, Resend
+- Testing: Vitest, Testing Library
+- Hosting: Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 必要環境
 
-## Learn More
+- Node.js 20 以上
+- npm
+- PostgreSQL
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Database setup
-
-This project uses [Prisma](https://www.prisma.io/) with a local Postgres database. Copy `.env.example` to `.env` and set `DATABASE_URL` for your instance. For example, with Docker:
-
-```dotenv
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"
-```
-
-### reCAPTCHA
-
-To protect forms from automated submissions, obtain Google reCAPTCHA keys and
-add the following variables to your `.env` file:
-
-```dotenv
-NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_site_key
-RECAPTCHA_SECRET=your_secret_key
-```
-
-The site key is used on the registration page and the secret verifies the
-token server-side.
-
-### Migrations & seeding
-
-Player data is not stored in the repository. Instead, the seed script
-scrapes the [JFA Samurai Blue](https://www.jfa.jp/samuraiblue/) roster and
-imports the players into your local database. Set the `JFA_MEMBER_URL`
-environment variable to the member page URL (add it to your `.env` file or
-pass it inline). You can pass it inline when
-running the seed command:
-
-```bash
-JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run migrate
-JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html npm run seed
-```
-
-### Migrating tournament data
-
-When upgrading from an older schema that stored the tournament name on the
-`Player` table, first apply the migrations that create the new `Tournament` and
-`Roster` tables:
-
-```bash
-npm run deploy:migrate
-```
-
-Next run the migration script to copy existing data into the new tables:
-
-```bash
-npx tsx scripts/migratePlayersToTournaments.ts
-```
-
-After verifying the results, apply the remaining migration to drop the legacy
-column:
-
-```bash
-npm run deploy:migrate
-```
-
-During CI deployment, run:
-
-```bash
-npm run deploy:migrate
-```
-
-### Optional roster selection
-
-When adding or editing a player, selecting a roster is optional. Leave the roster dropdown blank to associate the player only with the tournament.
-
-## Docker Compose
-
-Build and start the application along with a Postgres database. Pass the
-`JFA_MEMBER_URL` variable so the seed script can scrape the roster:
-
-```bash
-JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose up --build
-```
-
-Migrations are applied automatically when the app container starts. After the
-services are running you can seed the database again if needed:
-
-```bash
-JFA_MEMBER_URL=https://www.jfa.jp/samuraiblue/member.html docker compose exec app npm run seed
-```
-## Contact form mailer
-
-The contact form sends mail through Gmail using [Nodemailer](https://nodemailer.com/) and dispatches confirmation emails via [Resend](https://resend.com/) or [SendGrid](https://sendgrid.com/). Gmail delivers the notification to your inbox while Resend/SendGrid handles user confirmations.
-
-Install the appropriate mail service client:
-
-```bash
-npm install resend
-# or
-npm install @sendgrid/mail
-```
-
-Define the following environment variables in your `.env` file (sample values
-are provided in `.env.example`):
-
-- `GMAIL_USER` – Gmail address used to send messages
-- `GMAIL_APP_PASSWORD` – 16‑character app password for the Gmail account
-- `CONTACT_RECIPIENT` – Address that receives submitted messages
-- `RESEND_API_KEY` – API key for Resend (use `SENDGRID_API_KEY` for SendGrid)
-- `CONFIRM_FROM_ADDRESS` – Verified sender address for confirmation messages
-
-### Resend/SendGrid setup
-
-1. Create an account and verify a sending domain with Resend or SendGrid.
-2. Generate an API key and set `RESEND_API_KEY` or `SENDGRID_API_KEY` in your `.env`.
-3. Set `CONFIRM_FROM_ADDRESS` to a verified address from the provider.
-4. The application uses Gmail to notify you and Resend/SendGrid to send confirmation messages.
-
-### Gmail app password
-
-When two‑factor authentication is enabled on the Gmail account, you must
-generate an app password. In your Google Account settings, navigate to
-**Security → App passwords**, create a password for "Mail" and paste the
-generated 16‑character value into `GMAIL_APP_PASSWORD`.
-
-### Rate limiting and captcha
-
-The API route applies a simple IP‑based rate limit and supports optional
-captcha verification (Google reCAPTCHA or Cloudflare Turnstile) to reduce spam.
-Gmail also enforces its own sending limits, so additional protections may be
-required for high‑traffic sites.
-
-### Nodemailer setup
-
-```ts
-import nodemailer from 'nodemailer';
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
-```
-## Testing
-
-Before running the test suite, ensure you have Node.js 20 or later installed and install project dependencies:
+## ローカルセットアップ
 
 ```bash
 npm install
+cp .env.example .env
 ```
 
-Run the tests with:
+`.env` を設定後、DB を初期化します。
 
 ```bash
-npm test
+npm run migrate
+npm run seed
+npm run dev
 ```
-(runs `vitest run` under the hood)
 
-## Domain Information
+起動後: [http://localhost:3000](http://localhost:3000)
 
-- **Domain name:** `start-xi.com`
-- **Registrar:** Onamae.com
-- **Purchased by:** Kento Totsuka
-- **Purpose:** Used for deploying the soccer formation app and sending transactional emails via Resend.
-- **Expiration date:** August 4, 2026
-- **Nameservers:**
-  - 01.dnsv.jp
-  - 02.dnsv.jp
-  - 03.dnsv.jp
-  - 04.dnsv.jp
-- **Email setup:**
-  - SPF, DKIM, and DMARC records are configured for `send.start-xi.com`
-  - Domain verified on [Resend](https://resend.com/) for sending transactional email
+## 環境変数
 
-**Note:** Please renew the domain before the expiration date to prevent service disruption.
+`./.env.example` に全項目を定義しています。  
+以下は用途別の一覧です。
 
+### 必須（アプリ起動に必要）
 
+- `DATABASE_URL`: PostgreSQL 接続文字列
+- `NEXTAUTH_URL`: ローカルは `http://localhost:3000`、本番は本番 URL
+- `NEXTAUTH_SECRET`: NextAuth 用シークレット
 
-## Editing Players
+### 必須（管理者ログイン作成）
 
-Use the **選手一覧を編集** link on the home page to view all registered players. Each row in the list has an **編集** link that opens a form pre‑filled with the player's details. Submitting this form sends a request to `/api/players/[id]` to save changes. The same validation as creation is applied and duplicate names will return a 400 error.
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
 
-## License
+### 任意（Google ログインを使う場合）
 
-This project is licensed under the [MIT License](LICENSE).
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+### 任意（フォームの Bot 対策）
+
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+- `RECAPTCHA_SECRET`
+- `TURNSTILE_SECRET_KEY`
+
+### 任意（問い合わせメール送信）
+
+- `GMAIL_USER`
+- `GMAIL_APP_PASSWORD`
+- `CONTACT_RECIPIENT`
+- `RESEND_API_KEY`
+- `CONFIRM_FROM_ADDRESS`
+
+### 任意（アクセス制限）
+
+- `GATE_ENABLED`
+- `GATE_ALLOWED_EMAILS`
+
+### 任意（初期選手データ取り込み）
+
+- `JFA_MEMBER_URL`（例: `https://www.jfa.jp/samuraiblue/member.html`）
+
+## Seed の仕様（重要）
+
+`npm run seed` では以下を実行します。
+
+1. `Player` テーブルが空のときだけ JFA URL から選手を取得して登録
+2. `ADMIN_EMAIL` / `ADMIN_PASSWORD` があれば管理者ユーザーを upsert
+
+つまり、既に選手データがある場合は JFA 取り込みはスキップされます。
+
+### Seed の自動実行について
+
+- `docker compose up --build` のとき: 自動実行される（`prisma db seed` を実行）
+- ローカルで `npm run dev` のとき: 自動実行されない（手動で `npm run seed` が必要）
+- Vercel デプロイ時: 自動実行されない（手動で seed 実行が必要）
+
+本番初回のみ、DB マイグレーション後に `npm run seed` を1回実行します。  
+2回目以降は `Player` が既に存在するため、JFA 取り込みはスキップされます。
+
+## npm スクリプト
+
+- `npm run dev`: 開発サーバー
+- `npm run build`: 本番ビルド
+- `npm run start`: 本番起動
+- `npm run lint`: ESLint
+- `npm run test`: テスト実行
+- `npm run migrate`: Prisma migrate dev
+- `npm run deploy:migrate`: Prisma migrate deploy
+- `npm run seed`: 初期データ投入
+- `npm run update:images`: 選手画像更新スクリプト
+
+## Docker で動かす場合
+
+```bash
+docker compose up --build
+```
+
+- `app` コンテナ起動時に `prisma migrate deploy` と `prisma db seed` を実行
+- DB は `postgres:16`
+
+## Vercel 本番デプロイ
+
+1. GitHub リポジトリを Vercel に Import
+2. Vercel Project Settings > Environment Variables に `.env` の本番値を登録
+3. 本番 DB の `DATABASE_URL` を設定
+4. `npm run build` が Docker 開発環境で成功することを確認して push
+5. Vercel でデプロイ実行
+6. Domain に `start-xi.com` を追加し、DNS を設定
+7. 初回のみ、ローカル（またはCI）から本番DBに対して `npm run seed` を実行
+
+### Vercel に設定する代表的な環境変数
+
+- `DATABASE_URL`
+- `NEXTAUTH_URL`（例: `https://start-xi.com`）
+- `NEXTAUTH_SECRET`
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`（使う場合）
+- `RESEND_API_KEY`, `CONFIRM_FROM_ADDRESS`（使う場合）
+- `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `CONTACT_RECIPIENT`（使う場合）
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET`, `TURNSTILE_SECRET_KEY`（使う場合）
+
+## セキュリティ運用ルール
+
+- `.env` は Git 管理しない（`.env.example` のみ管理）
+- API キーやパスワードは README に書かない
+- 本番用の `NEXTAUTH_SECRET` は十分長いランダム値を使う
+- Gmail は通常パスワードでなく App Password を使う
+- 公開前に `npm run build` を通す
+
+## 公開前チェックリスト
+
+- Docker 開発環境で `npm run test` が成功
+- Docker 開発環境で `npm run build` が成功
+- 必要な環境変数が Vercel に登録済み
+- 本番 `DATABASE_URL` が接続可能
+- Google OAuth の Callback URL が本番ドメインで登録済み（使う場合）
+- Resend で送信ドメイン検証済み（使う場合）
+- お問い合わせ送信と認証フローの実機確認済み
+
+### Docker内での検証コマンド
+
+```bash
+docker compose build
+docker compose run --rm --no-deps app npm test
+docker compose run --rm --no-deps app npm run build
+```
+
+上記3コマンドが成功してから、Vercelへデプロイする運用を推奨します。
+
+## デプロイ手順
+
+1. 公開前チェックリストを満たしていることを確認する。
+2. 最新変更を GitHub に push する。
+3. Vercel でデプロイを実行する。
+4. 初回本番デプロイ後に、本番DBへ `npm run seed` を1回実行する。
+5. 本番環境で管理者ログインと問い合わせフォーム送信を確認する。
+
+## ライセンス
+
+[MIT](LICENSE)
