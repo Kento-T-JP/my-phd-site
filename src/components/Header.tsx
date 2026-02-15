@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Button from "./ui/Button";
 
@@ -10,6 +10,7 @@ export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const isFullyAuthenticated = session?.loginStage === "credentials";
   const navLinks = [
     { href: "/home", label: "Home" },
@@ -17,8 +18,26 @@ export default function Header() {
     { href: "/mypage", label: "My Page" },
   ];
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!isMenuOpen) return;
+      if (!headerRef.current) return;
+      if (!headerRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   return (
-    <header className="fixed top-0 left-0 w-full z-50 border-b border-cyan-200/20 bg-slate-950/55 backdrop-blur-md text-white">
+    <header ref={headerRef} className="fixed top-0 left-0 w-full z-50 border-b border-cyan-200/20 bg-slate-950/55 backdrop-blur-md text-white">
       <div className="app-shell flex items-center p-3 gap-2 flex-wrap sm:flex-nowrap">
         <Link href="/home" className="flex items-center gap-2">
           <Image

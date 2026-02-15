@@ -32,6 +32,9 @@ export default function JfaImportForm() {
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <p className="text-sm text-cyan-100/80">
+          https://www.jfa.jp/samuraiblue_2025/member/ このURLからどの召集メンバーをimportしたいか選んでください。
+        </p>
         <input
           type="text"
           className="w-full p-2 border rounded"

@@ -17,31 +17,45 @@ export default function CanvasParticles() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
 
+    const isCompact = window.innerWidth < 768;
     let width = el.offsetWidth;
     let height = el.offsetHeight;
-    const dpr = window.devicePixelRatio || 1;
+    const baseDpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(baseDpr, isCompact ? 1.25 : 2);
 
-    el.width = width * dpr;
-    el.height = height * dpr;
-    ctx.scale(dpr, dpr);
+    const applyCanvasSize = () => {
+      el.width = Math.max(1, Math.floor(width * dpr));
+      el.height = Math.max(1, Math.floor(height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    applyCanvasSize();
 
-    const particleCount = Math.floor(Math.min(width, height) / 7);
+    const particleCount = Math.floor(
+      Math.min(width, height) / (isCompact ? 12 : 7)
+    );
     const particles: { x: number; y: number; vx: number; vy: number }[] = [];
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        vx: (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
+        vy: (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
       });
     }
 
-    const maxDist = 100;
+    const maxDist = isCompact ? 64 : 100;
     let frame: number | null = null;
     let running = true;
+    let lastTs = 0;
+    const minFrameGap = isCompact ? 1000 / 24 : 1000 / 60;
 
-    function step() {
+    function step(ts: number) {
       if (!running) return;
+      if (ts - lastTs < minFrameGap) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
+      lastTs = ts;
       ctx.clearRect(0, 0, width, height);
       for (const p of particles) {
         p.x += p.vx;
@@ -54,7 +68,7 @@ export default function CanvasParticles() {
       for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
         ctx.beginPath();
-        ctx.arc(p1.x, p1.y, 2, 0, Math.PI * 2);
+        ctx.arc(p1.x, p1.y, isCompact ? 1.5 : 2, 0, Math.PI * 2);
         ctx.fill();
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
@@ -62,7 +76,7 @@ export default function CanvasParticles() {
           const dy = p1.y - p2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < maxDist) {
-            ctx.strokeStyle = `rgba(140,218,243,${(1 - dist / maxDist) * 0.6})`;
+            ctx.strokeStyle = `rgba(140,218,243,${(1 - dist / maxDist) * (isCompact ? 0.35 : 0.6)})`;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
@@ -86,9 +100,7 @@ export default function CanvasParticles() {
     function onResize() {
       width = el.offsetWidth;
       height = el.offsetHeight;
-      el.width = width * dpr;
-      el.height = height * dpr;
-      ctx.scale(dpr, dpr);
+      applyCanvasSize();
     }
 
     document.addEventListener("visibilitychange", onVisibility);
