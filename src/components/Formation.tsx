@@ -344,10 +344,6 @@ export default function Formation({
   }, []);
 
   useEffect(() => {
-    fetchRosters();
-  }, [fetchRosters]);
-
-  useEffect(() => {
     if (!session) return;
     async function loadFavorites() {
       try {
@@ -361,7 +357,7 @@ export default function Formation({
       }
     }
     loadFavorites();
-  }, [session]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (loading) return;
@@ -406,10 +402,6 @@ export default function Formation({
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchPlayers();
-  }, [fetchPlayers]);
 
   useEffect(() => {
     fetchPlayers();
@@ -863,8 +855,15 @@ export default function Formation({
   const isLargeViewport =
     !screenshotMode && viewportWidth >= 1280 && viewportHeight >= 760;
   const desktopBoost = isBrowserFullscreen ? 18 : isLargeViewport ? 10 : 0;
-  const tunedFieldCardSize = Math.min(236, Math.max(70, Math.round(92 * uiScale) + desktopBoost));
-  const benchCardSize = Math.min(198, Math.round(tunedFieldCardSize * 1.08));
+  const compactBoost = isCompactLayout ? 10 : 0;
+  const tunedFieldCardSize = Math.min(
+    236,
+    Math.max(isCompactLayout ? 82 : 70, Math.round(92 * uiScale) + desktopBoost + compactBoost)
+  );
+  const benchCardSize = Math.min(
+    isCompactLayout ? 210 : 198,
+    Math.round(tunedFieldCardSize * (isCompactLayout ? 1.12 : 1.08))
+  );
   const avatarRatio = isCompactLayout ? 0.44 : 0.52;
   const fieldAvatarSize = Math.round(tunedFieldCardSize * avatarRatio);
   const benchAvatarSize = Math.round(benchCardSize * avatarRatio);
@@ -882,9 +881,9 @@ export default function Formation({
   };
   const adaptiveOffsetStep = Math.max(
     14,
-    Math.min(38, Math.round(tunedFieldCardSize * 0.18))
+    Math.min(38, Math.round(tunedFieldCardSize * 0.18) + (isCompactLayout ? 2 : 0))
   );
-  const layoutGap = Math.round(22 * uiScale);
+  const layoutGap = Math.round((isCompactLayout ? 26 : 22) * uiScale);
   const layoutPad = Math.round(16 * uiScale);
   const fieldHeight = screenshotMode
     ? Math.round(660 * uiScale)

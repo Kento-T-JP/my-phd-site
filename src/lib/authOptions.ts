@@ -6,6 +6,15 @@ import { timingSafeEqual } from 'crypto';
 
 import prisma from '@/lib/prisma';
 
+const isAuthDebug =
+  process.env.NODE_ENV !== 'production' || process.env.NEXTAUTH_DEBUG === 'true';
+
+const authLog = (...args: unknown[]) => {
+  if (isAuthDebug) {
+    console.log(...args);
+  }
+};
+
 const parseAllowedEmails = (value?: string): string[] =>
   value
     ? value
@@ -75,28 +84,18 @@ const buildAccessStatusUrl = (status: string, email?: string): string | null => 
 };
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
-  useSecureCookies: false,
-  cookies: {
-    sessionToken: {
-      name: 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: false,
-      },
-    },
-  },
+  debug: isAuthDebug,
   logger: {
     error(code, metadata) {
       console.error('NEXTAUTH_ERROR', code, metadata);
     },
     warn(code) {
-      console.warn('NEXTAUTH_WARN', code);
+      if (isAuthDebug) {
+        console.warn('NEXTAUTH_WARN', code);
+      }
     },
     debug(code, metadata) {
-      console.log('NEXTAUTH_DEBUG', code, metadata);
+      authLog('NEXTAUTH_DEBUG', code, metadata);
     },
   },
   providers: [
@@ -120,7 +119,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) return null;
         const normalizedEmail = credentials.email.trim().toLowerCase();
 
-        console.log('CRED_START', {
+        authLog('CRED_START', {
           email: normalizedEmail,
           hasCaptcha: Boolean(credentials.captcha),
         });
@@ -133,12 +132,12 @@ export const authOptions: NextAuthOptions = {
         const adminEmailMatch = adminEmail && safeCompare(normalizedEmail, adminEmail);
         const adminPasswordMatch =
           adminPassword && safeCompare(credentials.password, adminPassword);
-        console.log('CRED_ADMIN_CHECK', {
+        authLog('CRED_ADMIN_CHECK', {
           adminEmailMatch,
           adminPasswordMatch,
         });
         if (adminEmailMatch && adminPasswordMatch) {
-          console.log('CRED_AUTH_SUCCESS', { kind: 'admin' });
+          authLog('CRED_AUTH_SUCCESS', { kind: 'admin' });
           const adminUser: User = {
             id: 'admin',
             email: normalizedEmail,
@@ -158,7 +157,7 @@ export const authOptions: NextAuthOptions = {
           'https://www.google.com/recaptcha/api/siteverify',
           { method: 'POST', body: params },
         ).then((res) => res.json());
-        console.log('CRED_RECAPTCHA', {
+        authLog('CRED_RECAPTCHA', {
           success: Boolean(verify?.success),
           score: verify?.score ?? null,
           errorCodes: verify?.['error-codes'] ?? null,
@@ -168,7 +167,7 @@ export const authOptions: NextAuthOptions = {
         const userRecord = await prisma.user.findUnique({
           where: { email: normalizedEmail },
         });
-        console.log('CRED_USER_LOOKUP', {
+        authLog('CRED_USER_LOOKUP', {
           found: Boolean(userRecord),
           emailVerified: Boolean(userRecord?.emailVerified),
           hasPassword: Boolean(userRecord?.hashedPassword),
@@ -178,7 +177,7 @@ export const authOptions: NextAuthOptions = {
         const valid = await compare(credentials.password, userRecord.hashedPassword);
         if (!valid) return null;
         if (!userRecord.isAdmin && !userRecord.emailVerified) return null;
-        console.log('CRED_AUTH_SUCCESS', { kind: 'user', id: userRecord.id });
+        authLog('CRED_AUTH_SUCCESS', { kind: 'user', id: userRecord.id });
         const dbUser: User = {
           id: userRecord.id.toString(),
           email: userRecord.email,
@@ -217,7 +216,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
-      console.log('JWT_CALLBACK_START', {
+      authLog('JWT_CALLBACK_START', {
         hasUser: Boolean(user),
         provider: account?.provider ?? null,
         tokenId: token.id ?? null,
@@ -226,7 +225,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id?.toString();
         token.isAdmin = user.isAdmin;
         token.userStatus = await resolveUserStatus(user);
-        console.log('JWT_USER', {
+        authLog('JWT_USER', {
           id: token.id,
           email: user.email,
           provider: account?.provider ?? null,
@@ -243,7 +242,7 @@ export const authOptions: NextAuthOptions = {
         if (account.provider === 'credentials') {
           token.gatePassed = true;
         }
-        console.log('JWT_ISSUED', {
+        authLog('JWT_ISSUED', {
           provider: account.provider,
           id: token.id,
           gatePassed: token.gatePassed ?? false,
@@ -257,7 +256,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      console.log('SESSION_CALLBACK_START', {
+      authLog('SESSION_CALLBACK_START', {
         tokenId: token.id ?? null,
         loginStage: token.loginStage ?? null,
         gatePassed: token.gatePassed ?? null,
@@ -269,7 +268,7 @@ export const authOptions: NextAuthOptions = {
       }
       session.loginStage = token.loginStage ?? 'credentials';
       session.gatePassed = token.gatePassed ?? false;
-      console.log('SESSION_BUILT', {
+      authLog('SESSION_BUILT', {
         id: session.user?.id,
         loginStage: session.loginStage,
         gatePassed: session.gatePassed,
