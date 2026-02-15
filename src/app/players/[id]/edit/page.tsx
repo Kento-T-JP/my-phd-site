@@ -8,6 +8,7 @@ import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 import useClickSound from "@/lib/useClickSound";
 import { normalizeUploadImage } from "@/lib/imageUpload";
+import FaceImageUploader, { defaultFaceCrop } from "@/components/FaceImageUploader";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -38,7 +39,7 @@ export default function EditPlayerPage() {
   const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageCrop, setImageCrop] = useState({ ...defaultFaceCrop });
   const [wikiUrl, setWikiUrl] = useState("");
   const [extra, setExtra] = useState<Record<string, unknown>>({});
   const [message, setMessage] = useState<string[]>([]);
@@ -55,6 +56,7 @@ export default function EditPlayerPage() {
   }>({});
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [busyAction, setBusyAction] = useState<"tournament" | "roster" | null>(null);
   const { play } = useClickSound();
   const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
@@ -132,18 +134,6 @@ export default function EditPlayerPage() {
     getCsrfToken().then((token) => setCsrf(token ?? ""));
   }, []);
 
-  useEffect(() => {
-    if (!image) {
-      setImagePreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(image);
-    setImagePreview(url);
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [image]);
-
   if (status === "loading") {
     return (
       <main className="p-4 sm:p-8 max-w-md mx-auto">
@@ -198,7 +188,7 @@ export default function EditPlayerPage() {
     allPositions.forEach((p) => form.append("position", p));
     if (number.trim() !== "") form.append("number", number);
     if (image) {
-      const normalizedImage = await normalizeUploadImage(image);
+      const normalizedImage = await normalizeUploadImage(image, imageCrop);
       form.append("image", normalizedImage);
     }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
@@ -254,6 +244,72 @@ export default function EditPlayerPage() {
           setMessage([err.error || "選手情報の更新に失敗しました"]);
         }
       }
+    }
+  };
+
+  const handleDeleteTournament = async () => {
+    const name = tournamentName.trim();
+    if (!name) return;
+    if (!confirm(`トーナメント「${name}」を削除しますか？`)) return;
+    play();
+    setBusyAction("tournament");
+    setMessage([]);
+    setSuccessMessage("");
+    try {
+      const res = await fetch("/api/tournaments", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage([data.error || "トーナメント削除に失敗しました"]);
+        return;
+      }
+      setSuccessMessage(`トーナメント「${name}」を削除しました`);
+      setTournamentName("");
+      setRosterTitle("");
+      window.dispatchEvent(new Event("tournament-saved"));
+    } catch {
+      setMessage(["トーナメント削除に失敗しました"]);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleDeleteRoster = async () => {
+    const tournament = tournamentName.trim();
+    const title = rosterTitle.trim();
+    if (!tournament || !title) return;
+    if (!confirm(`ロスター「${title}」を削除しますか？`)) return;
+    play();
+    setBusyAction("roster");
+    setMessage([]);
+    setSuccessMessage("");
+    try {
+      const res = await fetch("/api/rosters", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({ tournament, title }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage([data.error || "ロスター削除に失敗しました"]);
+        return;
+      }
+      setSuccessMessage(`ロスター「${title}」を削除しました`);
+      setRosterTitle("");
+      window.dispatchEvent(new Event("tournament-saved"));
+    } catch {
+      setMessage(["ロスター削除に失敗しました"]);
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -333,22 +389,15 @@ export default function EditPlayerPage() {
         </div>
         <div>
           <label className="block mb-1">画像（任意）</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full p-2 border rounded"
-            onChange={(e) => setImage(e.target.files?.[0] || null)}
+          <FaceImageUploader
+            file={image}
+            onFileChange={(nextFile) => {
+              setImage(nextFile);
+              setImageCrop({ ...defaultFaceCrop });
+            }}
+            crop={imageCrop}
+            onCropChange={setImageCrop}
           />
-          {imagePreview && (
-            <div className="mt-3">
-              <p className="mb-1 text-xs text-cyan-100/75">プレビュー（円形表示）</p>
-              <img
-                src={imagePreview}
-                alt="preview"
-                className="h-24 w-24 rounded-full object-cover border border-cyan-200/30"
-              />
-            </div>
-          )}
           {errors.image && (
             <p className="text-red-600 text-sm mt-1">{errors.image}</p>
           )}
@@ -379,7 +428,27 @@ export default function EditPlayerPage() {
                   value={rosterTitle}
                   onChange={(e) => setRosterTitle(e.target.value)}
                 />
+                {rosterTitle.trim() !== "" && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteRoster}
+                    disabled={busyAction !== null}
+                    className="mt-2 rounded bg-red-600 px-3 py-1 text-sm text-white disabled:opacity-60"
+                  >
+                    このロスターを削除
+                  </button>
+                )}
               </>
+            )}
+            {tournamentName.trim() !== "" && (
+              <button
+                type="button"
+                onClick={handleDeleteTournament}
+                disabled={busyAction !== null}
+                className="mt-2 rounded bg-red-700 px-3 py-1 text-sm text-white disabled:opacity-60"
+              >
+                このトーナメントを削除
+              </button>
             )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>

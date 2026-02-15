@@ -20,7 +20,13 @@ export default function JfaImportForm() {
     });
     const data = await res.json();
       if (res.ok) {
-        setMessage(`${data.count}人登録しました`);
+        const linked =
+          typeof data.linked === "number" ? data.linked : data.count;
+        const processed =
+          typeof data.count === "number" ? data.count : linked;
+        setMessage(
+          `${linked}人を反映しました（処理対象: ${processed}人）`
+        );
         setTimeout(() => {
         router.push("/home");
         }, 1500);

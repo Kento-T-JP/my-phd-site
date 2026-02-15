@@ -34,3 +34,70 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export async function DELETE(req: Request) {
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = Number(session.user.id);
+  const isAdmin = Boolean(session.user.isAdmin);
+
+  try {
+    const body = await req.json();
+    const title = typeof body?.title === 'string' ? body.title.trim() : '';
+    const tournament = typeof body?.tournament === 'string' ? body.tournament.trim() : '';
+    if (!title || !tournament) {
+      return NextResponse.json(
+        { error: 'Tournament and roster title are required' },
+        { status: 400 }
+      );
+    }
+
+    const roster = await prisma.roster.findFirst({
+      where: {
+        title: {
+          equals: title,
+          mode: 'insensitive',
+        },
+        tournament: {
+          name: {
+            equals: tournament,
+            mode: 'insensitive',
+          },
+        },
+      },
+      include: {
+        tournament: { select: { name: true } },
+      },
+    });
+
+    if (!roster) {
+      return NextResponse.json({ error: 'Roster not found' }, { status: 404 });
+    }
+    if (!isAdmin && roster.userId !== userId) {
+      return NextResponse.json(
+        { error: 'このロスターを削除する権限がありません。' },
+        { status: 403 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.rosterPlayer.deleteMany({
+        where: { rosterId: roster.id },
+      });
+      await tx.roster.delete({
+        where: { id: roster.id },
+      });
+    });
+
+    return NextResponse.json({
+      ok: true,
+      title: roster.title,
+      tournament: roster.tournament.name,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete roster';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

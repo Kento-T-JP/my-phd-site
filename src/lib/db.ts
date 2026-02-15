@@ -382,7 +382,7 @@ export async function addRosterPlayers(
   players: { playerId: number; number?: number; position?: string[] }[],
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  if (players.length === 0) return;
+  if (players.length === 0) return 0;
   const data = players.map((p) => ({
     rosterId,
     playerId: p.playerId,
@@ -396,7 +396,13 @@ export async function addRosterPlayers(
       data,
       skipDuplicates: true,
     });
-    return;
+    const linkedCount = await client.rosterPlayer.count({
+      where: {
+        rosterId,
+        playerId: { in: players.map((p) => p.playerId) },
+      },
+    });
+    return linkedCount;
   }
 
   const upserts = data.map((p) =>
@@ -407,6 +413,7 @@ export async function addRosterPlayers(
     })
   );
   await Promise.all(upserts);
+  return players.length;
 }
 
 /**

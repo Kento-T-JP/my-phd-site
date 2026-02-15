@@ -53,7 +53,18 @@ export async function POST(req: Request) {
       Number.isFinite(userId) ? userId : undefined,
     );
 
-    return NextResponse.json({ count: rosterEntries.length, title: roster.title });
+    const linked = await prisma.rosterPlayer.count({
+      where: {
+        rosterId: roster.id,
+        playerId: { in: rosterEntries.map((entry) => entry.playerId) },
+      },
+    });
+
+    return NextResponse.json({
+      count: rosterEntries.length,
+      linked,
+      title: roster.title,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'インポートに失敗しました';
     return NextResponse.json({ error: msg }, { status: 500 });
