@@ -23,7 +23,6 @@ export default function FaceImageUploader({
   onCropChange,
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const cropStartRef = useRef<FaceCrop | null>(null);
 
@@ -36,33 +35,6 @@ export default function FaceImageUploader({
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-
-  useEffect(() => {
-    if (!previewUrl || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const img = new Image();
-    img.onload = () => {
-      const size = canvas.width;
-      ctx.clearRect(0, 0, size, size);
-      const baseScale = Math.max(
-        size / img.naturalWidth,
-        size / img.naturalHeight
-      );
-      const scale = baseScale * crop.zoom;
-      const drawW = img.naturalWidth * scale;
-      const drawH = img.naturalHeight * scale;
-      const maxOffsetX = Math.max(0, (drawW - size) / 2);
-      const maxOffsetY = Math.max(0, (drawH - size) / 2);
-      const pxX = (crop.offsetX / 100) * maxOffsetX;
-      const pxY = (crop.offsetY / 100) * maxOffsetY;
-      const x = (size - drawW) / 2 - pxX;
-      const y = (size - drawH) / 2 - pxY;
-      ctx.drawImage(img, x, y, drawW, drawH);
-    };
-    img.src = previewUrl;
-  }, [previewUrl, crop]);
 
   const disabled = !file;
   const cropLabel = useMemo(
@@ -133,11 +105,16 @@ export default function FaceImageUploader({
               onTouchEnd={endDrag}
               onTouchCancel={endDrag}
             >
-              <canvas
-                ref={canvasRef}
-                width={240}
-                height={240}
-                className="h-full w-full"
+              <img
+                src={previewUrl}
+                alt="Face preview"
+                className="h-full w-full object-cover select-none pointer-events-none"
+                draggable={false}
+                style={{
+                  objectPosition: `${50 + crop.offsetX / 2}% ${50 + crop.offsetY / 2}%`,
+                  transform: `scale(${crop.zoom})`,
+                  transformOrigin: "center",
+                }}
               />
             </div>
           </div>

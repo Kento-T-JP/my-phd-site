@@ -6,6 +6,7 @@ import useClickSound from "@/lib/useClickSound";
 
 export default function JfaImportForm() {
   const [url, setUrl] = useState("");
+  const [skipExisting, setSkipExisting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
   const { play } = useClickSound();
@@ -16,16 +17,21 @@ export default function JfaImportForm() {
     const res = await fetch("/api/jfa-import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, skipExisting }),
     });
     const data = await res.json();
       if (res.ok) {
         const linked =
           typeof data.linked === "number" ? data.linked : data.count;
-        const processed =
-          typeof data.count === "number" ? data.count : linked;
+        const processed = typeof data.count === "number" ? data.count : linked;
+        const requested =
+          typeof data.requested === "number" ? data.requested : processed;
+        const created = typeof data.created === "number" ? data.created : 0;
+        const updated = typeof data.updated === "number" ? data.updated : 0;
+        const restored = typeof data.restored === "number" ? data.restored : 0;
+        const skipped = typeof data.skipped === "number" ? data.skipped : 0;
         setMessage(
-          `${linked}人を反映しました（処理対象: ${processed}人）`
+          `${linked}人を反映しました（対象: ${requested} / 処理: ${processed} / 新規: ${created} / 更新: ${updated} / 復元: ${restored} / スキップ: ${skipped}）`
         );
         setTimeout(() => {
         router.push("/home");
@@ -62,6 +68,14 @@ export default function JfaImportForm() {
           onChange={(e) => setUrl(e.target.value)}
           required
         />
+        <label className="flex items-center gap-2 text-sm text-cyan-100/90">
+          <input
+            type="checkbox"
+            checked={skipExisting}
+            onChange={(e) => setSkipExisting(e.target.checked)}
+          />
+          同じ名前の選手は import しない（既存データを維持）
+        </label>
         <button
           type="submit"
           className="px-4 py-2 bg-yellow-400 text-blue-900 rounded"

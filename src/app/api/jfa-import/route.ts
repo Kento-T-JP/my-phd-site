@@ -15,7 +15,9 @@ export async function POST(req: Request) {
   const rawId = session.user?.id;
   const userId = rawId === undefined ? undefined : Number(rawId);
   try {
-    const { url } = await req.json();
+    const body = await req.json();
+    const url = body?.url;
+    const skipExisting = Boolean(body?.skipExisting);
     if (typeof url !== 'string' || !validateJfaUrl(url)) {
       return NextResponse.json({ error: '不正なJFAメンバーURLです' }, { status: 400 });
     }
@@ -26,22 +28,48 @@ export async function POST(req: Request) {
       rosterTitle,
       rosterDate,
     } = await scrapeJfaPlayers(url);
-    const rosterEntries = await Promise.all(
-      players.map(async (p) => {
-        const player = await upsertPlayer({
-          name: p.name,
-          number: p.number,
-          image: p.image,
-          position: p.position,
-          role: 'player',
-        });
-        return {
-          playerId: player.id,
-          number: p.number ?? undefined,
-          position: p.position,
-        } as { playerId: number; number?: number; position?: string[] };
-      })
-    );
+
+    const existing = await prisma.player.findMany({
+      where: {
+        userId: null,
+        name: { in: players.map((p) => p.name) },
+      },
+      select: { id: true, name: true, isDeleted: true },
+    });
+    const existingByName = new Map(existing.map((p) => [p.name, p]));
+
+    let created = 0;
+    let updated = 0;
+    let restored = 0;
+    let skipped = 0;
+    const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
+    for (const p of players) {
+      const before = existingByName.get(p.name);
+      if (skipExisting && before) {
+        skipped += 1;
+        continue;
+      }
+      if (!before) {
+        created += 1;
+      } else if (before.isDeleted) {
+        restored += 1;
+      } else {
+        updated += 1;
+      }
+      const player = await upsertPlayer({
+        name: p.name,
+        number: p.number,
+        image: p.image,
+        position: p.position,
+        isDeleted: false,
+        role: 'player',
+      });
+      rosterEntries.push({
+        playerId: player.id,
+        number: p.number ?? undefined,
+        position: p.position,
+      });
+    }
 
     const roster = await upsertTournamentRosterPlayersBySlug(
       tournamentSlug,
@@ -53,16 +81,28 @@ export async function POST(req: Request) {
       Number.isFinite(userId) ? userId : undefined,
     );
 
+    const importedPlayerIds = rosterEntries.map((entry) => entry.playerId);
+    await prisma.player.updateMany({
+      where: { id: { in: importedPlayerIds } },
+      data: { isDeleted: false },
+    });
+
     const linked = await prisma.rosterPlayer.count({
       where: {
         rosterId: roster.id,
-        playerId: { in: rosterEntries.map((entry) => entry.playerId) },
+        playerId: { in: importedPlayerIds },
       },
     });
 
     return NextResponse.json({
       count: rosterEntries.length,
+      requested: players.length,
       linked,
+      created,
+      updated,
+      restored,
+      skipped,
+      skipExisting,
       title: roster.title,
     });
   } catch (err) {
