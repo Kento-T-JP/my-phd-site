@@ -15,7 +15,6 @@ export default function CanvasParticles() {
 
     const prefersReducedMotion =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
 
     const isCompact = window.innerWidth < 768;
     let width = el.offsetWidth;
@@ -38,8 +37,8 @@ export default function CanvasParticles() {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
-        vy: (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
+        vx: prefersReducedMotion ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
+        vy: prefersReducedMotion ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
       });
     }
 
@@ -57,11 +56,13 @@ export default function CanvasParticles() {
       }
       lastTs = ts;
       ctx.clearRect(0, 0, width, height);
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
+      if (!prefersReducedMotion) {
+        for (const p of particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0 || p.x > width) p.vx *= -1;
+          if (p.y < 0 || p.y > height) p.vy *= -1;
+        }
       }
 
       ctx.fillStyle = "#8cdaf3";
@@ -84,7 +85,7 @@ export default function CanvasParticles() {
           }
         }
       }
-      frame = requestAnimationFrame(step);
+      frame = prefersReducedMotion ? null : requestAnimationFrame(step);
     }
 
     function onVisibility() {
@@ -105,7 +106,11 @@ export default function CanvasParticles() {
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("resize", onResize);
-    frame = requestAnimationFrame(step);
+    if (prefersReducedMotion) {
+      step(0);
+    } else {
+      frame = requestAnimationFrame(step);
+    }
 
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
@@ -117,7 +122,7 @@ export default function CanvasParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 pointer-events-none bg-transparent"
+      className="fixed inset-0 z-0 pointer-events-none bg-transparent"
     />
   );
 }

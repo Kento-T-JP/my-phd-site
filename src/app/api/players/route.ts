@@ -15,6 +15,26 @@ import { RosterInfo } from '@/types/roster';
 import { verifyCsrfToken } from '@/lib/csrf';
 import { PlayerSchema } from '@/lib/schemas/player';
 
+async function savePlayerImage(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  const uploadDir = path.join(process.cwd(), 'public/uploads/players');
+  const fileName = `${Date.now()}-${file.name}`;
+
+  try {
+    await fs.mkdir(uploadDir, { recursive: true });
+    await fs.writeFile(path.join(uploadDir, fileName), buffer);
+    return `/uploads/players/${fileName}`;
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== 'EROFS') {
+      throw err;
+    }
+    const mimeType = file.type || 'image/jpeg';
+    return `data:${mimeType};base64,${buffer.toString('base64')}`;
+  }
+}
+
 export async function GET() {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const rawId = session?.user?.id;
@@ -98,13 +118,7 @@ export async function POST(req: Request) {
     let imagePath: string | undefined;
     const file = form.get('image');
     if (file && file instanceof File && file.size > 0) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadDir = path.join(process.cwd(), 'public/uploads/players');
-      await fs.mkdir(uploadDir, { recursive: true });
-      const fileName = `${Date.now()}-${file.name}`;
-      await fs.writeFile(path.join(uploadDir, fileName), buffer);
-      imagePath = `/uploads/players/${fileName}`;
+      imagePath = await savePlayerImage(file);
     }
 
     let player;

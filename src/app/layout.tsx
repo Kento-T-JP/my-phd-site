@@ -40,23 +40,25 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CanvasParticles />
-        <AuthProvider>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only fixed left-3 top-3 z-[80] rounded-md bg-cyan-200 px-3 py-1 text-sm font-semibold text-slate-950"
-          >
-            メインコンテンツへスキップ
-          </a>
-          <Header />
-          <HomeNav />
-          <div className="pt-24 pb-10">
-            <Analytics />
-            <div id="main-content" className="app-shell">
-              {children}
+        <div className="relative z-10">
+          <AuthProvider>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only fixed left-3 top-3 z-[80] rounded-md bg-cyan-200 px-3 py-1 text-sm font-semibold text-slate-950"
+            >
+              メインコンテンツへスキップ
+            </a>
+            <Header />
+            <HomeNav />
+            <div className="pt-24 pb-10">
+              <Analytics />
+              <div id="main-content" className="app-shell">
+                {children}
+              </div>
+              <Footer />
             </div>
-            <Footer />
-          </div>
-        </AuthProvider>
+          </AuthProvider>
+        </div>
       </body>
     </html>
   );

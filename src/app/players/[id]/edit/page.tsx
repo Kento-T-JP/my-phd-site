@@ -306,7 +306,6 @@ export default function EditPlayerPage() {
           <input
             type="number"
             min={1}
-            max={99}
             className="w-full p-2 border rounded"
             value={number}
             onChange={(e) => setNumber(e.target.value)}
