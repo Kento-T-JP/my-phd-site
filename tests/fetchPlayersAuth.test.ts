@@ -27,7 +27,7 @@ describe('fetchPlayers auth', () => {
     });
     vi.stubGlobal('fetch', fetchStub as any);
 
-    const mod = await import('../src/app/page');
+    const mod = await import('../src/lib/fetchPlayers');
     const players = await mod.fetchPlayers();
 
     expect(players).toEqual([

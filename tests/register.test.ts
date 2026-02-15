@@ -27,8 +27,8 @@ vi.mock('bcrypt', () => ({
 vi.mock('@/lib/db', () => ({
   __esModule: true,
   default: {
-    user: { findUnique: vi.fn(), create: vi.fn() },
-    emailVerificationToken: { create: vi.fn() },
+    user: { findUnique: vi.fn() },
+    pendingRegistration: { upsert: vi.fn() },
   },
 }));
 
@@ -40,8 +40,7 @@ beforeEach(async () => {
   const db = await import('@/lib/db');
   prisma = db.default as any;
   prisma.user.findUnique.mockReset();
-  prisma.user.create.mockReset();
-  prisma.emailVerificationToken.create.mockReset();
+  prisma.pendingRegistration.upsert.mockReset();
   process.env.NEXTAUTH_URL = 'http://localhost:3000';
   process.env.CONFIRM_FROM_ADDRESS = 'no-reply@test';
   process.env.RECAPTCHA_SECRET = 'secret';
@@ -60,11 +59,6 @@ describe('register API', () => {
   it('creates user and sends verification email', async () => {
     const { POST } = await import('../src/app/api/register/route');
     prisma.user.findUnique.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue({
-      id: 1,
-      email: 'test@example.com',
-      isAdmin: false,
-    });
     const req = new Request('http://test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,8 +71,10 @@ describe('register API', () => {
     const res = await POST(req);
     expect(res.status).toBe(200);
     const tokenHex = Buffer.from('mocktoken').toString('hex');
-    expect(prisma.emailVerificationToken.create).toHaveBeenCalledWith({
-      data: { token: tokenHex, userId: 1, expires: expect.any(Date) },
+    expect(prisma.pendingRegistration.upsert).toHaveBeenCalledWith({
+      where: { email: 'test@example.com' },
+      update: { hashedPassword: 'hashed', token: tokenHex, expires: expect.any(Date) },
+      create: { email: 'test@example.com', hashedPassword: 'hashed', token: tokenHex, expires: expect.any(Date) },
     });
     expect(resendSendMock).toHaveBeenCalledTimes(1);
     const payload = resendSendMock.mock.calls[0][0];
@@ -102,7 +98,7 @@ describe('register API', () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.pendingRegistration.upsert).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
   });
 });

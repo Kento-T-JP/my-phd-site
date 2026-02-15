@@ -102,6 +102,7 @@ describe('player API routes', () => {
     playersSpy.mockReset();
     tNamesSpy.mockReset();
     allTSpy.mockReset();
+    allTSpy.mockResolvedValue([]);
     rTitlesSpy.mockReset();
     upsertTournamentSpy.mockReset();
     upsertRosterSpy.mockReset();
@@ -350,6 +351,7 @@ describe('lookup API routes', () => {
     upsertTournamentSpy = mod.upsertTournament as any;
     tNamesSpy.mockReset();
     allTSpy.mockReset();
+    allTSpy.mockResolvedValue([]);
     rTitlesSpy.mockReset();
     upsertTournamentSpy.mockReset();
     const auth = await import('next-auth/next');

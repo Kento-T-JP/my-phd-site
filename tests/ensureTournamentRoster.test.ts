@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ensureTournamentRoster } from '@/lib/db';
 
 interface MockClient {
-  tournament: { upsert: any };
-  roster: { findFirst: any; create: any; upsert: any };
+  tournament: { findFirst: any; upsert: any };
+  roster: { findFirst: any; create: any; upsert: any; findUniqueOrThrow: any };
 }
 
 let client: MockClient;
@@ -43,11 +43,15 @@ describe('ensureTournamentRoster', () => {
     nextId = 1;
     client = {
       tournament: {
+        findFirst: vi.fn(async () => null),
         upsert: vi.fn(async () => ({ id: 1, name: 'Cup' })),
       },
       roster: {
         findFirst: vi.fn(findFirstImpl),
         create: vi.fn(createImpl),
+        findUniqueOrThrow: vi.fn(async ({ where }: any) =>
+          rosters.find((r) => r.id === where.id) ?? null
+        ),
         upsert: vi.fn(({ create }: any) => {
           const existing = rosters.find(
             (r) =>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import Home from '@/app/page';
+import Home from '@/app/home/page';
 
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: { user: { email: 'a@test.com' } } }) }));
 vi.mock('next-auth/next', () => ({ getServerSession: () => Promise.resolve({ user: { email: 'a@test.com', isAdmin: false } }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('@/lib/url', () => ({ getBaseUrl: () => Promise.resolve('http://localhost:3000') }));
 vi.mock('next/headers', () => ({
   cookies: () => ({ toString: () => '' }),
   headers: () => new Map([['host', 'localhost:3000']]) as any,
@@ -74,4 +75,3 @@ describe('favorites on home page', () => {
     );
   });
 });
-

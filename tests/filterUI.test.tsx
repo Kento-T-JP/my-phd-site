@@ -57,15 +57,15 @@ describe('Roster filter UI', () => {
     });
   });
 
-  it('shows secondary roster select when a tournament is selected', async () => {
+  it('keeps roster and position selects available after selecting a roster', async () => {
     global.fetch = mockFetch();
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
-    // two selects initially (filter and position)
+    // two selects: roster and position
     expect(screen.getAllByRole('combobox').length).toBe(2);
     const mainSelect = screen.getAllByRole('combobox')[0];
-    fireEvent.change(mainSelect, { target: { value: 't:1' } });
-    await waitFor(() => expect(screen.getAllByRole('combobox').length).toBe(3));
+    fireEvent.change(mainSelect, { target: { value: '1' } });
+    await waitFor(() => expect(screen.getAllByRole('combobox').length).toBe(2));
     expect(
       screen.getAllByText('Cup - 2024/01/01-2024/01/10').length
     ).toBeGreaterThan(0);

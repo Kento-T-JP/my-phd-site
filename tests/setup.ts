@@ -36,3 +36,22 @@ class TestRequest extends OriginalRequest {
 }
 // @ts-ignore
 global.Request = TestRequest;
+
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+// @ts-ignore
+global.ResizeObserver = ResizeObserverMock;
+
+Object.defineProperty(global.HTMLMediaElement.prototype, 'play', {
+  configurable: true,
+  value: vi.fn().mockResolvedValue(undefined),
+});
+
+Object.defineProperty(global.HTMLMediaElement.prototype, 'pause', {
+  configurable: true,
+  value: vi.fn(),
+});
