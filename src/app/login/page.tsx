@@ -62,7 +62,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!captchaToken) return;
     try {
       const res = await signIn("credentials", {
         redirect: false,
@@ -150,7 +149,6 @@ export default function LoginPage() {
           <button
             type="submit"
             className="primary-btn w-full disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={!captchaToken}
             onClick={play}
           >
             Sign In

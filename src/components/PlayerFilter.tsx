@@ -74,16 +74,16 @@ export default function PlayerFilter({
   };
 
   return (
-    <div className="flex gap-2 mb-4">
+    <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <input
         type="text"
-        className="border p-1 flex-1"
+        className="w-full min-w-0 border p-2"
         placeholder="Filter players..."
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
       />
       <select
-        className="border p-1"
+        className="w-full min-w-0 border p-2"
         value={rosterInput}
         onChange={(e) => setRosterInput(e.target.value)}
       >
@@ -95,7 +95,7 @@ export default function PlayerFilter({
         ))}
       </select>
       <select
-        className="border p-1"
+        className="w-full min-w-0 border p-2"
         value={positionInput}
         onChange={(e) => setPositionInput(e.target.value)}
       >
@@ -107,7 +107,7 @@ export default function PlayerFilter({
         ))}
       </select>
       <button
-        className="px-2 py-1 bg-blue-500 text-white rounded"
+        className="w-full px-3 py-2 bg-blue-500 text-white rounded sm:justify-self-end sm:w-auto"
         onClick={() => {
           play();
           handleApply();

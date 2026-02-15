@@ -118,18 +118,19 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials.password) return null;
+        const normalizedEmail = credentials.email.trim().toLowerCase();
 
         console.log('CRED_START', {
-          email: credentials.email,
+          email: normalizedEmail,
           hasCaptcha: Boolean(credentials.captcha),
         });
 
-        const adminEmail = process.env.ADMIN_EMAIL ?? '';
+        const adminEmail = (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase();
         const adminPassword = process.env.ADMIN_PASSWORD ?? '';
         const safeCompare = (a: string, b: string) =>
           a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
-        const adminEmailMatch = adminEmail && safeCompare(credentials.email, adminEmail);
+        const adminEmailMatch = adminEmail && safeCompare(normalizedEmail, adminEmail);
         const adminPasswordMatch =
           adminPassword && safeCompare(credentials.password, adminPassword);
         console.log('CRED_ADMIN_CHECK', {
@@ -140,7 +141,7 @@ export const authOptions: NextAuthOptions = {
           console.log('CRED_AUTH_SUCCESS', { kind: 'admin' });
           const adminUser: User = {
             id: 'admin',
-            email: adminEmail,
+            email: normalizedEmail,
             isAdmin: true,
             status: 'active',
           };
@@ -165,17 +166,18 @@ export const authOptions: NextAuthOptions = {
         if (!verify.success) return null;
 
         const userRecord = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: normalizedEmail },
         });
         console.log('CRED_USER_LOOKUP', {
           found: Boolean(userRecord),
           emailVerified: Boolean(userRecord?.emailVerified),
           hasPassword: Boolean(userRecord?.hashedPassword),
         });
-        if (!userRecord || !userRecord.emailVerified) return null;
+        if (!userRecord) return null;
         if (!userRecord.hashedPassword) return null;
         const valid = await compare(credentials.password, userRecord.hashedPassword);
         if (!valid) return null;
+        if (!userRecord.isAdmin && !userRecord.emailVerified) return null;
         console.log('CRED_AUTH_SUCCESS', { kind: 'user', id: userRecord.id });
         const dbUser: User = {
           id: userRecord.id.toString(),

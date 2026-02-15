@@ -13,7 +13,7 @@ export default function HomeNav() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { play } = useClickSound();
+  const { play, muted, toggleMuted } = useClickSound();
 
   const links = [
     { href: "/players/new", label: "新規選手登録", auth: true },
@@ -114,6 +114,17 @@ export default function HomeNav() {
               </Link>
             </li>
           )}
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                toggleMuted();
+              }}
+              className="w-full text-left py-2.5 px-3 rounded-xl transition-all duration-200 ease-in-out text-cyan-100/85 hover:text-white hover:bg-cyan-300/12"
+            >
+              サウンド: {muted ? "OFF" : "ON"}
+            </button>
+          </li>
         </ul>
       </aside>
     </nav>

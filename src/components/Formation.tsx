@@ -42,6 +42,7 @@ interface Dragging {
   id: number;
   offsetX: number;
   offsetY: number;
+  pointerId: number;
 }
 
 /** horizontal spacing between players in the same line (percentage points) */
@@ -474,8 +475,9 @@ export default function Formation({
       });
     };
 
-    const move = (e: MouseEvent) => {
+    const move = (e: PointerEvent) => {
       if (!dragging) return;
+      if (e.pointerId !== dragging.pointerId) return;
       const field = document.querySelector(".field") as HTMLElement | null;
       if (!field) return;
       const rect = field.getBoundingClientRect();
@@ -483,12 +485,18 @@ export default function Formation({
       nextTop = ((e.clientY - rect.top - dragging.offsetY) / rect.height) * 100;
       scheduleUpdate();
     };
-    const up = () => setDragging(null);
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up = (e: PointerEvent) => {
+      if (!dragging) return;
+      if (e.pointerId !== dragging.pointerId) return;
+      setDragging(null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
     return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [dragging]);
@@ -1086,14 +1094,18 @@ export default function Formation({
                   left: `${pos.left}%`,
                   transform: "translate(-50%, -50%)",
                   zIndex: frontmostId === p.id ? 10 : 0,
+                  touchAction: "none",
                 }}
-                onMouseDown={(e) => {
+                onPointerDown={(e) => {
+                  if (e.pointerType === "mouse" && e.button !== 0) return;
                   play();
+                  e.preventDefault();
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setDragging({
                     id: p.id,
                     offsetX: e.clientX - r.left - r.width / 2,
                     offsetY: e.clientY - r.top - r.height / 2,
+                    pointerId: e.pointerId,
                   });
                   if (!customMode) freezeDefaults(
                     defaultsFrozen,
