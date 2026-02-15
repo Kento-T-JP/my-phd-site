@@ -7,6 +7,7 @@ import type { PositionKey } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 import useClickSound from "@/lib/useClickSound";
+import { normalizeUploadImage } from "@/lib/imageUpload";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -37,6 +38,7 @@ export default function EditPlayerPage() {
   const [otherPosition, setOtherPosition] = useState("");
   const [number, setNumber] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [wikiUrl, setWikiUrl] = useState("");
   const [extra, setExtra] = useState<Record<string, unknown>>({});
   const [message, setMessage] = useState<string[]>([]);
@@ -130,6 +132,18 @@ export default function EditPlayerPage() {
     getCsrfToken().then((token) => setCsrf(token ?? ""));
   }, []);
 
+  useEffect(() => {
+    if (!image) {
+      setImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    setImagePreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [image]);
+
   if (status === "loading") {
     return (
       <main className="p-4 sm:p-8 max-w-md mx-auto">
@@ -183,7 +197,10 @@ export default function EditPlayerPage() {
     form.append("name", name);
     allPositions.forEach((p) => form.append("position", p));
     if (number.trim() !== "") form.append("number", number);
-    if (image) form.append("image", image);
+    if (image) {
+      const normalizedImage = await normalizeUploadImage(image);
+      form.append("image", normalizedImage);
+    }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
     if (rosterTitle.trim() !== "") {
       if (tournamentName.trim() !== "") {
@@ -322,6 +339,16 @@ export default function EditPlayerPage() {
             className="w-full p-2 border rounded"
             onChange={(e) => setImage(e.target.files?.[0] || null)}
           />
+          {imagePreview && (
+            <div className="mt-3">
+              <p className="mb-1 text-xs text-cyan-100/75">プレビュー（円形表示）</p>
+              <img
+                src={imagePreview}
+                alt="preview"
+                className="h-24 w-24 rounded-full object-cover border border-cyan-200/30"
+              />
+            </div>
+          )}
           {errors.image && (
             <p className="text-red-600 text-sm mt-1">{errors.image}</p>
           )}

@@ -43,17 +43,15 @@ export async function POST(req: Request) {
       })
     );
 
-      const roster = await prisma.$transaction(async (tx) => {
-        return upsertTournamentRosterPlayersBySlug(
-          tournamentSlug,
-          tournamentName,
-          rosterTitle,
-          rosterEntries,
-          rosterDate,
-          tx,
-          Number.isFinite(userId) ? userId : undefined,
-        );
-      });
+    const roster = await upsertTournamentRosterPlayersBySlug(
+      tournamentSlug,
+      tournamentName,
+      rosterTitle,
+      rosterEntries,
+      rosterDate,
+      prisma,
+      Number.isFinite(userId) ? userId : undefined,
+    );
 
     return NextResponse.json({ count: rosterEntries.length, title: roster.title });
   } catch (err) {

@@ -23,10 +23,6 @@ const prisma = new PrismaClient();
 
 export default prisma;
 
-interface HasTransaction {
-  $transaction: PrismaClient['$transaction'];
-}
-
 /**
  * Retrieve various statistics for the admin dashboard.
  */
@@ -387,24 +383,30 @@ export async function addRosterPlayers(
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
   if (players.length === 0) return;
-  const upserts = players.map((p) =>
+  const data = players.map((p) => ({
+    rosterId,
+    playerId: p.playerId,
+    number: p.number,
+    position: p.position,
+  }));
+
+  // Prefer bulk insert to reduce query count on large imports.
+  if (typeof (client as any).rosterPlayer?.createMany === 'function') {
+    await (client as any).rosterPlayer.createMany({
+      data,
+      skipDuplicates: true,
+    });
+    return;
+  }
+
+  const upserts = data.map((p) =>
     client.rosterPlayer.upsert({
-      where: { rosterId_playerId: { rosterId, playerId: p.playerId } },
+      where: { rosterId_playerId: { rosterId: p.rosterId, playerId: p.playerId } },
       update: {},
-      create: {
-        rosterId,
-        playerId: p.playerId,
-        number: p.number,
-        position: p.position,
-      },
+      create: p,
     })
   );
-  if ('$transaction' in client) {
-    const txClient = client as HasTransaction;
-    await txClient.$transaction(upserts);
-  } else {
-    await Promise.all(upserts);
-  }
+  await Promise.all(upserts);
 }
 
 /**
