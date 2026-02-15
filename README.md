@@ -15,7 +15,7 @@
 
 - Framework: Next.js 16.1.6 (App Router), React 19, TypeScript
 - Styling: Tailwind CSS 4
-- Database / ORM: PostgreSQL, Prisma
+- Database / ORM: PostgreSQL (Production: Neon), Prisma
 - Authentication: NextAuth (`next-auth`)
 - Mail: Nodemailer, Resend
 - Testing: Vitest, Testing Library
@@ -130,12 +130,13 @@ docker compose up --build
 ## Vercel 本番デプロイ
 
 1. GitHub リポジトリを Vercel に Import
-2. Vercel Project Settings > Environment Variables に `.env` の本番値を登録
-3. 本番 DB の `DATABASE_URL` を設定
-4. `npm run build` が Docker 開発環境で成功することを確認して push
-5. Vercel でデプロイ実行
-6. Domain に `start-xi.com` を追加し、DNS を設定
-7. 初回のみ、ローカル（またはCI）から本番DBに対して `npm run seed` を実行
+2. Vercel Marketplace で Neon を接続し、本番用 PostgreSQL を作成
+3. Vercel Project Settings > Environment Variables に `.env` の本番値を登録
+4. 本番 DB の `DATABASE_URL` を設定
+5. `npm run build` が Docker 開発環境で成功することを確認して push
+6. Vercel でデプロイ実行
+7. Domain に `start-xi.com` を追加し、DNS を設定
+8. 初回のみ、ローカル（またはCI）から本番DBに対して `npm run seed` を実行
 
 ### Vercel に設定する代表的な環境変数
 
