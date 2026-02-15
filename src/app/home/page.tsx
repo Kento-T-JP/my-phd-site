@@ -61,17 +61,31 @@ export default async function Home({
 
   if (players.length === 0) {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
-        <h1 className="text-xl font-bold mb-4">JFAメンバーインポート</h1>
-        <JfaImportForm />
+      <main className="py-2">
+        <section className="glass-panel p-4 sm:p-6 max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-2">JFAメンバーインポート</h1>
+          <p className="text-sm text-cyan-100/75 mb-5">
+            まずは選手データを取り込んで、フォーメーション作成を開始してください。
+          </p>
+          <JfaImportForm />
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="p-4 sm:p-8">
-      <h1 className="text-2xl font-bold mb-4">Starting Eleven: Tactical Preview</h1>
-      <Formation initialFormation={initialFormation} />
+    <main className="py-2">
+      <section className="mb-4 px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Starting Eleven Tactical Preview
+        </h1>
+        <p className="text-sm text-cyan-100/75 mt-1">
+          フォーメーション作成、選手配置、比較検討を1つの画面で行えます。
+        </p>
+      </section>
+      <section className="glass-panel p-3 sm:p-5">
+        <Formation initialFormation={initialFormation} />
+      </section>
     </main>
   );
 }

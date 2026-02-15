@@ -11,6 +11,14 @@ export function normalizeSlug(str: string) {
     .replace(/(^-|-$)/g, '');
 }
 
+function normalizeTournamentName(name: string) {
+  return name.normalize('NFKC').trim().replace(/\s+/g, ' ');
+}
+
+function normalizeRosterTitle(title: string) {
+  return title.normalize('NFKC').trim().replace(/\s+/g, ' ');
+}
+
 const prisma = new PrismaClient();
 
 export default prisma;
@@ -230,11 +238,21 @@ export async function upsertTournament(
   name: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
-  const slug = normalizeSlug(name);
+  const normalizedName = normalizeTournamentName(name);
+  if (!normalizedName) {
+    throw new Error('Tournament name is required');
+  }
+  const existingByName = await client.tournament.findFirst({
+    where: { name: { equals: normalizedName, mode: 'insensitive' } },
+  });
+  if (existingByName) {
+    return existingByName;
+  }
+  const slug = normalizeSlug(normalizedName);
   return client.tournament.upsert({
     where: { slug },
-    update: {},
-    create: { name, slug },
+    update: { name: normalizedName },
+    create: { name: normalizedName, slug },
   });
 }
 
@@ -244,10 +262,20 @@ export async function upsertTournamentBySlug(
   name: string,
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
+  const normalizedName = normalizeTournamentName(name);
+  if (!normalizedName) {
+    throw new Error('Tournament name is required');
+  }
+  const existingByName = await client.tournament.findFirst({
+    where: { name: { equals: normalizedName, mode: 'insensitive' } },
+  });
+  if (existingByName) {
+    return existingByName;
+  }
   return client.tournament.upsert({
     where: { slug },
-    update: { name },
-    create: { name, slug },
+    update: { name: normalizedName },
+    create: { name: normalizedName, slug },
   });
 }
 
@@ -259,11 +287,27 @@ export async function upsertRoster(
   date?: Date,
   userId?: number,
 ) {
-  const where = { tournamentId_title: { tournamentId, title } } as const;
+  const normalizedTitle = normalizeRosterTitle(title);
+  if (!normalizedTitle) {
+    throw new Error('試合リスト名が空です');
+  }
+  const existingByName = await client.roster.findFirst({
+    where: {
+      title: { equals: normalizedTitle, mode: 'insensitive' },
+    },
+    select: { id: true, tournamentId: true },
+  });
+  if (existingByName && existingByName.tournamentId !== tournamentId) {
+    throw new Error('同じ名前の試合リストは作成できません');
+  }
+  if (existingByName && existingByName.tournamentId === tournamentId) {
+    return client.roster.findUniqueOrThrow({ where: { id: existingByName.id } });
+  }
+  const where = { tournamentId_title: { tournamentId, title: normalizedTitle } } as const;
   return client.roster.upsert({
     where,
     update: {},
-    create: { tournamentId, title, date: date ?? new Date(), userId: userId ?? null },
+    create: { tournamentId, title: normalizedTitle, date: date ?? new Date(), userId: userId ?? null },
   });
 }
 

@@ -9,88 +9,93 @@ import Button from "./ui/Button";
 export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const showHome = pathname !== "/home";
-  const homeHref = "/home";
-  const homeLabel = "Home";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isFullyAuthenticated = session?.loginStage === "credentials";
+  const navLinks = [
+    { href: "/home", label: "Home" },
+    { href: "/formations", label: "Formations" },
+    { href: "/mypage", label: "My Page" },
+  ];
+
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-transparent transition-colors text-white flex items-center p-4 flex-wrap sm:flex-nowrap">
-      <Image
-        src="/emblem.svg"
-        alt="Samurai Blue Emblem"
-        width={40}
-        height={40}
-        unoptimized
-        className="mr-2"
-      />
-      <span className="text-xl font-bold flex-grow">SAMURAI BLUE</span>
-      {isFullyAuthenticated ? (
-        <>
-          <Button
-            className="sm:hidden"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-controls="primary-navigation"
-            aria-expanded={isMenuOpen}
-            type="button"
-          >
-            <span className="sr-only">Toggle navigation</span>
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+    <header className="fixed top-0 left-0 w-full z-50 border-b border-cyan-200/20 bg-slate-950/55 backdrop-blur-md text-white">
+      <div className="app-shell flex items-center p-3 gap-2 flex-wrap sm:flex-nowrap">
+        <Link href="/home" className="flex items-center gap-2">
+          <Image
+            src="/emblem.svg"
+            alt="Samurai Blue Emblem"
+            width={40}
+            height={40}
+            unoptimized
+            className="mr-1"
+          />
+          <span className="text-lg sm:text-xl font-bold tracking-wide">SAMURAI BLUE</span>
+        </Link>
+        {isFullyAuthenticated ? (
+          <>
+            <Button
+              className="sm:hidden ghost-btn ml-auto"
+              onClick={() => setIsMenuOpen((open) => !open)}
+              aria-controls="primary-navigation"
+              aria-expanded={isMenuOpen}
+              type="button"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </Button>
-          <nav
-            id="primary-navigation"
-            className={`${isMenuOpen ? "block" : "hidden"} w-full sm:block sm:w-auto`}
-          >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              {showHome && (
-                <Link href={homeHref} className="underline">
-                  {homeLabel}
-                </Link>
-              )}
-              {session ? (
-                <>
-                  <span className="text-sm max-w-[300px] truncate">
-                    {session.user?.email
-                      ? `Logged in as ${session.user.email}`
-                      : "Logged in"}
-                  </span>
-                  <Link href="/formations" className="underline">
-                    Formations
-                  </Link>
-                  <Link href="/mypage" className="underline">
-                    My Page
-                  </Link>
-                  <Button onClick={() => signOut()} className="underline" type="button">
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/" className="underline">
-                    Login
-                  </Link>
-                  <Link href="/register" className="underline">
-                    Register
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
-        </>
-      ) : null}
+              <span className="sr-only">Toggle navigation</span>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </Button>
+            <nav
+              id="primary-navigation"
+              className={`${isMenuOpen ? "block" : "hidden"} w-full sm:block sm:w-auto sm:ml-auto`}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                {session ? (
+                  <>
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`nav-link ${pathname === link.href ? "active" : ""}`}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                    <span className="text-xs sm:text-sm max-w-[260px] truncate px-2 py-1 text-cyan-100/75">
+                      {session.user?.email
+                        ? `Logged in as ${session.user.email}`
+                        : "Logged in"}
+                    </span>
+                    <Button onClick={() => signOut()} className="ghost-btn" type="button">
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/" className="nav-link">
+                      Login
+                    </Link>
+                    <Link href="/register" className="nav-link">
+                      Register
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
+          </>
+        ) : null}
+      </div>
     </header>
   );
 }

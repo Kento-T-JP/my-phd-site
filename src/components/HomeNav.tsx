@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useClickSound from "@/lib/useClickSound";
 
 export default function HomeNav() {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const isAdmin = session?.user?.isAdmin;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
@@ -40,11 +42,11 @@ export default function HomeNav() {
   }, []);
 
   return (
-    <nav>
+    <nav aria-label="サイドメニュー">
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-18 left-6 z-40 text-yellow-300 hover:text-white"
+        className="fixed top-[84px] left-4 z-40 text-cyan-100 hover:text-white bg-slate-900/70 border border-cyan-200/20 rounded-full p-2 backdrop-blur-md"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
@@ -67,25 +69,32 @@ export default function HomeNav() {
       </button>
       {isOpen && (
         <div
-          className="fixed inset-x-0 top-16 bottom-0 bg-black/40 z-30"
+          className="fixed inset-x-0 top-[76px] bottom-0 bg-black/45 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed top-16 bottom-0 left-0 w-64 bg-blue-900/50 border border-cyan-400/20 p-4 backdrop-blur-sm transform transition-all duration-300 ease-in-out z-40 ${
+        className={`fixed top-[76px] bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
       >
-        <ul className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/65 mb-3 px-3">
+          Quick Actions
+        </p>
+        <ul className="space-y-1.5">
           {links
             .filter((link) => !link.auth || !!session)
             .map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
+                  className={`block py-2.5 px-3 rounded-xl transition-all duration-200 ease-in-out ${
+                    pathname === link.href
+                      ? "bg-cyan-300/20 text-white"
+                      : "text-cyan-100/85 hover:text-white hover:bg-cyan-300/12"
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -95,7 +104,11 @@ export default function HomeNav() {
             <li>
               <Link
                 href="/admin"
-                className="block py-2 px-4 text-yellow-300 hover:text-white hover:underline transition-all duration-300 ease-in-out hover:translate-x-1 hover:opacity-80"
+                className={`block py-2.5 px-3 rounded-xl transition-all duration-200 ease-in-out ${
+                  pathname === "/admin"
+                    ? "bg-cyan-300/20 text-white"
+                    : "text-cyan-100/85 hover:text-white hover:bg-cyan-300/12"
+                }`}
               >
                 管理者画面
               </Link>
@@ -106,4 +119,3 @@ export default function HomeNav() {
     </nav>
   );
 }
-

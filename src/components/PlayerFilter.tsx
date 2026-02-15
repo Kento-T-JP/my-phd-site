@@ -1,26 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import type { PositionKey, Roster, Tournament } from "@/types/player";
+import type { PositionKey, Roster } from "@/types/player";
 import { rosterDisplayTitle } from "@/lib/format";
 import type { PlayerFilterOptions } from "./Formation";
 import useClickSound from "@/lib/useClickSound";
 
 interface Props {
   rosters: Roster[];
-  tournaments: Tournament[];
   positionOptions: PositionKey[];
   onApply: (filter: PlayerFilterOptions) => void;
 }
 
 export default function PlayerFilter({
   rosters,
-  tournaments,
   positionOptions,
   onApply,
 }: Props) {
   const { data: session } = useSession();
   const [searchInput, setSearchInput] = useState("");
-  const [tournamentInput, setTournamentInput] = useState("");
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const previousUserIdRef = useRef<string | undefined>();
@@ -34,7 +31,6 @@ export default function PlayerFilter({
       localStorage.removeItem(`selectedRoster_${prevId}`);
     }
     setSearchInput("");
-    setTournamentInput("");
     setRosterInput("");
     setPositionInput("");
     onApply({});
@@ -47,8 +43,6 @@ export default function PlayerFilter({
     const saved = localStorage.getItem(`selectedRoster_${userId}`);
     if (saved) {
       setRosterInput(saved);
-      const r = rosters.find((rr) => rr.id === Number(saved));
-      if (r) setTournamentInput(String(r.tournamentId));
     }
   }, [session, rosters]);
 
@@ -72,14 +66,9 @@ export default function PlayerFilter({
 
   const handleApply = () => {
     const rosterId = rosterInput ? Number(rosterInput) : undefined;
-    const tournamentId =
-      rosterId === undefined && tournamentInput
-        ? Number(tournamentInput)
-        : undefined;
     onApply({
       name: searchInput,
       rosterId,
-      tournamentId,
       position: positionInput || undefined,
     });
   };
@@ -95,35 +84,16 @@ export default function PlayerFilter({
       />
       <select
         className="border p-1"
-        value={tournamentInput}
-        onChange={(e) => {
-          setTournamentInput(e.target.value);
-          setRosterInput("");
-        }}
+        value={rosterInput}
+        onChange={(e) => setRosterInput(e.target.value)}
       >
-        <option value="">All tournaments</option>
-        {tournaments.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
+        <option value="">全ての試合リスト</option>
+        {rosters.map((r) => (
+          <option key={r.id} value={r.id}>
+            {rosterDisplayTitle(r)}
           </option>
         ))}
       </select>
-      {tournamentInput && (
-        <select
-          className="border p-1"
-          value={rosterInput}
-          onChange={(e) => setRosterInput(e.target.value)}
-        >
-          <option value="">All rosters</option>
-          {rosters
-            .filter((r) => r.tournamentId === Number(tournamentInput))
-            .map((r) => (
-              <option key={r.id} value={r.id}>
-                {rosterDisplayTitle(r)}
-              </option>
-            ))}
-        </select>
-      )}
       <select
         className="border p-1"
         value={positionInput}
@@ -148,4 +118,3 @@ export default function PlayerFilter({
     </div>
   );
 }
-

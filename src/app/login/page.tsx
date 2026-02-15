@@ -49,8 +49,10 @@ export default function LoginPage() {
 
   if (status === "loading") {
     return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
-        <p>Loading...</p>
+      <main className="auth-shell">
+        <div className="auth-card">
+          <p className="text-cyan-100/85">Loading...</p>
+        </div>
       </main>
     );
   }
@@ -87,70 +89,78 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="p-4 sm:p-8 max-w-md mx-auto">
-      <h1 className="text-xl font-bold mb-4">Login</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block mb-1">Email</label>
-          <input
-            type="email"
-            className="w-full p-2 border rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-1">Password</label>
-          <div className="flex items-center">
+    <main className="auth-shell">
+      <section className="auth-card">
+        <h1 className="text-2xl font-bold mb-2">アカウントログイン</h1>
+        <p className="text-sm text-cyan-100/75 mb-6">
+          メールアドレスとパスワードを入力してホーム画面へ進みます。
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block mb-1 text-sm text-cyan-100/85">Email</label>
             <input
-              type={showPassword ? "text" : "password"}
-              className="w-full p-2 border rounded"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="email"
+              className="form-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
               required
             />
-            <button
-              type="button"
-              className="ml-2 px-2 py-1 text-sm border rounded"
-              onClick={() => {
-                play();
-                setShowPassword((prev) => !prev);
-              }}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
           </div>
-        </div>
-        {siteKey ? (
-          isMounted ? (
-            <ReCAPTCHA sitekey={siteKey} onChange={setCaptchaToken} />
-          ) : null
-        ) : (
-          <div className="p-2 text-yellow-700 border border-yellow-500 rounded">
-            reCAPTCHA site key is not configured
+          <div>
+            <label className="block mb-1 text-sm text-cyan-100/85">Password</label>
+            <div className="flex items-center">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="8文字以上"
+                required
+              />
+              <button
+                type="button"
+                className="ghost-btn ml-2 text-sm"
+                onClick={() => {
+                  play();
+                  setShowPassword((prev) => !prev);
+                }}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
-        )}
-        {error && <p className="text-red-600">{error}</p>}
+          {siteKey ? (
+            isMounted ? (
+              <ReCAPTCHA sitekey={siteKey} onChange={setCaptchaToken} />
+            ) : null
+          ) : (
+            <div className="p-2 text-amber-300 border border-amber-400/70 rounded-md text-sm">
+              reCAPTCHA site key is not configured
+            </div>
+          )}
+          {error && <p className="status-error text-sm">{error}</p>}
+          <button
+            type="submit"
+            className="primary-btn w-full disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={!captchaToken}
+            onClick={play}
+          >
+            Sign In
+          </button>
+        </form>
         <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded"
-          onClick={play}
+          type="button"
+          className="mt-6 text-sm text-cyan-100/85 underline underline-offset-2"
+          onClick={() => {
+            play();
+            router.back();
+          }}
         >
-          Sign In
+          戻る
         </button>
-      </form>
-      <button
-        type="button"
-        className="mt-6 text-sm underline"
-        onClick={() => {
-          play();
-          router.back();
-        }}
-      >
-        戻る
-      </button>
+      </section>
     </main>
   );
 }

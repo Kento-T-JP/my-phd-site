@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   useMemo,
+  type CSSProperties,
   useRef,
   useCallback,
   useTransition,
@@ -15,7 +16,7 @@ import WikiLink from "@/components/WikiLink";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import type { Player, PositionKey, Roster } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
@@ -44,19 +45,14 @@ interface Dragging {
 }
 
 /** horizontal spacing between players in the same line (percentage points) */
-const OFFSET_STEP = 20; // wider than previous 16 to avoid overlap
+const OFFSET_STEP = 24;
+const clampPercent = (value: number, min = 6, max = 94) =>
+  Math.min(max, Math.max(min, value));
 
-
-/** 名前の長さに応じてクラスを返す */
-const getNameClass = (name: string) => {
-  const plainName = name.replace(/\s+/g, "");
-  if (plainName.length >= 10) return "text-[10px] leading-tight";
-  if (plainName.length >= 5) return "text-xs";
-  return "";
-};
 
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
 const BENCH_LIMIT = 12;
+const DEFAULT_FORMATION_NAME = "4-3-3";
 
 export interface PlayerFilterOptions {
   name?: string;
@@ -132,7 +128,9 @@ const freezeDefaults = (
   lineupOrder: number[],
   formation: Formation,
   playerPositions: Record<number, { top: number; left: number }>,
-  setPlayerPositions: React.Dispatch<React.SetStateAction<Record<number, { top: number; left: number }>>>
+  setPlayerPositions: React.Dispatch<React.SetStateAction<Record<number, { top: number; left: number }>>>,
+  step: number = OFFSET_STEP,
+  adjustLeft: (left: number) => number = (left) => left
 ) => {
   if (defaultsFrozen) return;
   const newPos: typeof playerPositions = {};
@@ -146,14 +144,38 @@ const freezeDefaults = (
     for (let i = 0; i < base.max && idx < idsArray.length; i++) {
       const pid = idsArray[idx++];
       if (!playerPositions[pid]) {
-        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * OFFSET_STEP : 0);
-        newPos[pid] = { top: base.top, left: base.left + offset };
+        const offset = (base.max > 1 ? (i - (base.max - 1) / 2) * step : 0);
+        newPos[pid] = { top: base.top, left: adjustLeft(base.left) + offset };
       }
     }
   });
 
   setPlayerPositions((prev) => ({ ...newPos, ...prev }));
   setDefaultsFrozen(true);
+};
+
+const buildDefaultPositionMap = (
+  lineupOrder: number[],
+  formation: Formation,
+  step: number = OFFSET_STEP,
+  adjustLeft: (left: number) => number = (left) => left
+) => {
+  const positions: Record<number, { top: number; left: number }> = {};
+  let idx = 0;
+  Object.keys(formation.positions).forEach((posKey) => {
+    const base = formation.positions[posKey as keyof typeof formation.positions];
+    if (!base) return;
+    for (let i = 0; i < base.max && idx < lineupOrder.length; i++) {
+      const pid = lineupOrder[idx++];
+      const offset = base.max > 1 ? (i - (base.max - 1) / 2) * step : 0;
+      const baseLeft = adjustLeft(base.left);
+      positions[pid] = {
+        top: clampPercent(base.top),
+        left: clampPercent(baseLeft + offset),
+      };
+    }
+  });
+  return positions;
 };
 
 export default function Formation({
@@ -171,9 +193,11 @@ export default function Formation({
     InitialFormation | undefined
   >(initialFormationProp);
   /* ───────── state ───────── */
+  const defaultFormation =
+    formations.find((f) => f.name === DEFAULT_FORMATION_NAME) ?? formations[0];
   const base = initialFormation
-    ? formations.find((f) => f.name === initialFormation.name) ?? formations[0]
-    : formations[0];
+    ? formations.find((f) => f.name === initialFormation.name) ?? defaultFormation
+    : defaultFormation;
   const [formation, setFormation] = useState<Formation>(base);
   const [lineupOrder, setLineupOrder] = useState<number[]>(
     initialFormation?.positions.lineupOrder ?? []
@@ -188,7 +212,6 @@ export default function Formation({
     (Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] })[]
   >([]);
   const [rosters, setRosters] = useState<Roster[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<Dragging | null>(null);
@@ -228,6 +251,11 @@ export default function Formation({
   const router = useRouter();
   const { play } = useClickSound();
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const fieldRef = useRef<HTMLDivElement | null>(null);
+  const [fieldWidth, setFieldWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
 
   const positionOptions = useMemo(() => {
     const defaultPositions = formations.flatMap((f) =>
@@ -283,7 +311,7 @@ export default function Formation({
   useEffect(() => {
     if (!initialFormation) return;
     const base =
-      formations.find((f) => f.name === initialFormation.name) ?? formations[0];
+      formations.find((f) => f.name === initialFormation.name) ?? defaultFormation;
     setFormation(base);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
@@ -301,7 +329,7 @@ export default function Formation({
     setDefaultsFrozen(false);
     setSelectedId(null);
     setSelectedIsBench(null);
-  }, [initialFormation]);
+  }, [defaultFormation, initialFormation]);
 
   const fetchRosters = useCallback(async () => {
     try {
@@ -318,24 +346,6 @@ export default function Formation({
     fetchRosters();
   }, [fetchRosters]);
 
-  // load tournament options once
-  useEffect(() => {
-    async function fetchTournaments() {
-      try {
-        const res = await fetch('/api/tournaments');
-        if (!res.ok) throw new Error('Failed to fetch tournaments');
-        const data: Tournament[] = await res.json();
-        setTournaments(data);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    fetchTournaments();
-    const handler = () => fetchTournaments();
-    window.addEventListener('tournament-saved', handler);
-    return () => window.removeEventListener('tournament-saved', handler);
-  }, []);
-
   useEffect(() => {
     if (!session) return;
     async function loadFavorites() {
@@ -351,6 +361,30 @@ export default function Formation({
     }
     loadFavorites();
   }, [session]);
+
+  useEffect(() => {
+    if (loading) return;
+    const target = fieldRef.current;
+    if (!target) return;
+    const update = () => {
+      setFieldWidth(target.getBoundingClientRect().width);
+      setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
+      setIsBrowserFullscreen(Boolean(document.fullscreenElement));
+    };
+    update();
+    const observer = new ResizeObserver(() => update());
+    observer.observe(target);
+    document.addEventListener("fullscreenchange", update);
+    window.addEventListener("orientationchange", update);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("fullscreenchange", update);
+      window.removeEventListener("orientationchange", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [loading]);
   const filteredPlayers = useMemo(() => {
     return filterPlayers(players, filter);
   }, [players, filter]);
@@ -528,8 +562,14 @@ export default function Formation({
         } else {
           /* --- Field↔Field: swap coordinates --- */
           setPlayerPositions((prev) => {
-            const posA = prev[selectedId] ?? { ...prev[id] };
-            const posB = prev[id] ?? { ...prev[selectedId] };
+            const defaults = buildDefaultPositionMap(
+              lineupOrder,
+              formation,
+              adaptiveOffsetStep,
+              adjustBaseLeft
+            );
+            const posA = prev[selectedId] ?? defaults[selectedId];
+            const posB = prev[id] ?? defaults[id];
             return {
               ...prev,
               [selectedId]: posB,
@@ -561,7 +601,13 @@ export default function Formation({
 
       // pos swap (bench gets field coord, field coord removed)
       setPlayerPositions((prev) => {
-        const fieldPos = prev[fieldId] ?? { top: 50, left: 50 };
+        const defaults = buildDefaultPositionMap(
+          lineupOrder,
+          formation,
+          adaptiveOffsetStep,
+          adjustBaseLeft
+        );
+        const fieldPos = prev[fieldId] ?? defaults[fieldId] ?? { top: 50, left: 50 };
         const copy = { ...prev };
         copy[benchId] = fieldPos;
         delete copy[fieldId];
@@ -575,7 +621,9 @@ export default function Formation({
           lineupOrder,
           formation,
           playerPositions,
-          setPlayerPositions
+          setPlayerPositions,
+          adaptiveOffsetStep,
+          adjustBaseLeft
         );
       setCustomMode(true);
 
@@ -642,6 +690,13 @@ export default function Formation({
       return;
     }
     const name = alias.trim() || formation.name;
+    if (
+      initialFormation?.id &&
+      name.toLowerCase() === (initialFormation.name ?? "").trim().toLowerCase()
+    ) {
+      await handleUpdate();
+      return;
+    }
     if (!window.confirm('Save formation "' + name + '"?')) {
       return;
     }
@@ -663,7 +718,11 @@ export default function Formation({
         onSaved?.(saved);
       } else {
         const data = await res.json();
-        alert(data.error || "保存に失敗しました");
+        alert(
+          typeof data?.error === "string"
+            ? data.error
+            : "保存に失敗しました"
+        );
       }
     } catch {
       alert("保存に失敗しました");
@@ -695,11 +754,17 @@ export default function Formation({
         }),
       });
       if (res.ok) {
+        const updated = (await res.json()) as SavedFormation;
         alert("更新しました");
+        startTransition(() => setInitialFormation(updated));
         onUpdated?.();
       } else {
         const data = await res.json();
-        alert(data.error || "更新に失敗しました");
+        alert(
+          typeof data?.error === "string"
+            ? data.error
+            : "更新に失敗しました"
+        );
       }
     } catch {
       alert("更新に失敗しました");
@@ -781,11 +846,70 @@ export default function Formation({
       if (idxB === -1) return -1;
       return idxA - idxB;
     });
+  const isCompactLayout = fieldWidth > 0 && fieldWidth < 640;
+  const widthScale = fieldWidth > 0 ? fieldWidth / 980 : 1;
+  const heightScale = viewportHeight > 0 ? viewportHeight / 820 : 1;
+  const uiScale = screenshotMode
+    ? 0.9
+    : Math.max(0.8, Math.min(1.52, Math.min(widthScale, heightScale) * 1.06));
+  const isLargeViewport =
+    !screenshotMode && viewportWidth >= 1280 && viewportHeight >= 760;
+  const desktopBoost = isBrowserFullscreen ? 18 : isLargeViewport ? 10 : 0;
+  const tunedFieldCardSize = Math.min(236, Math.max(70, Math.round(92 * uiScale) + desktopBoost));
+  const benchCardSize = Math.min(198, Math.round(tunedFieldCardSize * 1.08));
+  const avatarRatio = isCompactLayout ? 0.44 : 0.52;
+  const fieldAvatarSize = Math.round(tunedFieldCardSize * avatarRatio);
+  const benchAvatarSize = Math.round(benchCardSize * avatarRatio);
+  const nameFontSize = tunedFieldCardSize >= 128 ? 14 : tunedFieldCardSize >= 104 ? 13 : tunedFieldCardSize >= 84 ? 11 : 8;
+  const nameLineClamp = tunedFieldCardSize >= 124 ? 3 : 2;
+  const metaFontSize = tunedFieldCardSize >= 112 ? 12 : tunedFieldCardSize >= 88 ? 11 : 10;
+  const isWideDesktop = !screenshotMode && fieldWidth >= 1000;
+  const adjustBaseLeft = (left: number) => {
+    if (!isWideDesktop) return left;
+    const delta = left - 50;
+    const abs = Math.abs(delta);
+    if (abs >= 26) return clampPercent(50 + delta * 0.86, 12, 88);
+    if (abs >= 12) return clampPercent(50 + delta * 1.08, 8, 92);
+    return left;
+  };
+  const adaptiveOffsetStep = Math.max(
+    14,
+    Math.min(38, Math.round(tunedFieldCardSize * 0.18))
+  );
+  const layoutGap = Math.round(22 * uiScale);
+  const layoutPad = Math.round(16 * uiScale);
+  const fieldHeight = screenshotMode
+    ? Math.round(660 * uiScale)
+    : Math.round(Math.max(540, Math.min(1040, viewportHeight * 0.83)));
+  const fieldMinHeight = Math.round(Math.max(520, 520 * uiScale));
+  const desktopFieldMinWidth = screenshotMode
+    ? undefined
+    : viewportWidth >= 1536
+      ? "min(1480px, 72vw)"
+      : viewportWidth >= 1280
+        ? "min(1280px, 68vw)"
+        : viewportWidth >= 1024
+          ? "min(1080px, 64vw)"
+          : undefined;
+  const canShowFavoriteInCard = !screenshotMode;
+  const layoutVars = {
+    "--ui-scale": String(uiScale),
+    "--field-card-size": `${tunedFieldCardSize}px`,
+    "--bench-card-size": `${benchCardSize}px`,
+    "--player-name-size": `${nameFontSize}px`,
+    "--player-name-lines": String(nameLineClamp),
+    "--player-meta-size": `${metaFontSize}px`,
+    "--favorite-size": `${isCompactLayout ? 12 : 14}px`,
+    "--layout-gap": `${layoutGap}px`,
+    "--layout-pad": `${layoutPad}px`,
+    "--field-height": `${fieldHeight}px`,
+    "--field-min-height": `${fieldMinHeight}px`,
+  } as CSSProperties;
 
   const renderBenchCard = (p: Player) => (
     <div
       key={p.id}
-      className="player-card group"
+      className="player-card bench-player-card group"
       onClick={() => handleClick(p.id, true)}
     >
       {selectedId === p.id && (
@@ -798,35 +922,40 @@ export default function Formation({
       {tempoPulseId === p.id && (
         <span className="tempo-pulse absolute inset-0 pointer-events-none" />
       )}
-      <div className="relative w-12 h-12 mx-auto">
+      <div
+        className="relative mx-auto"
+        style={{ width: benchAvatarSize, height: benchAvatarSize }}
+      >
         {p.image ? (
           <Image
             src={p.image}
             alt={p.name}
-            width={48}
-            height={48}
-            className="w-12 h-12 object-cover rounded-full pointer-events-none"
+            width={benchAvatarSize}
+            height={benchAvatarSize}
+            className="w-full h-full object-cover rounded-full pointer-events-none"
             crossOrigin="anonymous"
           />
         ) : (
-          <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+          <div className="w-full h-full flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-[10px] text-cyan-100">
             No image
           </div>
         )}
       </div>
       {/* player name (always visible) */}
       <div
-        className={`font-semibold whitespace-normal break-words text-cyan-100 flex items-center justify-center`}
+        className="player-name-row font-semibold text-cyan-100"
         title={p.number ? `背番号: ${p.number}` : ""}
       >
-        <span className={getNameClass(p.name)}>{p.name}</span>
-        {session ? (
+        <span className="player-name">{p.name}</span>
+      </div>
+      {canShowFavoriteInCard &&
+        (session ? (
           <button
             onClick={(e) => {
               e.stopPropagation();
               toggleFavorite(p.id);
             }}
-            className="ml-1 text-yellow-300"
+            className="favorite-overlay text-yellow-300"
             aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
           >
             {favorites.has(p.id) ? "★" : "☆"}
@@ -834,7 +963,7 @@ export default function Formation({
         ) : (
           <Link
             href="/login"
-            className="ml-1 text-yellow-300"
+            className="favorite-overlay text-yellow-300"
             aria-label="Login to favorite"
             onClick={(e) => {
               play();
@@ -843,16 +972,15 @@ export default function Formation({
           >
             ☆
           </Link>
-        )}
-      </div>
+        ))}
       {/* jersey number */}
       {p.number && (
-        <div className="text-sm text-cyan-200 hidden group-hover:block">
+        <div className={`player-meta text-cyan-200 ${selectedId === p.id ? "block" : "hidden group-hover:block"}`}>
           背番号: {p.number}
         </div>
       )}
       {/* position info with wiki link */}
-      <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-start gap-1">
+      <div className={`player-meta text-cyan-200 items-center gap-1 ${selectedId === p.id ? "flex justify-start" : "hidden group-hover:flex justify-start"}`}>
         <span>{p.position.join(", ")}</span>
         <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
       </div>
@@ -862,24 +990,38 @@ export default function Formation({
   const screenshotHref = initialFormation?.id
     ? `/formations/screenshot?formationId=${initialFormation.id}`
     : "#";
+  const displayFormationName =
+    alias.trim() || initialFormation?.name || formation.name;
 
   return (
     <Profiler id="Formation" onRender={handleProfilerRender}>
-      <div className="p-4 pb-8">
-      <h2 className="text-xl font-bold mb-4">Formation: {formation.name}</h2>
+      <div
+        className="pb-8"
+        style={{ ...layoutVars, padding: "var(--layout-pad)" }}
+      >
+      <h2 className="text-xl font-bold mb-4">Formation: {displayFormationName}</h2>
       {!screenshotMode && (
         <PlayerFilter
           rosters={rosters}
-          tournaments={tournaments}
           positionOptions={positionOptions}
           onApply={setFilter}
         />
       )}
-      <div id="field-bench" className="flex flex-col sm:flex-row-reverse sm:items-center mt-8 sm:mt-12 gap-6">
+      <div
+        id="field-bench"
+        className="flex flex-col sm:flex-row-reverse sm:items-center sm:justify-center mt-8 sm:mt-12"
+        style={{ gap: "var(--layout-gap)" }}
+      >
       {/* field */}
       <div
         id="field"
-        className="field formation-field relative flex-none w-full h-screen sm:flex-1 sm:h-[600px] border border-cyan-400/10 rounded overflow-hidden"
+        ref={fieldRef}
+        className="field formation-field relative w-full sm:flex-1 sm:min-w-0 border border-cyan-400/10 rounded overflow-hidden"
+        style={{
+          height: "var(--field-height)",
+          minHeight: "var(--field-min-height)",
+          minWidth: desktopFieldMinWidth,
+        }}
       >
         <div className="field-sweep absolute inset-0 pointer-events-none" />
         {sortedKeys.map((posKey) => {
@@ -920,12 +1062,20 @@ export default function Formation({
           const group = [...customs, ...defaults];
 
           return group.map((p) => {
+            const defaultIndex = defaults.indexOf(p);
             const offset =
-              defaults.includes(p)
-                ? ((defaults.indexOf(p) - (defaults.length - 1) / 2) * OFFSET_STEP)
+              defaultIndex !== -1
+                ? ((defaultIndex - (defaults.length - 1) / 2) * adaptiveOffsetStep)
                 : 0;
-            const def = { top: base.top, left: base.left + offset };
-            const pos = playerPositions[p.id] ?? def;
+            const baseLeft = adjustBaseLeft(base.left);
+            const def = {
+              top: clampPercent(base.top),
+              left: clampPercent(baseLeft + offset),
+            };
+            const customPos = playerPositions[p.id];
+            const pos = customPos
+              ? { top: clampPercent(customPos.top), left: clampPercent(customPos.left) }
+              : def;
 
             return (
               <div
@@ -945,7 +1095,16 @@ export default function Formation({
                     offsetX: e.clientX - r.left - r.width / 2,
                     offsetY: e.clientY - r.top - r.height / 2,
                   });
-                  if (!customMode) freezeDefaults(defaultsFrozen, setDefaultsFrozen, lineupOrder, formation, playerPositions, setPlayerPositions);
+                  if (!customMode) freezeDefaults(
+                    defaultsFrozen,
+                    setDefaultsFrozen,
+                    lineupOrder,
+                    formation,
+                    playerPositions,
+                    setPlayerPositions,
+                    adaptiveOffsetStep,
+                    adjustBaseLeft
+                  );
                   setCustomMode(true);
                 }}
                 onClick={(e) => {
@@ -954,7 +1113,7 @@ export default function Formation({
                 }}
               >
                 <div
-                  className="player-card group text-center"
+                  className="player-card field-player-card group text-center"
                 >
                   {selectedId === p.id && (
                     <>
@@ -966,35 +1125,40 @@ export default function Formation({
                   {tempoPulseId === p.id && (
                     <span className="tempo-pulse absolute inset-0 pointer-events-none" />
                   )}
-                  <div className="relative w-12 h-12 mx-auto">
+                  <div
+                    className="relative mx-auto"
+                    style={{ width: fieldAvatarSize, height: fieldAvatarSize }}
+                  >
                     {p.image ? (
                       <Image
                         src={p.image}
                         alt={p.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 object-cover rounded-full pointer-events-none"
+                        width={fieldAvatarSize}
+                        height={fieldAvatarSize}
+                        className="w-full h-full object-cover rounded-full pointer-events-none"
                         crossOrigin="anonymous"
                       />
                     ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-xs text-cyan-100">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300/40 rounded-full pointer-events-none text-center text-[10px] text-cyan-100">
                         No image
                       </div>
                     )}
                   </div>
                   {/* player name (always visible) */}
                   <div
-                    className={`font-semibold whitespace-normal break-words text-cyan-100 flex items-center justify-center`}
+                    className="player-name-row font-semibold text-cyan-100"
                     title={p.number ? `背番号: ${p.number}` : ""}
                   >
-                    <span className={getNameClass(p.name)}>{p.name}</span>
-                    {session ? (
+                    <span className="player-name">{p.name}</span>
+                  </div>
+                  {canShowFavoriteInCard &&
+                    (session ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(p.id);
                         }}
-                        className="ml-1 text-yellow-300"
+                        className="favorite-overlay text-yellow-300"
                         aria-label={favorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}
                       >
                         {favorites.has(p.id) ? "★" : "☆"}
@@ -1002,7 +1166,7 @@ export default function Formation({
                     ) : (
                       <Link
                         href="/login"
-                        className="ml-1 text-yellow-300"
+                        className="favorite-overlay text-yellow-300"
                         aria-label="Login to favorite"
                         onClick={(e) => {
                           play();
@@ -1011,16 +1175,15 @@ export default function Formation({
                       >
                         ☆
                       </Link>
-                    )}
-                  </div>
+                    ))}
                   {/* jersey number */}
                   {p.number && (
-                    <div className="text-sm text-cyan-200 hidden group-hover:block">
+                    <div className={`player-meta text-cyan-200 ${selectedId === p.id ? "block" : "hidden group-hover:block"}`}>
                       背番号: {p.number}
                     </div>
                   )}
                   {/* position info with wiki link */}
-                  <div className="text-sm text-cyan-200 hidden group-hover:flex items-center justify-center gap-1">
+                  <div className={`player-meta text-cyan-200 items-center gap-1 ${selectedId === p.id ? "flex justify-center" : "hidden group-hover:flex justify-center"}`}>
                     <span>{p.position.join(", ")}</span>
                     <WikiLink name={p.name} wikiUrl={p.wikiUrl} variant="icon" />
                   </div>
@@ -1032,7 +1195,7 @@ export default function Formation({
         </div>
 
         {/* bench */}
-        <div id="bench" className="w-full sm:w-[264px] shrink-0">
+        <div id="bench" className="w-full sm:w-[calc(var(--bench-card-size,104px)*2+1rem)] shrink-0">
           <h3 className="text-lg font-bold mb-2">Bench</h3>
           <div className="flex flex-wrap gap-0 sm:grid sm:grid-cols-2">
             {benchPlayers.map(renderBenchCard)}
@@ -1097,7 +1260,7 @@ export default function Formation({
                     保存中…
                   </span>
                 ) : (
-                  "保存"
+                  initialFormation?.id ? "別名で保存" : "保存"
                 )}
               </button>
               {initialFormation?.id && (

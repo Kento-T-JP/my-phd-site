@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession, getCsrfToken } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
-import type { Player, PositionKey, Roster, Tournament } from "@/types/player";
+import type { Player, PositionKey, Roster } from "@/types/player";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { filterPlayers } from "@/components/Formation";
@@ -19,17 +19,14 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosters, setRosters] = useState<Roster[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<string>("");
-  const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
 
   const [searchInput, setSearchInput] = useState("");
-  const [filterInput, setFilterInput] = useState("");
-  const [subRosterInput, setSubRosterInput] = useState("");
+  const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -72,17 +69,14 @@ export default function PlayersPage() {
 
     setPlayers([]);
     setRosters([]);
-    setTournaments([]);
     setFavorites(new Set());
     setError("");
     setLoading(true);
     setSearch("");
     setSelectedRoster("");
-    setSelectedTournament("");
     setSelectedPosition("");
     setSearchInput("");
-    setFilterInput("");
-    setSubRosterInput("");
+    setRosterInput("");
     setPositionInput("");
 
     previousUserIdRef.current = currentId;
@@ -160,22 +154,6 @@ export default function PlayersPage() {
 
   useEffect(() => {
     if (!session) return;
-    async function fetchTournaments() {
-      try {
-        const res = await fetch("/api/tournaments");
-        if (!res.ok) throw new Error("Failed to fetch tournaments");
-        setTournaments((await res.json()) as Tournament[]);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    fetchTournaments();
-    const handler = () => fetchTournaments();
-    window.addEventListener("tournament-saved", handler);
-    return () => window.removeEventListener("tournament-saved", handler);
-  }, [session]);
-  useEffect(() => {
-    if (!session) return;
     async function loadFavorites() {
       try {
         const res = await fetch("/api/favorites");
@@ -192,17 +170,12 @@ export default function PlayersPage() {
 
   const filteredPlayers = useMemo(() => {
     const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
-    const tournamentId =
-      rosterId === undefined && selectedTournament
-        ? Number(selectedTournament)
-        : undefined;
     return filterPlayers(players, {
       name: search,
       rosterId,
-      tournamentId,
       position: selectedPosition,
     }).sort((a, b) => a.name.localeCompare(b.name, "ja"));
-  }, [players, search, selectedRoster, selectedTournament, selectedPosition]);
+  }, [players, search, selectedRoster, selectedPosition]);
 
   const allSelected =
     filteredPlayers.length > 0 &&
@@ -302,36 +275,16 @@ export default function PlayersPage() {
         />
         <select
           className="border p-1"
-          value={filterInput}
-          onChange={(e) => {
-            const val = e.target.value;
-            setFilterInput(val);
-            setSubRosterInput("");
-          }}
+          value={rosterInput}
+          onChange={(e) => setRosterInput(e.target.value)}
         >
-          <option value="">All tournaments</option>
-          {tournaments.map((t) => (
-            <option key={`t-${t.id}`} value={`t:${t.id}`}>
-              {t.name}
+          <option value="">全ての試合リスト</option>
+          {rosters.map((r) => (
+            <option key={r.id} value={r.id}>
+              {rosterDisplayTitle(r)}
             </option>
           ))}
         </select>
-        {filterInput.startsWith("t:") && (
-          <select
-            className="border p-1"
-            value={subRosterInput}
-            onChange={(e) => setSubRosterInput(e.target.value)}
-          >
-            <option value="">All rosters</option>
-            {rosters
-              .filter((r) => r.tournamentId === Number(filterInput.slice(2)))
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {rosterDisplayTitle(r)}
-                </option>
-              ))}
-          </select>
-        )}
         <select
           className="border p-1"
           value={positionInput}
@@ -350,14 +303,7 @@ export default function PlayersPage() {
             play();
             setSearch(searchInput);
             setSelectedPosition(positionInput);
-            if (filterInput.startsWith("t:")) {
-              const tid = filterInput.slice(2);
-              setSelectedTournament(tid);
-              setSelectedRoster(subRosterInput);
-            } else {
-              setSelectedTournament("");
-              setSelectedRoster("");
-            }
+            setSelectedRoster(rosterInput);
           }}
         >
           Apply Filters

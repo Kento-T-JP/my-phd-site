@@ -52,10 +52,25 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!formation || formation.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const normalizedName = (data.name ?? formation.name).trim();
+  const duplicate = await prisma.formation.findFirst({
+    where: {
+      userId: user.id,
+      id: { not: num },
+      name: { equals: normalizedName, mode: "insensitive" },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return NextResponse.json(
+      { error: "同じ名前のフォーメーションは使用できません。別名にしてください。" },
+      { status: 409 }
+    );
+  }
   const updated = await prisma.formation.update({
     where: { id: num },
     data: {
-      name: data.name ?? formation.name,
+      name: normalizedName,
       positions: data.positions ?? formation.positions,
     },
   });

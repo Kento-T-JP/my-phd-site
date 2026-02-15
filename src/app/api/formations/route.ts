@@ -56,9 +56,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
   }
   const { name, positions, nodes } = parsed.data;
+  const normalizedName = (name || "Untitled").trim();
+  const duplicate = await prisma.formation.findFirst({
+    where: {
+      userId: user.id,
+      name: { equals: normalizedName, mode: "insensitive" },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return NextResponse.json(
+      { error: "同じ名前のフォーメーションは保存できません。別名にしてください。" },
+      { status: 409 }
+    );
+  }
   const saved = await prisma.formation.create({
     data: {
-      name: name || "Untitled",
+      name: normalizedName,
       positions,
       userId: user.id,
       nodes: nodes
@@ -75,4 +89,3 @@ export async function POST(req: Request) {
   });
   return NextResponse.json(saved, { status: 201 });
 }
-

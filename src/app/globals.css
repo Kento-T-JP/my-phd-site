@@ -1,9 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Samurai Blue base colors */
-  --background: #002D62;
-  --foreground: #ffffff;
+  --background: #031630;
+  --background-soft: #0a2454;
+  --surface: rgba(8, 27, 61, 0.74);
+  --surface-strong: rgba(9, 32, 70, 0.9);
+  --foreground: #f4f9ff;
+  --muted: #b2c4ea;
+  --border: rgba(152, 202, 255, 0.28);
+  --accent: #6fd3ff;
+  --accent-strong: #31b7ff;
+  --danger: #ff7e8d;
+  --success: #67d5a5;
 }
 
 @theme inline {
@@ -15,15 +23,155 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #00183d;
-    --foreground: #ededed;
+    --background: #010f24;
+    --background-soft: #081e45;
+    --surface: rgba(6, 24, 56, 0.82);
+    --surface-strong: rgba(7, 28, 66, 0.95);
+    --foreground: #eff6ff;
+    --muted: #abc0e6;
+    --border: rgba(145, 197, 255, 0.24);
+    --accent: #67cbff;
+    --accent-strong: #27b1ff;
   }
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(111, 211, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 84% 14%, rgba(49, 183, 255, 0.18), transparent 30%),
+    linear-gradient(145deg, var(--background), var(--background-soft) 52%, #071936 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  width: min(1800px, 96vw);
+  margin-inline: auto;
+}
+
+.glass-panel {
+  background: linear-gradient(160deg, var(--surface), var(--surface-strong));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0, 8, 28, 0.3);
+  backdrop-filter: blur(9px);
+}
+
+.nav-link {
+  border-radius: 999px;
+  padding: 0.38rem 0.84rem;
+  color: var(--muted);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.nav-link:hover {
+  color: var(--foreground);
+  background: rgba(111, 211, 255, 0.12);
+}
+
+.nav-link.active {
+  color: var(--foreground);
+  background: rgba(111, 211, 255, 0.22);
+}
+
+.auth-shell {
+  width: min(540px, 92vw);
+  margin: 0 auto;
+  padding: 6.4rem 0 3rem;
+}
+
+.auth-card {
+  background: linear-gradient(170deg, rgba(7, 31, 73, 0.88), rgba(6, 23, 53, 0.92));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(0, 12, 38, 0.38);
+  padding: clamp(1.1rem, 3.2vw, 1.6rem);
+}
+
+.form-input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 190, 255, 0.42);
+  background: rgba(4, 18, 45, 0.7);
+  color: var(--foreground);
+  padding: 0.62rem 0.78rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.form-input::placeholder {
+  color: rgba(202, 218, 246, 0.72);
+}
+
+.form-input:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(49, 183, 255, 0.22);
+  background: rgba(4, 18, 45, 0.86);
+  outline: none;
+}
+
+.primary-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 0.62rem 0.98rem;
+  background: linear-gradient(120deg, var(--accent-strong), var(--accent));
+  color: #02162f;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.primary-btn:hover {
+  filter: brightness(1.08);
+}
+
+.primary-btn:active {
+  transform: translateY(1px);
+}
+
+.ghost-btn {
+  border: 1px solid rgba(152, 202, 255, 0.35);
+  border-radius: 10px;
+  color: var(--foreground);
+  padding: 0.48rem 0.76rem;
+  background: rgba(8, 30, 67, 0.55);
+}
+
+.ghost-btn:hover {
+  background: rgba(14, 45, 94, 0.64);
+}
+
+.status-error {
+  color: var(--danger);
+}
+
+.status-success {
+  color: var(--success);
 }
 
 /* ───── Blue Lock inspired field styling ───── */
@@ -82,7 +230,55 @@ body {
 }
 
 .player-card {
-  @apply relative w-24 h-24 sm:w-32 sm:h-32 p-2 rounded cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50;
+  @apply relative p-2 rounded cursor-pointer transition-transform duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-400/10 hover:border-cyan-400/20 bg-slate-800/50;
+}
+
+.field-player-card {
+  width: var(--field-card-size, 96px);
+  height: var(--field-card-size, 96px);
+}
+
+.bench-player-card {
+  width: var(--bench-card-size, 104px);
+  height: var(--bench-card-size, 104px);
+}
+
+.player-name-row {
+  width: 100%;
+  display: block;
+  text-align: center;
+  font-size: var(--player-name-size, 11px);
+  line-height: 1.2;
+  padding-inline: 2px;
+}
+
+.player-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--player-name-lines, 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.player-meta {
+  font-size: var(--player-meta-size, 11px);
+  line-height: 1.2;
+}
+
+.favorite-chip {
+  flex: 0 0 auto;
+  font-size: 0.85em;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.favorite-overlay {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  font-size: var(--favorite-size, 14px);
+  line-height: 1;
 }
 
 /* ───── Player selection effects ───── */
