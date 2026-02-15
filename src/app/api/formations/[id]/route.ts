@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { FormationUpdateSchema } from "../route";
+import { authOptions } from "@/lib/authOptions";
+import { FormationUpdateSchema } from "@/lib/schemas/formations";
 import { unwrapParams } from "@/lib/unwrap";
 
 async function getUser() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.email) return null;
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   return user;
@@ -71,7 +72,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     where: { id: num },
     data: {
       name: normalizedName,
-      positions: data.positions ?? formation.positions,
+      positions: (data.positions ?? formation.positions) as Prisma.InputJsonValue,
     },
   });
   return NextResponse.json(updated);

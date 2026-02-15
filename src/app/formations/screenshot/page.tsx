@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Formation from "@/components/Formation";
 import type { SavedFormation } from "@/types/formation";
 
-export default function FormationScreenshotPage() {
+function FormationScreenshotPageContent() {
   const searchParams = useSearchParams();
   const formationId = searchParams.get("formationId");
   const [formation, setFormation] = useState<SavedFormation | null>(null);
@@ -65,3 +65,10 @@ export default function FormationScreenshotPage() {
   );
 }
 
+export default function FormationScreenshotPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <FormationScreenshotPageContent />
+    </Suspense>
+  );
+}

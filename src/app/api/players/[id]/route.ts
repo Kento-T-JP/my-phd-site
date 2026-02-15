@@ -9,8 +9,8 @@ import prisma, {
   upsertRoster,
 } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { PlayerSchema } from '../route';
+import { authOptions } from '@/lib/authOptions';
+import { PlayerSchema } from '@/lib/schemas/player';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { RosterInfo } from '@/types/roster';
@@ -236,10 +236,11 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const rawId = session.user.id;
   const userId = Number(rawId);
   const unwrapped = await unwrapParams(params);
@@ -254,11 +255,11 @@ export async function PUT(
   if (
     player.userId &&
     player.userId !== userId &&
-    !session.user.isAdmin
+    !isAdmin
   ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (!player.userId && !session.user.isAdmin) {
+  if (!player.userId && !isAdmin) {
     return handleUpdate(
       req,
       num,
@@ -272,10 +273,11 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const rawId = session.user.id;
   const userId = Number(rawId);
   const unwrapped = await unwrapParams(params);
@@ -290,11 +292,11 @@ export async function DELETE(
   if (
     player.userId &&
     player.userId !== userId &&
-    !session.user.isAdmin
+    !isAdmin
   ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (!player.userId && !session.user.isAdmin) {
+  if (!player.userId && !isAdmin) {
     await prisma.player.create({
       data: {
         name: player.name,

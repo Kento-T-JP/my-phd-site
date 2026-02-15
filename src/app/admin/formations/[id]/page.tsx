@@ -51,7 +51,9 @@ export default function FormationDetailPage({ params }: Props) {
     );
   }
 
-  if (!session.user?.isAdmin) {
+  const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
+
+  if (!isAdmin) {
     return (
       <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
@@ -84,4 +86,3 @@ export default function FormationDetailPage({ params }: Props) {
     </main>
   );
 }
-

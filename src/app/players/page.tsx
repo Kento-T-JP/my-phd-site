@@ -15,6 +15,7 @@ import useClickSound from "@/lib/useClickSound";
 
 export default function PlayersPage() {
   const { data: session, status } = useSession();
+  const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ export default function PlayersPage() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [csrf, setCsrf] = useState("");
-  const previousUserIdRef = useRef<string | undefined>();
+  const previousUserIdRef = useRef<string | undefined>(undefined);
   const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
   const { play } = useClickSound();
 
@@ -369,7 +370,7 @@ export default function PlayersPage() {
                     href={`/players/${p.id}/edit`}
                     className="text-yellow-300 underline"
                   >
-                    {p.userId === session.user.id ? "編集" : "カスタム作成"}
+                    {p.userId === sessionUserId ? "編集" : "カスタム作成"}
                   </Link>
                 ) : (
                   <Link

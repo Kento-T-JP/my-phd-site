@@ -1,10 +1,10 @@
 'use client';
 
-import React, { forwardRef, ButtonHTMLAttributes } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import React, { forwardRef } from 'react';
+import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
 import useClickSound from '@/lib/useClickSound';
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
+export type ButtonProps = HTMLMotionProps<'button'>;
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', children, onClick, ...props }, ref) => {

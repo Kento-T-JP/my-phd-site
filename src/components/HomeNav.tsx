@@ -9,7 +9,7 @@ import useClickSound from "@/lib/useClickSound";
 export default function HomeNav() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const isAdmin = session?.user?.isAdmin;
+  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);

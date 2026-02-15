@@ -41,4 +41,5 @@ export interface RosterPlayer {
   playerId: number;
   number?: number;
   position?: string[];
+  roster?: Roster;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -32,12 +33,13 @@ const statusCopy = {
 
 type StatusKey = keyof typeof statusCopy;
 
-export default function AccessStatusPage() {
+function AccessStatusPageContent() {
   const params = useSearchParams();
   const { data: session } = useSession();
   const { play } = useClickSound();
+  const sessionUser = session?.user as { status?: string } | undefined;
 
-  const rawStatus = params.get("status") ?? session?.user?.status ?? "pending";
+  const rawStatus = params.get("status") ?? sessionUser?.status ?? "pending";
   const rawEmail = params.get("email");
   const status = (Object.keys(statusCopy) as StatusKey[]).includes(
     rawStatus as StatusKey
@@ -103,5 +105,13 @@ export default function AccessStatusPage() {
         </button>
       </div>
     </main>
+  );
+}
+
+export default function AccessStatusPage() {
+  return (
+    <Suspense fallback={<main className="p-4 sm:p-8 max-w-md mx-auto"><p>Loading...</p></main>}>
+      <AccessStatusPageContent />
+    </Suspense>
   );
 }

@@ -12,3 +12,4 @@ export const ContactSchema = z.object({
 });
 
 export type ContactForm = z.infer<typeof ContactSchema>;
+export type ContactFormInput = z.input<typeof ContactSchema>;

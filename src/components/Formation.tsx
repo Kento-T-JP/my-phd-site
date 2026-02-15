@@ -772,7 +772,7 @@ export default function Formation({
   };
 
   const handleProfilerRender = useCallback(
-    (id: string, phase: "mount" | "update", actualDuration: number) => {
+    (id: string, phase: "mount" | "update" | "nested-update", actualDuration: number) => {
       if (process.env.NODE_ENV !== "production") {
         console.log(`Profiler:${id} ${phase} ${actualDuration.toFixed(2)}ms`);
       }
@@ -822,7 +822,7 @@ export default function Formation({
   };
   const benchPlayers = benchIds
     .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => p)
+    .filter((p): p is Player => Boolean(p))
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);
@@ -835,7 +835,7 @@ export default function Formation({
     });
   const benchOutPlayers = benchOutIds
     .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => p)
+    .filter((p): p is Player => Boolean(p))
     .sort((a, b) => {
       const posA = getBenchSortPos(a);
       const posB = getBenchSortPos(b);

@@ -17,6 +17,7 @@ type Stats = {
 
 export default function StatsPage() {
   const { data: session, status } = useSession();
+  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function StatsPage() {
     );
   }
 
-  if (!session.user?.isAdmin) {
+  if (!isAdmin) {
     return (
       <main className="p-4 sm:p-8">
         <p>Unauthorized</p>

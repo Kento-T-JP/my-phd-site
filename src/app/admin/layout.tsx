@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import AdminNav from "@/components/AdminNav";
 
 export default async function AdminLayout({
@@ -9,8 +9,11 @@ export default async function AdminLayout({
 }: {
   children: ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
+  const session = (await getServerSession(authOptions)) as
+    | { user?: { isAdmin?: boolean } }
+    | null;
+  const isAdmin = Boolean(session?.user?.isAdmin);
+  if (!isAdmin) {
     redirect("/login");
   }
 

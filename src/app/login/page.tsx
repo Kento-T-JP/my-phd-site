@@ -10,6 +10,9 @@ const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false }
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const sessionUser = session?.user as
+    | { status?: string; isAdmin?: boolean }
+    | undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,8 +32,8 @@ export default function LoginPage() {
         router.replace("/");
         return;
       }
-      if (session?.user?.status && session.user.status !== "active") {
-        router.replace(`/access-status?status=${session.user.status}`);
+      if (sessionUser?.status && sessionUser.status !== "active") {
+        router.replace(`/access-status?status=${sessionUser.status}`);
         return;
       }
       if (session?.loginStage === "credentials") {
@@ -41,7 +44,7 @@ export default function LoginPage() {
         router.replace("/");
       }
     }
-  }, [router, session?.gatePassed, session?.loginStage, session?.user?.status, status]);
+  }, [router, session?.gatePassed, session?.loginStage, sessionUser?.status, status]);
 
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
@@ -70,11 +73,14 @@ export default function LoginPage() {
       });
       if (res?.ok) {
         const session = await getSession();
-        if (session?.user?.status && session.user.status !== "active") {
-          router.push(`/access-status?status=${session.user.status}`);
+        const currentUser = session?.user as
+          | { status?: string; isAdmin?: boolean }
+          | undefined;
+        if (currentUser?.status && currentUser.status !== "active") {
+          router.push(`/access-status?status=${currentUser.status}`);
           return;
         }
-        if (session?.user?.isAdmin) {
+        if (currentUser?.isAdmin) {
           router.push("/admin");
         } else {
           router.push("/home");

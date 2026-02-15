@@ -55,6 +55,8 @@ export default function EditPlayerPage() {
   const [expanded, setExpanded] = useState(false);
   const { play } = useClickSound();
   const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
+  const isOwner = ownerId !== null && Number.isFinite(sessionUserId) && sessionUserId === ownerId;
 
   const prevTournament = useRef("");
 
@@ -206,7 +208,7 @@ export default function EditPlayerPage() {
       if (tournamentName.trim() !== "") {
         window.dispatchEvent(new Event("tournament-saved"));
       }
-      const msg = ownerId && session?.user?.id === ownerId ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
+      const msg = isOwner ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
       setSuccessMessage(msg);
       setTimeout(() => {
         router.push("/players");
@@ -249,7 +251,7 @@ export default function EditPlayerPage() {
   return (
     <main className="p-4 sm:p-8 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">
-        {ownerId && session?.user?.id === ownerId ? "Edit Player" : "カスタム選手を作成"}
+        {isOwner ? "Edit Player" : "カスタム選手を作成"}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -394,7 +396,7 @@ export default function EditPlayerPage() {
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
           disabled={loading}
         >
-          {ownerId && session?.user?.id === ownerId ? "送信" : "カスタム作成"}
+          {isOwner ? "送信" : "カスタム作成"}
         </button>
         <button
           type="button"

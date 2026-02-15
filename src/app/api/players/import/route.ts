@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import prisma, { upsertPlayer } from '@/lib/db';
 import { normalizePosition } from '@/lib/positions';
 
@@ -14,7 +14,7 @@ interface ImportedPlayer {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -83,10 +83,11 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const userId = session.user.id;
   try {
     const { players } = await req.json();
     if (!Array.isArray(players)) {
@@ -107,7 +108,7 @@ export async function PUT(req: Request) {
           },
           undefined,
           tx,
-          session.user.id,
+          userId,
         );
         inserted += 1;
       }
@@ -119,4 +120,3 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
-

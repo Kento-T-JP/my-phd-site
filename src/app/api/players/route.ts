@@ -8,29 +8,15 @@ import prisma, {
   upsertRoster,
 } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { z } from 'zod';
+import { authOptions } from '@/lib/authOptions';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { RosterInfo } from '@/types/roster';
 import { verifyCsrfToken } from '@/lib/csrf';
-
-export const PlayerSchema = z.object({
-  name: z.string().min(1, { message: "名前は必須です" }),
-  position: z.array(z.string()).min(1, { message: "ポジションを1つ以上選択してください" }),
-  number: z.coerce
-    .number()
-    .int({ message: "背番号は整数で入力してください" })
-    .min(1, { message: "背番号は1以上で入力してください" })
-    .max(99, { message: "背番号は99以下で入力してください" })
-    .optional(),
-  wikiUrl: z.string().url().optional(),
-  tournament: z.string().optional(),
-  tournamentDate: z.string().optional(),
-});
+import { PlayerSchema } from '@/lib/schemas/player';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const rawId = session?.user?.id;
   const userId = rawId === undefined ? undefined : Number(rawId);
   const players = await getPlayers(
@@ -47,7 +33,7 @@ export async function POST(req: Request) {
   if (!verifyCsrfToken(req)) {
     return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
   }
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

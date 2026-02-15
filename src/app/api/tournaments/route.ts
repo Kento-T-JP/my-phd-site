@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getTournaments, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 
 function normalizeTournamentName(name: string) {
   return name.normalize('NFKC').trim().replace(/\s+/g, ' ');
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const userId = session?.user?.id ? Number(session.user.id) : undefined;
   const list = await getTournaments(userId);
   return NextResponse.json(list);
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Tournament name is required' }, { status: 400 });
     }
 
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
     const tournaments = await getTournaments(userId);
     const duplicate = tournaments.some(

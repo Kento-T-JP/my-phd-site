@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,7 +8,7 @@ import Formation from "@/components/Formation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
 
-export default function FormationsPage() {
+function FormationsPageContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const formationId = searchParams.get("formationId");
@@ -112,5 +112,13 @@ export default function FormationsPage() {
         </>
       )}
     </main>
+  );
+}
+
+export default function FormationsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <FormationsPageContent />
+    </Suspense>
   );
 }

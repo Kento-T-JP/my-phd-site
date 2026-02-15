@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ContactSchema, type ContactForm } from '@/lib/validation/contact';
+import { ContactSchema, type ContactFormInput } from '@/lib/validation/contact';
 import { getCsrfToken } from 'next-auth/react';
 import useClickSound from '@/lib/useClickSound';
 
@@ -17,7 +17,7 @@ export default function ContactPage() {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<ContactForm>({
+  } = useForm<ContactFormInput>({
     resolver: zodResolver(ContactSchema),
     defaultValues: {
       name: '',
@@ -34,7 +34,7 @@ export default function ContactPage() {
     getCsrfToken().then((token) => setCsrf(token ?? ''));
   }, []);
 
-  const onSubmit = async (data: ContactForm) => {
+  const onSubmit = async (data: ContactFormInput) => {
     setResult(null);
     try {
       const res = await fetch('/api/contact', {
@@ -191,4 +191,3 @@ export default function ContactPage() {
     </main>
   );
 }
-

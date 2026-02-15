@@ -1,33 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { z } from "zod";
-import { FormationNodeSchema } from "@/types/formation";
-import type { FormationNode } from "@/types/formation";
-
-const PlayerPosSchema = z.object({ top: z.number(), left: z.number() });
-
-const PositionsSchema = z.object({
-  lineupOrder: z.array(z.number()).optional(),
-  benchOrder: z.array(z.number()).optional(),
-  playerPositions: z.record(z.string(), PlayerPosSchema).optional(),
-});
-
-export const FormationCreateSchema = z.object({
-  name: z.string().optional(),
-  positions: PositionsSchema,
-  nodes: z.array(FormationNodeSchema).optional(),
-});
-
-export const FormationUpdateSchema = z.object({
-  name: z.string().optional(),
-  positions: PositionsSchema.optional(),
-  nodes: z.array(FormationNodeSchema).optional(),
-});
+import { authOptions } from "@/lib/authOptions";
+import { FormationCreateSchema } from "@/lib/schemas/formations";
 
 async function getUser() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.email) return null;
   return prisma.user.findUnique({ where: { email: session.user.email } });
 }
@@ -77,7 +55,7 @@ export async function POST(req: Request) {
       userId: user.id,
       nodes: nodes
         ? {
-            create: nodes.map((n: FormationNode) => ({
+            create: nodes.map((n) => ({
               x: n.x,
               y: n.y,
               playerId: n.playerId,

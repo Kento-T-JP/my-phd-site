@@ -20,7 +20,7 @@ export default function PlayerFilter({
   const [searchInput, setSearchInput] = useState("");
   const [rosterInput, setRosterInput] = useState("");
   const [positionInput, setPositionInput] = useState("");
-  const previousUserIdRef = useRef<string | undefined>();
+  const previousUserIdRef = useRef<string | undefined>(undefined);
   const { play } = useClickSound();
 
   useEffect(() => {

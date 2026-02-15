@@ -19,6 +19,7 @@ interface Inquiry {
 
 export default function AdminInquiriesPage() {
   const { data: session, status } = useSession();
+  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function AdminInquiriesPage() {
     );
   }
 
-  if (!session.user?.isAdmin) {
+  if (!isAdmin) {
     return (
       <main className="p-4 sm:p-8">
         <p>Unauthorized</p>
@@ -165,4 +166,3 @@ export default function AdminInquiriesPage() {
     </main>
   );
 }
-

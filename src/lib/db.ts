@@ -143,10 +143,22 @@ export async function createPlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const { role, extra, ...rest } = data;
+  const { role, extra, rosterPlayers, ...rest } = data;
   void role;
+  void rosterPlayers;
+  const playerData: Prisma.PlayerUncheckedCreateInput = {
+    name: rest.name,
+    position: rest.position,
+    number: rest.number,
+    image: rest.image,
+    wikiUrl: rest.wikiUrl,
+    basePlayerId: rest.basePlayerId,
+    isDeleted: rest.isDeleted,
+    userId,
+    extra: extra as Prisma.InputJsonValue | undefined,
+  };
   const player = await client.player.create({
-    data: { ...rest, userId, extra: extra as Prisma.JsonValue | undefined },
+    data: playerData,
   });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
@@ -171,24 +183,28 @@ export async function upsertPlayer(
     where: { name: data.name, userId: uidNum ?? null },
   });
   let player;
-  const { role, extra, ...rest } = data;
+  const { role, extra, rosterPlayers, ...rest } = data;
   void role;
+  void rosterPlayers;
+  const playerData: Prisma.PlayerUncheckedCreateInput = {
+    name: rest.name,
+    position: rest.position,
+    number: rest.number,
+    image: rest.image,
+    wikiUrl: rest.wikiUrl,
+    basePlayerId: rest.basePlayerId,
+    isDeleted: rest.isDeleted,
+    userId: uidNum,
+    extra: extra as Prisma.InputJsonValue | undefined,
+  };
   if (existing) {
     player = await client.player.update({
       where: { id: existing.id },
-      data: {
-        ...rest,
-        userId: uidNum,
-        extra: extra as Prisma.JsonValue | undefined,
-      },
+      data: playerData,
     });
   } else {
     player = await client.player.create({
-      data: {
-        ...rest,
-        userId: uidNum,
-        extra: extra as Prisma.JsonValue | undefined,
-      },
+      data: playerData,
     });
   }
   if (rosterId) {
@@ -221,11 +237,23 @@ export async function updatePlayer(
   if (dup) {
     throw new Error('同じ名前の選手が既に存在します');
   }
-  const { role, extra, ...rest } = data;
+  const { role, extra, rosterPlayers, ...rest } = data;
   void role;
+  void rosterPlayers;
+  const playerData: Prisma.PlayerUncheckedUpdateInput = {
+    name: rest.name,
+    position: rest.position,
+    number: rest.number,
+    image: rest.image,
+    wikiUrl: rest.wikiUrl,
+    basePlayerId: rest.basePlayerId,
+    isDeleted: rest.isDeleted,
+    userId,
+    extra: extra as Prisma.InputJsonValue | undefined,
+  };
   const player = await client.player.update({
     where: { id },
-    data: { ...rest, userId, extra: extra as Prisma.JsonValue | undefined },
+    data: playerData,
   });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);

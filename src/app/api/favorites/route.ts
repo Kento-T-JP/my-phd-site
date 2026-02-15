@@ -4,19 +4,16 @@ import prisma, {
   addFavoritePlayer,
   removeFavoritePlayer,
 } from '@/lib/db';
-import type { Player } from '@/types/player';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 
 const FavoritePlayerSchema = z.object({
   playerId: z.coerce.number().int().positive(),
 });
 
-export type FavoritePlayerRequest = z.infer<typeof FavoritePlayerSchema>;
-
 async function getUser() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.email) return null;
   return prisma.user.findUnique({ where: { email: session.user.email } });
 }
@@ -27,7 +24,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const favorites = await getFavoritePlayers(user.id);
-  return NextResponse.json<Player[]>(favorites);
+  return NextResponse.json(favorites);
 }
 
 export async function POST(req: Request) {

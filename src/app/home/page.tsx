@@ -1,34 +1,19 @@
 import Formation from "@/components/Formation";
 import JfaImportForm from "@/components/JfaImportForm";
 import type { SavedFormation } from "@/types/formation";
-import type { Player } from "@/types/player";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-export async function fetchPlayers(): Promise<Player[]> {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
-  const baseUrl = await getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/players`, {
-    cache: "no-store",
-    headers: { cookie: cookieHeader },
-  });
-  if (!res.ok) {
-    console.error(`Failed to fetch players: ${res.status} ${res.statusText}`);
-    throw new Error("Failed to fetch players");
-  }
-  return (await res.json()) as Player[];
-}
+import { authOptions } from "@/lib/authOptions";
+import { fetchPlayers } from "@/lib/fetchPlayers";
 
 export default async function Home({
   searchParams,
 }: {
   searchParams?: Promise<{ formationId?: string }>;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session) {
     redirect("/");
   }

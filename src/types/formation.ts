@@ -24,7 +24,16 @@ export type FormationNode = z.infer<typeof FormationNodeSchema> & {
   formationId: number;
 };
 
-export interface SavedFormation extends Formation {
+export interface SavedFormation {
   id: number;
+  name: string;
+  positions: {
+    lineupOrder: number[];
+    benchOrder: number[];
+    playerPositions: Record<number, { top: number; left: number }>;
+  };
   nodes: FormationNode[];
+  userId?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }

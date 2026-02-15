@@ -8,19 +8,21 @@ export default function CanvasParticles() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const el: HTMLCanvasElement = canvas;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const ctx: CanvasRenderingContext2D = context;
 
     const prefersReducedMotion =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
 
-    let width = canvas.offsetWidth;
-    let height = canvas.offsetHeight;
+    let width = el.offsetWidth;
+    let height = el.offsetHeight;
     const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    el.width = width * dpr;
+    el.height = height * dpr;
     ctx.scale(dpr, dpr);
 
     const particleCount = Math.floor(Math.min(width, height) / 7);
@@ -82,10 +84,10 @@ export default function CanvasParticles() {
     }
 
     function onResize() {
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      width = el.offsetWidth;
+      height = el.offsetHeight;
+      el.width = width * dpr;
+      el.height = height * dpr;
       ctx.scale(dpr, dpr);
     }
 
