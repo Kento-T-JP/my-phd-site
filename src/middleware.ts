@@ -27,11 +27,32 @@ const applySecurityHeaders = (res: NextResponse) => {
   return res;
 };
 
+const isGateEnabled = (value?: string): boolean => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return !['false', '0', 'off', 'no'].includes(normalized);
+};
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token: (JWT & { isAdmin?: boolean; userStatus?: string }) | null = await getToken({
-    req,
-  });
+  const token:
+    | (JWT & { isAdmin?: boolean; userStatus?: string; loginStage?: string; gatePassed?: boolean })
+    | null = await getToken({ req });
+  if (pathname === '/' || pathname.startsWith('/home') || pathname.startsWith('/api/auth/session')) {
+    const cookieHeader = req.headers.get('cookie') ?? '';
+    const cookieNames = cookieHeader
+      .split(';')
+      .map((c) => c.trim().split('=')[0])
+      .filter(Boolean);
+    console.log('MW_TOKEN', {
+      path: pathname,
+      cookieLength: cookieHeader.length,
+      cookieNames,
+      tokenId: token?.id ?? null,
+      gatePassed: token?.gatePassed ?? null,
+      loginStage: token?.loginStage ?? null,
+    });
+  }
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     if (token?.isAdmin !== true) {
       if (pathname.startsWith('/api/')) {
@@ -41,6 +62,47 @@ export async function middleware(req: NextRequest) {
       }
       const loginUrl = new URL('/login', req.url);
       return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    }
+  }
+
+  const gateEnabled = isGateEnabled(process.env.GATE_ENABLED);
+  if (gateEnabled) {
+    const gateAllowedPaths = [
+      '/',
+      '/api/auth',
+      '/api/debug-session',
+      '/api/auth/callback/credentials',
+    ];
+    const stageAllowedPaths = [
+      '/login',
+      '/access-status',
+      '/api/auth',
+      '/api/debug-session',
+      '/api/auth/callback/credentials',
+    ];
+
+    if (!token?.gatePassed) {
+      const isAllowed = gateAllowedPaths.some((path) => pathname.startsWith(path));
+      if (!isAllowed) {
+        if (pathname.startsWith('/api/')) {
+          return applySecurityHeaders(
+            NextResponse.json({ error: 'Gate required' }, { status: 401 }),
+          );
+        }
+        const redirectUrl = new URL('/', req.url);
+        return applySecurityHeaders(NextResponse.redirect(redirectUrl));
+      }
+    } else if (token.loginStage !== 'credentials') {
+      const isAllowed = stageAllowedPaths.some((path) => pathname.startsWith(path));
+      if (!isAllowed) {
+        if (pathname.startsWith('/api/')) {
+          return applySecurityHeaders(
+            NextResponse.json({ error: 'Credential login required' }, { status: 401 }),
+          );
+        }
+        const redirectUrl = new URL('/login', req.url);
+        return applySecurityHeaders(NextResponse.redirect(redirectUrl));
+      }
     }
   }
 

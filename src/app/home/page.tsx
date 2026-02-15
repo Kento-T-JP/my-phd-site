@@ -9,8 +9,10 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function fetchPlayers(): Promise<Player[]> {
-  const cookieHeader = cookies().toString();
-  const res = await fetch(`${getBaseUrl()}/api/players`, {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const baseUrl = await getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/players`, {
     cache: "no-store",
     headers: { cookie: cookieHeader },
   });
@@ -24,7 +26,7 @@ export async function fetchPlayers(): Promise<Player[]> {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { formationId?: string };
+  searchParams?: Promise<{ formationId?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -33,13 +35,16 @@ export default async function Home({
 
   const players = await fetchPlayers();
 
-  const formationId = searchParams?.formationId;
+  const resolvedSearchParams = await searchParams;
+  const formationId = resolvedSearchParams?.formationId;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
-      const cookieHeader = cookies().toString();
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore.toString();
+      const baseUrl = await getBaseUrl();
       const res = await fetch(
-        `${getBaseUrl()}/api/formations/${formationId}`,
+        `${baseUrl}/api/formations/${formationId}`,
         {
           cache: "no-store",
           headers: { cookie: cookieHeader },

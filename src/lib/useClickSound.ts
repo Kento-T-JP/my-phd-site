@@ -23,14 +23,23 @@ export default function useClickSound() {
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const muted =
-      (typeof window !== 'undefined' && localStorage.getItem('mute') === 'true') ||
-      prefersReducedMotion;
+    let muted = prefersReducedMotion;
+    if (!muted && typeof window !== 'undefined') {
+      try {
+        muted = localStorage.getItem('mute') === 'true';
+      } catch {
+        muted = true;
+      }
+    }
     if (muted) return;
 
     try {
+      if (typeof audio.play !== 'function') return;
       audio.currentTime = 0;
-      void audio.play();
+      const playResult = audio.play();
+      if (playResult && typeof playResult.catch === 'function') {
+        playResult.catch(() => {});
+      }
     } catch {
       // ignore play errors
     }

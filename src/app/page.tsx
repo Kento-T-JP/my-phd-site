@@ -5,8 +5,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
-  if (session) {
+  if (session?.loginStage === "credentials") {
     redirect("/home");
+  }
+  if (session?.loginStage === "google") {
+    redirect("/login");
   }
 
   return <GoogleLoginPanel />;

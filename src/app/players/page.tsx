@@ -35,7 +35,30 @@ export default function PlayersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [csrf, setCsrf] = useState("");
   const previousUserIdRef = useRef<string | undefined>();
+  const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
   const { play } = useClickSound();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !deleteAudioRef.current) {
+      const audio = new Audio("/sounds/hitonokokoro.mp3");
+      audio.preload = "auto";
+      deleteAudioRef.current = audio;
+    }
+  }, []);
+
+  const playDeleteSound = () => {
+    const audio = deleteAudioRef.current;
+    if (!audio) return;
+    try {
+      audio.currentTime = 0;
+      const result = audio.play();
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {});
+      }
+    } catch {
+      // ignore play errors
+    }
+  };
 
   useEffect(() => {
     const prevId = previousUserIdRef.current;
@@ -230,6 +253,7 @@ export default function PlayersPage() {
     }
     if (deleted.length > 0) {
       setPlayers((prev) => prev.filter((p) => !deleted.includes(p.id)));
+      playDeleteSound();
     }
     setSelectedIds(new Set());
   };

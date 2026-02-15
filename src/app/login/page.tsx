@@ -24,11 +24,11 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/");
-      return;
-    }
     if (status === "authenticated") {
+      if (!session?.gatePassed) {
+        router.replace("/");
+        return;
+      }
       if (session?.user?.status && session.user.status !== "active") {
         router.replace(`/access-status?status=${session.user.status}`);
         return;
@@ -37,15 +37,11 @@ export default function LoginPage() {
         router.replace("/home");
         return;
       }
-      if (session?.loginStage === "google") {
-        router.replace("/");
-        return;
-      }
       if (session?.loginStage !== "google") {
         router.replace("/");
       }
     }
-  }, [router, session?.loginStage, session?.user?.status, status]);
+  }, [router, session?.gatePassed, session?.loginStage, session?.user?.status, status]);
 
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
@@ -62,25 +58,31 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!captchaToken) return;
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-      captcha: captchaToken,
-    });
-    if (res?.ok) {
-      const session = await getSession();
-      if (session?.user?.status && session.user.status !== "active") {
-        router.push(`/access-status?status=${session.user.status}`);
-        return;
-      }
-      if (session?.user?.isAdmin) {
-        router.push("/admin");
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        callbackUrl: "/home",
+        email,
+        password,
+        captcha: captchaToken,
+      });
+      if (res?.ok) {
+        const session = await getSession();
+        if (session?.user?.status && session.user.status !== "active") {
+          router.push(`/access-status?status=${session.user.status}`);
+          return;
+        }
+        if (session?.user?.isAdmin) {
+          router.push("/admin");
+        } else {
+          router.push("/home");
+        }
       } else {
-        router.push("/home");
+        setError("メールアドレスまたはパスワードが正しくありません");
       }
-    } else {
-      setError("メールアドレスまたはパスワードが正しくありません");
+    } catch (err) {
+      console.error(err);
+      setError("ログイン処理でエラーが発生しました");
     }
   };
 
@@ -139,6 +141,16 @@ export default function LoginPage() {
           Sign In
         </button>
       </form>
+      <button
+        type="button"
+        className="mt-6 text-sm underline"
+        onClick={() => {
+          play();
+          router.back();
+        }}
+      >
+        戻る
+      </button>
     </main>
   );
 }

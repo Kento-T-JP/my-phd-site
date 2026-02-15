@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import useClickSound from "@/lib/useClickSound";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -81,7 +83,16 @@ export default function RegisterPage() {
           Sign Up
         </button>
       </form>
+      <button
+        type="button"
+        className="mt-6 text-sm underline"
+        onClick={() => {
+          play();
+          router.back();
+        }}
+      >
+        戻る
+      </button>
     </main>
   );
 }
-

@@ -38,17 +38,19 @@ export async function POST(req: Request) {
   }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return NextResponse.json({ error: "このメールアドレスは既に使用されています" }, { status: 400 });
+    return NextResponse.json(
+      { error: "このメールアドレスは既に使用されています" },
+      { status: 400 }
+    );
   }
-  const hashed = await hash(password, 10);
-  const user = await prisma.user.create({
-    data: { email, hashedPassword: hashed, isAdmin },
-  });
 
+  const hashed = await hash(password, 10);
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  await prisma.emailVerificationToken.create({
-    data: { token, userId: user.id, expires },
+  await prisma.pendingRegistration.upsert({
+    where: { email },
+    update: { hashedPassword: hashed, token, expires },
+    create: { email, hashedPassword: hashed, token, expires },
   });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -68,6 +70,5 @@ export async function POST(req: Request) {
     console.error("Failed to send verification email", err);
   }
 
-  return NextResponse.json({ id: user.id, email: user.email, isAdmin: user.isAdmin });
+  return NextResponse.json({ ok: true });
 }
-

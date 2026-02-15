@@ -52,31 +52,28 @@ async function main() {
     console.log(`✅ Players already exist, skipping seed.`);
   }
 
-  const adminCount = await prisma.user.count({ where: { isAdmin: true } });
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (adminCount === 0) {
-    if (!adminEmail || !adminPassword) {
-      console.log(
-        '❌ ADMIN_EMAIL or ADMIN_PASSWORD environment variable is not set; admin user not created.'
-      );
-    } else {
-      const hashedPassword = await hash(adminPassword, 10);
-      await prisma.user.create({
-        data: {
-          email: adminEmail,
-          hashedPassword,
-          isAdmin: true,
-        },
-      });
-      console.log('✅ Seeded admin user');
-    }
+  if (!adminEmail || !adminPassword) {
+    console.log(
+      '❌ ADMIN_EMAIL or ADMIN_PASSWORD environment variable is not set; admin user not created.'
+    );
   } else {
-    console.log('✅ Admin user already exists, skipping seed.');
-  }
-
-  if (adminEmail && adminPassword) {
+    const hashedPassword = await hash(adminPassword, 10);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        hashedPassword,
+        isAdmin: true,
+      },
+      create: {
+        email: adminEmail,
+        hashedPassword,
+        isAdmin: true,
+      },
+    });
+    console.log('✅ Admin user ensured');
     console.log(`🛈 Admin email: ${adminEmail}`);
     console.log(`🛈 Admin password: ${adminPassword}`);
   }

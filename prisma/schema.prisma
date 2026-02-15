@@ -164,6 +164,15 @@ model EmailVerificationToken {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model PendingRegistration {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  hashedPassword String
+  token          String   @unique
+  expires        DateTime
+  createdAt      DateTime @default(now())
+}
+
 model Visit {
   id        Int      @id @default(autoincrement())
   path      String

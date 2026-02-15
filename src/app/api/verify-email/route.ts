@@ -7,15 +7,27 @@ export async function GET(req: Request) {
   if (!token) {
     return NextResponse.json({ error: "Invalid token" }, { status: 400 });
   }
-  const record = await prisma.emailVerificationToken.findUnique({ where: { token } });
+  const record = await prisma.pendingRegistration.findUnique({ where: { token } });
   if (!record || record.expires < new Date()) {
     return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
   }
-  await prisma.user.update({
-    where: { id: record.userId },
-    data: { emailVerified: new Date() },
-  });
-  await prisma.emailVerificationToken.delete({ where: { token } });
+  const existing = await prisma.user.findUnique({ where: { email: record.email } });
+  if (existing) {
+    await prisma.user.update({
+      where: { email: record.email },
+      data: { emailVerified: new Date(), status: "active" },
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        email: record.email,
+        hashedPassword: record.hashedPassword,
+        status: "active",
+        emailVerified: new Date(),
+      },
+    });
+  }
+  await prisma.pendingRegistration.delete({ where: { token } });
   const redirectUrl = `${process.env.NEXTAUTH_URL || ""}/login`;
   return NextResponse.redirect(redirectUrl);
 }

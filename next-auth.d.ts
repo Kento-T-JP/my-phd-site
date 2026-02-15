@@ -8,6 +8,7 @@ declare module "next-auth" {
       status?: string;
     } & DefaultSession["user"];
     loginStage?: string;
+    gatePassed?: boolean;
   }
 
   interface User extends DefaultUser {
@@ -23,5 +24,6 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     loginStage?: string;
     userStatus?: string;
+    gatePassed?: boolean;
   }
 }

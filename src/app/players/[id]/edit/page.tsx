@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
 import { formations } from "@/data/formations";
 import type { PositionKey } from "@/types/player";
@@ -15,6 +15,17 @@ const positionOptions: PositionKey[] = Array.from(
     "MF/FW",
   ])
 ) as PositionKey[];
+
+const positionGroupOrder = ["GK", "DF", "MF", "FW", "Other"] as const;
+type PositionGroup = (typeof positionGroupOrder)[number];
+
+const resolvePositionGroup = (pos: string): PositionGroup => {
+  if (pos.includes("GK")) return "GK";
+  if (pos.includes("DF")) return "DF";
+  if (pos.includes("MF")) return "MF";
+  if (pos.includes("FW")) return "FW";
+  return "Other";
+};
 
 export default function EditPlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,8 +54,31 @@ export default function EditPlayerPage() {
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const { play } = useClickSound();
+  const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const prevTournament = useRef("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !deleteAudioRef.current) {
+      const audio = new Audio("/sounds/hitonokokoro.mp3");
+      audio.preload = "auto";
+      deleteAudioRef.current = audio;
+    }
+  }, []);
+
+  const playDeleteSound = () => {
+    const audio = deleteAudioRef.current;
+    if (!audio) return;
+    try {
+      audio.currentTime = 0;
+      const result = audio.play();
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {});
+      }
+    } catch {
+      // ignore play errors
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -67,6 +101,21 @@ export default function EditPlayerPage() {
     }
     load();
   }, [id]);
+
+  const groupedPositions = useMemo(() => {
+    const groups: Record<PositionGroup, PositionKey[]> = {
+      GK: [],
+      DF: [],
+      MF: [],
+      FW: [],
+      Other: [],
+    };
+    positionOptions.forEach((pos) => {
+      const key = resolvePositionGroup(pos);
+      groups[key].push(pos);
+    });
+    return groups;
+  }, []);
 
   useEffect(() => {
     if (prevTournament.current && prevTournament.current !== tournamentName) {
@@ -110,6 +159,7 @@ export default function EditPlayerPage() {
     setSuccessMessage("");
     if (res.ok) {
       setSuccessMessage("選手を削除しました");
+      playDeleteSound();
       setTimeout(() => {
         router.push("/players");
       }, 1500);
@@ -216,17 +266,28 @@ export default function EditPlayerPage() {
         </div>
         <div>
           <label className="block mb-1">ポジション</label>
-          <div className="flex flex-wrap gap-2">
-            {positionOptions.map((pos) => (
-              <label key={pos} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={positions.includes(pos)}
-                  onChange={() => togglePosition(pos)}
-                />
-                {pos}
-              </label>
-            ))}
+          <div className="space-y-3">
+            {positionGroupOrder.map((group) => {
+              const groupPositions = groupedPositions[group];
+              if (groupPositions.length === 0) return null;
+              return (
+                <div key={group}>
+                  <p className="text-xs uppercase text-white/70 mb-1">{group}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupPositions.map((pos) => (
+                      <label key={pos} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={positions.includes(pos)}
+                          onChange={() => togglePosition(pos)}
+                        />
+                        {pos}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <input
             className="w-full p-2 border rounded mt-2"
