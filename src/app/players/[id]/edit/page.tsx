@@ -29,6 +29,12 @@ const resolvePositionGroup = (pos: string): PositionGroup => {
   return "Other";
 };
 
+interface Affiliation {
+  rosterId: number;
+  tournamentName: string;
+  rosterTitle: string;
+}
+
 export default function EditPlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -47,7 +53,8 @@ export default function EditPlayerPage() {
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
-  const [currentAffiliations, setCurrentAffiliations] = useState<string[]>([]);
+  const [currentAffiliations, setCurrentAffiliations] = useState<Affiliation[]>([]);
+  const [removeRosterIds, setRemoveRosterIds] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -100,15 +107,21 @@ export default function EditPlayerPage() {
         setNumber(p.number ? String(p.number) : "");
         setWikiUrl(p.wikiUrl ?? "");
         setExtra(p.extra ?? {});
+        setRemoveRosterIds(new Set());
         if (p.rosterPlayers?.length) {
           setCurrentAffiliations(
             p.rosterPlayers
-              .map((rp: { roster?: { tournament?: { name?: string }; title?: string } }) => {
-                const tournament = rp.roster?.tournament?.name ?? "";
-                const roster = rp.roster?.title ?? "";
-                return [tournament, roster].filter(Boolean).join(" / ");
+              .map((rp: { rosterId?: number; roster?: { tournament?: { name?: string }; title?: string } }) => {
+                const rosterId = typeof rp.rosterId === "number" ? rp.rosterId : 0;
+                const tournamentName = rp.roster?.tournament?.name ?? "";
+                const rosterTitle = rp.roster?.title ?? "";
+                return {
+                  rosterId,
+                  tournamentName,
+                  rosterTitle,
+                } as Affiliation;
               })
-              .filter(Boolean)
+              .filter((rp) => rp.rosterId > 0 && rp.tournamentName && rp.rosterTitle)
           );
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
@@ -167,6 +180,18 @@ export default function EditPlayerPage() {
     );
   };
 
+  const toggleRemoveRosterId = (rosterId: number) => {
+    setRemoveRosterIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rosterId)) {
+        next.delete(rosterId);
+      } else {
+        next.add(rosterId);
+      }
+      return next;
+    });
+  };
+
   const handleDelete = async () => {
     if (isDeleting || isSubmitting) return;
     play();
@@ -219,6 +244,9 @@ export default function EditPlayerPage() {
       form.append("image", normalizedImage);
     }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
+    removeRosterIds.forEach((rosterId) =>
+      form.append("removeRosterId", String(rosterId))
+    );
     if (rosterTitle.trim() !== "") {
       if (tournamentName.trim() !== "") {
         form.append("tournament", tournamentName);
@@ -383,10 +411,30 @@ export default function EditPlayerPage() {
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
             {currentAffiliations.length > 0 && (
-              <p className="text-xs text-cyan-100 mb-2">
-                現在の所属: {currentAffiliations.join(" / ")}
-              </p>
+              <div className="mb-2 rounded border border-cyan-300/30 p-2">
+                <p className="text-xs text-cyan-100/90 mb-1">
+                  現在の所属（解除したいものにチェック）
+                </p>
+                <div className="space-y-1">
+                  {currentAffiliations.map((aff) => (
+                    <label
+                      key={aff.rosterId}
+                      className="flex items-center gap-2 text-xs text-cyan-100"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={removeRosterIds.has(aff.rosterId)}
+                        onChange={() => toggleRemoveRosterId(aff.rosterId)}
+                      />
+                      {aff.tournamentName} / {aff.rosterTitle}
+                    </label>
+                  ))}
+                </div>
+              </div>
             )}
+            <p className="text-xs text-cyan-100/75 mb-2">
+              下の入力欄で新しい大会/ロースターを追加で紐付けできます。
+            </p>
             <TournamentSelect
               value={tournamentName}
               onChange={setTournamentName}
