@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
 import { formations } from "@/data/formations";
-import type { PositionKey } from "@/types/player";
+import type { PositionKey, Roster } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 import useClickSound from "@/lib/useClickSound";
@@ -54,7 +54,9 @@ export default function EditPlayerPage() {
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
   const [currentAffiliations, setCurrentAffiliations] = useState<Affiliation[]>([]);
-  const [removeRosterIds, setRemoveRosterIds] = useState<Set<number>>(new Set());
+  const [rosterOptions, setRosterOptions] = useState<Affiliation[]>([]);
+  const [selectedRosterIds, setSelectedRosterIds] = useState<Set<number>>(new Set());
+  const [initialRosterIds, setInitialRosterIds] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -98,43 +100,70 @@ export default function EditPlayerPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/players/${id}`);
-      if (res.ok) {
-        const p = await res.json();
+      const [playerRes, rostersRes] = await Promise.all([
+        fetch(`/api/players/${id}`),
+        fetch("/api/rosters"),
+      ]);
+      if (playerRes.ok) {
+        const p = await playerRes.json();
         setOwnerId(p.userId ?? null);
         setName(p.name);
         setPositions(p.position as PositionKey[]);
         setNumber(p.number ? String(p.number) : "");
         setWikiUrl(p.wikiUrl ?? "");
         setExtra(p.extra ?? {});
-        setRemoveRosterIds(new Set());
+        setSelectedRosterIds(new Set());
+        setInitialRosterIds(new Set());
         if (p.rosterPlayers?.length) {
-          setCurrentAffiliations(
-            p.rosterPlayers
-              .map((rp: { rosterId?: number; roster?: { tournament?: { name?: string }; title?: string } }) => {
-                const rosterId = typeof rp.rosterId === "number" ? rp.rosterId : 0;
-                const tournamentName = rp.roster?.tournament?.name ?? "";
-                const rosterTitle = rp.roster?.title ?? "";
-                return {
-                  rosterId,
-                  tournamentName,
-                  rosterTitle,
-                } as Affiliation;
-              })
-              .filter(
-                (rp: Affiliation) =>
-                  rp.rosterId > 0 &&
-                  rp.tournamentName.length > 0 &&
-                  rp.rosterTitle.length > 0
-              )
+          const linked = p.rosterPlayers
+            .map((rp: { rosterId?: number; roster?: { tournament?: { name?: string }; title?: string } }) => {
+              const rosterId = typeof rp.rosterId === "number" ? rp.rosterId : 0;
+              const tournamentName = rp.roster?.tournament?.name ?? "";
+              const rosterTitle = rp.roster?.title ?? "";
+              return {
+                rosterId,
+                tournamentName,
+                rosterTitle,
+              } as Affiliation;
+            })
+            .filter(
+              (rp: Affiliation) =>
+                rp.rosterId > 0 &&
+                rp.tournamentName.length > 0 &&
+                rp.rosterTitle.length > 0
+            );
+          const linkedIds = new Set<number>(
+            linked.map((rp: Affiliation) => rp.rosterId)
           );
+          setCurrentAffiliations(linked);
+          setSelectedRosterIds(new Set(linkedIds));
+          setInitialRosterIds(new Set(linkedIds));
           setTournamentName("");
           setRosterTitle("");
         } else {
           setCurrentAffiliations([]);
+          setSelectedRosterIds(new Set());
+          setInitialRosterIds(new Set());
           setTournamentName("");
           setRosterTitle("");
         }
+      }
+      if (rostersRes.ok) {
+        const rosters = (await rostersRes.json()) as Roster[];
+        setRosterOptions(
+          rosters
+            .map((r) => ({
+              rosterId: r.id,
+              tournamentName: r.tournament?.name ?? "",
+              rosterTitle: r.title,
+            }))
+            .filter(
+              (rp: Affiliation) =>
+                rp.rosterId > 0 &&
+                rp.tournamentName.length > 0 &&
+                rp.rosterTitle.length > 0
+            )
+        );
       }
       setLoading(false);
     }
@@ -186,8 +215,8 @@ export default function EditPlayerPage() {
     );
   };
 
-  const toggleRemoveRosterId = (rosterId: number) => {
-    setRemoveRosterIds((prev) => {
+  const toggleRosterSelection = (rosterId: number) => {
+    setSelectedRosterIds((prev) => {
       const next = new Set(prev);
       if (next.has(rosterId)) {
         next.delete(rosterId);
@@ -250,9 +279,16 @@ export default function EditPlayerPage() {
       form.append("image", normalizedImage);
     }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
-    removeRosterIds.forEach((rosterId) =>
-      form.append("removeRosterId", String(rosterId))
-    );
+    initialRosterIds.forEach((rosterId) => {
+      if (!selectedRosterIds.has(rosterId)) {
+        form.append("removeRosterId", String(rosterId));
+      }
+    });
+    selectedRosterIds.forEach((rosterId) => {
+      if (!initialRosterIds.has(rosterId)) {
+        form.append("addRosterId", String(rosterId));
+      }
+    });
     if (rosterTitle.trim() !== "") {
       if (tournamentName.trim() !== "") {
         form.append("tournament", tournamentName);
@@ -416,21 +452,21 @@ export default function EditPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
-            {currentAffiliations.length > 0 && (
+            {rosterOptions.length > 0 && (
               <div className="mb-2 rounded border border-cyan-300/30 p-2">
                 <p className="text-xs text-cyan-100/90 mb-1">
-                  現在の所属（解除したいものにチェック）
+                  既存ロースター（チェックで追加/解除）
                 </p>
                 <div className="space-y-1">
-                  {currentAffiliations.map((aff) => (
+                  {rosterOptions.map((aff) => (
                     <label
                       key={aff.rosterId}
                       className="flex items-center gap-2 text-xs text-cyan-100"
                     >
                       <input
                         type="checkbox"
-                        checked={removeRosterIds.has(aff.rosterId)}
-                        onChange={() => toggleRemoveRosterId(aff.rosterId)}
+                        checked={selectedRosterIds.has(aff.rosterId)}
+                        onChange={() => toggleRosterSelection(aff.rosterId)}
                       />
                       {aff.tournamentName} / {aff.rosterTitle}
                     </label>
