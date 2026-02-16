@@ -33,7 +33,7 @@ const isGateEnabled = (value?: string): boolean => {
   return !['false', '0', 'off', 'no'].includes(normalized);
 };
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token:
     | (JWT & { isAdmin?: boolean; userStatus?: string; loginStage?: string; gatePassed?: boolean })

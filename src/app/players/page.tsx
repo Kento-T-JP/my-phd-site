@@ -304,7 +304,7 @@ export default function PlayersPage({
         >
           {deleteProgress
             ? `Deleting... ${deleteProgress.done}/${deleteProgress.total}`
-            : "Delete selected"}
+            : "Delete"}
         </button>
         {deleteProgress && (
           <p className="mt-2 text-sm text-cyan-200 animate-pulse">
