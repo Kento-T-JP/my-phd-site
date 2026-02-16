@@ -139,6 +139,18 @@ describe('player API routes', () => {
     });
   });
 
+  it('GET players can disable extra payload explicitly', async () => {
+    const { GET } = await import('../src/app/api/players/route');
+    playersSpy.mockResolvedValue([{ id: 1, name: 'P', position: [], role: 'player' }]);
+    const res = await GET(new Request('http://test/api/players?includeExtra=0'));
+    expect(res.status).toBe(200);
+    expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
+      includeImage: true,
+      includeExtra: false,
+      includeRosterLinks: false,
+    });
+  });
+
   it('GET returns a player', async () => {
     const { GET } = await import('../src/app/api/players/[id]/route');
     prisma.player.findUnique.mockResolvedValue({ id: 1, name: 'A', position: ['GK'] });
@@ -270,19 +282,9 @@ describe('player API routes', () => {
     const req = new Request('http://test', { method: 'POST', body: form });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect(addSpy).toHaveBeenCalledTimes(3);
+    expect(addSpy).toHaveBeenCalledTimes(1);
     expect(addSpy).toHaveBeenCalledWith(
-      10,
-      [{ playerId: 1, number: undefined, position: ['GK'] }],
-      expect.anything(),
-    );
-    expect(addSpy).toHaveBeenCalledWith(
-      11,
-      [{ playerId: 1, number: undefined, position: ['GK'] }],
-      expect.anything(),
-    );
-    expect(addSpy).toHaveBeenCalledWith(
-      9,
+      [10, 11, 9],
       [{ playerId: 1, number: undefined, position: ['GK'] }],
       expect.anything(),
     );
@@ -355,7 +357,7 @@ describe('player API routes', () => {
     const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);
     expect(addSpy).toHaveBeenCalledWith(
-      20,
+      [20],
       [{ playerId: 1, number: undefined, position: ['MF'] }],
       expect.anything(),
     );

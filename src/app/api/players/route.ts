@@ -42,6 +42,12 @@ export async function GET(req: Request) {
   const lite = searchParams.get('lite') === '1';
   const paged = searchParams.get('paged') === '1';
   const includeRosterLinks = searchParams.get('includeRosterLinks') === '1';
+  const includeImageParam = searchParams.get('includeImage');
+  const includeExtraParam = searchParams.get('includeExtra');
+  const includeImage =
+    includeImageParam === null ? !lite : includeImageParam === '1';
+  const includeExtra =
+    includeExtraParam === null ? !lite : includeExtraParam === '1';
   const q = (searchParams.get('q') ?? '').trim();
   const rosterIds = (searchParams.get('rosterIds') ?? '')
     .split(',')
@@ -86,12 +92,12 @@ export async function GET(req: Request) {
           name: true,
           position: true,
           number: true,
-          image: !lite,
+          image: includeImage,
           wikiUrl: true,
           userId: true,
           basePlayerId: true,
           isDeleted: true,
-          extra: !lite,
+          extra: includeExtra,
           ...(includeRosterLinks
             ? {
                 rosterPlayers: {
@@ -114,8 +120,8 @@ export async function GET(req: Request) {
   }
 
   const players = await getPlayers(undefined, uid, {
-    includeImage: !lite,
-    includeExtra: !lite,
+    includeImage,
+    includeExtra,
     includeRosterLinks,
   });
   return NextResponse.json(players.filter((p) => p.name.toLowerCase() !== 'unknown'));
@@ -255,9 +261,9 @@ export async function POST(req: Request) {
         rosterIdsToLink.add(rosterInfo.id);
       }
 
-      for (const id of rosterIdsToLink) {
+      if (rosterIdsToLink.size > 0) {
         await addRosterPlayers(
-          id,
+          Array.from(rosterIdsToLink),
           [
             {
               playerId: player.id,

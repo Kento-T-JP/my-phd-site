@@ -435,17 +435,24 @@ export async function ensureTournamentRoster(
 
 /** Link players to a roster, skipping duplicates. */
 export async function addRosterPlayers(
-  rosterId: number,
+  rosterId: number | number[],
   players: { playerId: number; number?: number; position?: string[] }[],
   client: Prisma.TransactionClient | PrismaClient = prisma,
 ) {
   if (players.length === 0) return 0;
-  const data = players.map((p) => ({
-    rosterId,
-    playerId: p.playerId,
-    number: p.number,
-    position: p.position,
-  }));
+  const rosterIds = Array.isArray(rosterId) ? rosterId : [rosterId];
+  const uniqueRosterIds = Array.from(
+    new Set(rosterIds.filter((id) => Number.isFinite(id) && id > 0)),
+  );
+  if (uniqueRosterIds.length === 0) return 0;
+  const data = uniqueRosterIds.flatMap((id) =>
+    players.map((p) => ({
+      rosterId: id,
+      playerId: p.playerId,
+      number: p.number,
+      position: p.position,
+    })),
+  );
 
   // Prefer bulk insert to reduce query count on large imports.
   if (typeof (client as any).rosterPlayer?.createMany === 'function') {
@@ -468,7 +475,7 @@ export async function addRosterPlayers(
     })
   );
   await Promise.all(upserts);
-  return players.length;
+  return data.length;
 }
 
 /**

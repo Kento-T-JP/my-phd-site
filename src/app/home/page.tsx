@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/authOptions";
+import prisma from "@/lib/db";
 import { fetchPlayers } from "@/lib/fetchPlayers";
 
 export default async function Home({
@@ -18,25 +19,48 @@ export default async function Home({
     redirect("/");
   }
 
-  const players = await fetchPlayers();
+  const sessionId = Number(session.user?.id);
+  const ownerId = Number.isFinite(sessionId) ? sessionId : undefined;
+  const hasPlayers = ownerId
+    ? Boolean(
+        await prisma.player.findFirst({
+          where: {
+            userId: ownerId,
+            isDeleted: false,
+            NOT: { name: { equals: "unknown", mode: "insensitive" } },
+          },
+          select: { id: true },
+        }),
+      )
+    : (await fetchPlayers()).some(
+        (player) => player.name.toLowerCase() !== "unknown",
+      );
 
   const resolvedSearchParams = await searchParams;
   const formationId = resolvedSearchParams?.formationId;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
-      const cookieStore = await cookies();
-      const cookieHeader = cookieStore.toString();
-      const baseUrl = await getBaseUrl();
-      const res = await fetch(
-        `${baseUrl}/api/formations/${formationId}`,
-        {
+      const num = Number(formationId);
+      if (!Number.isNaN(num) && ownerId) {
+        const formation = await prisma.formation.findUnique({
+          where: { id: num },
+          include: { nodes: true },
+        });
+        if (formation && formation.userId === ownerId) {
+          initialFormation = formation as SavedFormation;
+        }
+      } else {
+        const cookieStore = await cookies();
+        const cookieHeader = cookieStore.toString();
+        const baseUrl = await getBaseUrl();
+        const res = await fetch(`${baseUrl}/api/formations/${formationId}`, {
           cache: "no-store",
           headers: { cookie: cookieHeader },
+        });
+        if (res.ok) {
+          initialFormation = (await res.json()) as SavedFormation;
         }
-      );
-      if (res.ok) {
-        initialFormation = (await res.json()) as SavedFormation;
       }
     } catch (error) {
       console.error(`Failed to fetch formation ${formationId}:`, error);
@@ -44,7 +68,7 @@ export default async function Home({
     }
   }
 
-  if (players.length === 0) {
+  if (!hasPlayers) {
     return (
       <main className="py-2">
         <section className="glass-panel p-4 sm:p-6 max-w-2xl mx-auto">

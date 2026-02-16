@@ -177,35 +177,11 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           },
         });
       }
-      if (addRosterIds.length > 0) {
-        for (const addRosterId of addRosterIds) {
-          await addRosterPlayers(
-            addRosterId,
-            [
-              {
-                playerId: player.id,
-                number: parsed.data.number,
-                position: parsed.data.position,
-              },
-            ],
-            tx,
-          );
-        }
-      }
+      const rosterIdsToAdd = new Set<number>(addRosterIds);
       const rosterUserId = overrideUserId ?? player.userId ?? undefined;
       const ownerId = Number.isFinite(rosterUserId) ? (rosterUserId as number) : undefined;
       if (rosterId) {
-        await addRosterPlayers(
-          rosterId,
-          [
-            {
-              playerId: player.id,
-              number: parsed.data.number,
-              position: parsed.data.position,
-            },
-          ],
-          tx,
-        );
+        rosterIdsToAdd.add(rosterId);
         rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
         if (!ownerId) {
@@ -219,17 +195,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           tx,
           tournamentDate,
         );
-        await addRosterPlayers(
-          roster.id,
-          [
-            {
-              playerId: player.id,
-              number: parsed.data.number,
-              position: parsed.data.position,
-            },
-          ],
-          tx,
-        );
+        rosterIdsToAdd.add(roster.id);
         rosterInfo = roster;
       } else if (tournamentName) {
         if (!ownerId) {
@@ -241,8 +207,11 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           tx,
           tournamentDate,
         );
+        rosterIdsToAdd.add(rosterInfo.id);
+      }
+      if (rosterIdsToAdd.size > 0) {
         await addRosterPlayers(
-          rosterInfo.id,
+          Array.from(rosterIdsToAdd),
           [
             {
               playerId: player.id,

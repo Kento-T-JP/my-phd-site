@@ -2,10 +2,16 @@ import AdminCard from "@/components/AdminCard";
 
 export default function AdminPage() {
   return (
-    <main className="p-4 sm:p-8 bg-gray-50 rounded-lg">
-      <h1 className="text-xl font-bold mb-6 text-black">Admin Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <main className="space-y-5">
+      <header>
+        <h1 className="text-2xl font-bold text-cyan-50 sm:text-3xl">Admin Dashboard</h1>
+        <p className="mt-1 text-sm text-cyan-100/75 sm:text-base">
+          User, content, roster and analytics operations in one place.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminCard href="/admin/users" title="Users" icon="👥" />
+        <AdminCard href="/admin/inquiries" title="Inquiries" icon="📨" />
         <AdminCard href="/admin/formations" title="Formations" icon="📝" />
         <AdminCard href="/admin/rosters" title="Rosters" icon="🏆" />
         <AdminCard href="/admin/stats" title="Stats" icon="📊" />

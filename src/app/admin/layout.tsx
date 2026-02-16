@@ -18,9 +18,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="p-4">
-      <AdminNav />
-      {children}
+    <div className="px-3 py-4 sm:px-5 sm:py-6">
+      <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
+        <AdminNav />
+        <div className="glass-panel p-3 sm:p-5">{children}</div>
+      </div>
     </div>
   );
 }
