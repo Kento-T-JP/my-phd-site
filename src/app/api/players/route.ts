@@ -41,6 +41,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lite = searchParams.get('lite') === '1';
   const paged = searchParams.get('paged') === '1';
+  const includeRosterLinks = searchParams.get('includeRosterLinks') === '1';
   const q = (searchParams.get('q') ?? '').trim();
   const rosterIds = (searchParams.get('rosterIds') ?? '')
     .split(',')
@@ -91,11 +92,15 @@ export async function GET(req: Request) {
           basePlayerId: true,
           isDeleted: true,
           extra: !lite,
-          rosterPlayers: {
-            include: {
-              roster: { select: { tournamentId: true } },
-            },
-          },
+          ...(includeRosterLinks
+            ? {
+                rosterPlayers: {
+                  include: {
+                    roster: { select: { tournamentId: true } },
+                  },
+                },
+              }
+            : {}),
         },
       }),
       prisma.player.count({ where }),
@@ -111,6 +116,7 @@ export async function GET(req: Request) {
   const players = await getPlayers(undefined, uid, {
     includeImage: !lite,
     includeExtra: !lite,
+    includeRosterLinks,
   });
   return NextResponse.json(players.filter((p) => p.name.toLowerCase() !== 'unknown'));
 }
