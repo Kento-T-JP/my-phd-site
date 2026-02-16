@@ -34,7 +34,33 @@ export function extractMatchDate(html: string): MatchDateRange {
 }
 
 export function validateJfaUrl(url: string) {
-  return url.startsWith('https://www.jfa.jp/samuraiblue/') && url.endsWith('member.html');
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== 'www.jfa.jp') return false;
+    const path = parsed.pathname;
+    const samuraiPattern = /^\/samuraiblue(?:\/[^/]+)?\/member\.html$/;
+    const nationalTeamPattern = /^\/national_team\/[^/]+\/[^/]+\/member\.html$/;
+    return samuraiPattern.test(path) || nationalTeamPattern.test(path);
+  } catch {
+    return false;
+  }
+}
+
+function extractTournamentSlugFromPath(url: string): string {
+  try {
+    const parsed = new URL(url, 'https://www.jfa.jp');
+    const segs = parsed.pathname.split('/').filter(Boolean);
+    if (segs[0] === 'national_team' && segs.length >= 3) {
+      return segs[2] ?? '';
+    }
+    if (segs[0] === 'samuraiblue' && segs.length >= 2) {
+      if (segs[1] === 'member.html') return '';
+      return segs[1] ?? '';
+    }
+    return '';
+  } catch {
+    return '';
+  }
 }
 
 export async function scrapeJfaPlayers(url: string) {
@@ -57,8 +83,7 @@ export async function scrapeJfaPlayers(url: string) {
     const crumbLinks = $('.outer-block.pankz .pankz-list span a');
     if (crumbLinks.length) {
       const href = $(crumbLinks[crumbLinks.length - 1]).attr('href') || '';
-      const m = href.match(/samuraiblue\/(\w+)/);
-      if (m) tournamentSlug = m[1];
+      tournamentSlug = extractTournamentSlugFromPath(href);
     }
     const texts = crumbSpans
       .map((i, el) => norm($(el).find('a').text() || $(el).text()))
@@ -86,8 +111,7 @@ export async function scrapeJfaPlayers(url: string) {
     tournament = new Date().toISOString().slice(0, 10);
   }
   if (!tournamentSlug) {
-    const m = url.match(/samuraiblue\/(\w+)/);
-    if (m) tournamentSlug = m[1];
+    tournamentSlug = extractTournamentSlugFromPath(url);
   }
   if (!tournamentSlug) {
     tournamentSlug = normalizeSlug(tournament);

@@ -8,11 +8,19 @@ describe('validateJfaUrl', () => {
   it('accepts valid Samurai Blue member URLs', () => {
     expect(validateJfaUrl('https://www.jfa.jp/samuraiblue/member.html')).toBe(true);
     expect(validateJfaUrl('https://www.jfa.jp/samuraiblue/2024/member.html')).toBe(true);
+    expect(
+      validateJfaUrl(
+        'https://www.jfa.jp/national_team/u23_2026/afc_u23_asiancup_2026/member.html'
+      )
+    ).toBe(true);
   });
 
   it('rejects other URLs', () => {
     expect(validateJfaUrl('https://example.com')).toBe(false);
     expect(validateJfaUrl('https://www.jfa.jp/samuraiblue/member.htm')).toBe(false);
+    expect(
+      validateJfaUrl('https://www.jfa.jp/national_team/u23_2026/member.html')
+    ).toBe(false);
   });
 });
 
@@ -198,6 +206,49 @@ describe('scrapeJfaPlayers', () => {
     expect(result.tournamentSlug).toBe('event');
     expect(result.rosterDate?.toISOString().slice(0,10)).toBe('2025-07-07');
     expect(result.rosterEndDate?.toISOString().slice(0,10)).toBe('2025-07-16');
+    expect(result.players).toEqual([
+      {
+        name: 'John Doe',
+        number: 1,
+        image: 'https://www.jfa.jp/gk1.jpg',
+        position: ['Goalkeepers'],
+      },
+    ]);
+
+    spy.mockRestore();
+  });
+
+  it('extracts tournament slug from national team URL format', async () => {
+    const inlineFixture = `
+      <div class="outer-block pankz">
+        <div class="pankz-list">
+          <span>ホーム</span>
+          <span>U-23日本代表</span>
+          <span>招集メンバー</span>
+        </div>
+      </div>
+      <div class="textarea-match disp_pc">2026/04/10 対戦</div>
+      <div class="section-block">
+        <h4>Goalkeepers</h4>
+        <div class="competition-member">
+          <ul>
+            <li>
+              <div class="name">1 John Doe</div>
+              <img src="/gk1.jpg" />
+            </li>
+          </ul>
+        </div>
+      </div>
+    `;
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: inlineFixture });
+
+    const result = await scrapeJfaPlayers(
+      'https://www.jfa.jp/national_team/u23_2026/afc_u23_asiancup_2026/member.html'
+    );
+
+    expect(result.tournamentSlug).toBe('afc_u23_asiancup_2026');
+    expect(result.tournamentName).toBe('U-23日本代表');
+    expect(result.rosterTitle).toBe('U-23日本代表 - 2026/04/10');
     expect(result.players).toEqual([
       {
         name: 'John Doe',
