@@ -18,8 +18,8 @@ export default function PlayerFilter({
 }: Props) {
   const { data: session } = useSession();
   const [searchInput, setSearchInput] = useState("");
-  const [rosterInput, setRosterInput] = useState("");
-  const [positionInput, setPositionInput] = useState("");
+  const [rosterInputs, setRosterInputs] = useState<string[]>([]);
+  const [positionInputs, setPositionInputs] = useState<string[]>([]);
   const previousUserIdRef = useRef<string | undefined>(undefined);
   const { play } = useClickSound();
 
@@ -31,8 +31,8 @@ export default function PlayerFilter({
       localStorage.removeItem(`selectedRoster_${prevId}`);
     }
     setSearchInput("");
-    setRosterInput("");
-    setPositionInput("");
+    setRosterInputs([]);
+    setPositionInputs([]);
     onApply({});
     previousUserIdRef.current = currentId;
   }, [session?.user?.id, onApply]);
@@ -42,34 +42,50 @@ export default function PlayerFilter({
     if (!userId) return;
     const saved = localStorage.getItem(`selectedRoster_${userId}`);
     if (saved) {
-      setRosterInput(saved);
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setRosterInputs(parsed.map((v) => String(v)));
+          return;
+        }
+      } catch {
+        // backward compatibility for old plain string
+      }
+      setRosterInputs([saved]);
     }
   }, [session, rosters]);
 
   useEffect(() => {
-    if (!rosterInput || rosters.length === 0) return;
-    const exists = rosters.some((r) => r.id === Number(rosterInput));
-    if (!exists) {
-      setRosterInput("");
+    if (rosterInputs.length === 0 || rosters.length === 0) return;
+    const valid = rosterInputs.filter((id) =>
+      rosters.some((r) => r.id === Number(id))
+    );
+    if (valid.length !== rosterInputs.length) {
+      setRosterInputs(valid);
     }
-  }, [rosters, rosterInput]);
+  }, [rosterInputs, rosters]);
 
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) return;
-    if (rosterInput) {
-      localStorage.setItem(`selectedRoster_${userId}`, rosterInput);
+    if (rosterInputs.length > 0) {
+      localStorage.setItem(
+        `selectedRoster_${userId}`,
+        JSON.stringify(rosterInputs)
+      );
     } else {
       localStorage.removeItem(`selectedRoster_${userId}`);
     }
-  }, [rosterInput, session]);
+  }, [rosterInputs, session]);
 
   const handleApply = () => {
-    const rosterId = rosterInput ? Number(rosterInput) : undefined;
+    const rosterIds = rosterInputs
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id));
     onApply({
       name: searchInput,
-      rosterId,
-      position: positionInput || undefined,
+      rosterIds: rosterIds.length > 0 ? rosterIds : undefined,
+      positions: positionInputs.length > 0 ? positionInputs : undefined,
     });
   };
 
@@ -83,11 +99,15 @@ export default function PlayerFilter({
         onChange={(e) => setSearchInput(e.target.value)}
       />
       <select
+        multiple
         className="w-full min-w-0 border p-2"
-        value={rosterInput}
-        onChange={(e) => setRosterInput(e.target.value)}
+        value={rosterInputs}
+        onChange={(e) =>
+          setRosterInputs(
+            Array.from(e.target.selectedOptions).map((opt) => opt.value)
+          )
+        }
       >
-        <option value="">全ての試合リスト</option>
         {rosters.map((r) => (
           <option key={r.id} value={r.id}>
             {rosterDisplayTitle(r)}
@@ -95,11 +115,15 @@ export default function PlayerFilter({
         ))}
       </select>
       <select
+        multiple
         className="w-full min-w-0 border p-2"
-        value={positionInput}
-        onChange={(e) => setPositionInput(e.target.value)}
+        value={positionInputs}
+        onChange={(e) =>
+          setPositionInputs(
+            Array.from(e.target.selectedOptions).map((opt) => opt.value)
+          )
+        }
       >
-        <option value="">All positions</option>
         {positionOptions.map((pos) => (
           <option key={pos} value={pos}>
             {pos}

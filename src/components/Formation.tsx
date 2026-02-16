@@ -59,8 +59,10 @@ const DEFAULT_FORMATION_NAME = "4-3-3";
 export interface PlayerFilterOptions {
   name?: string;
   rosterId?: number;
+  rosterIds?: number[];
   tournamentId?: number;
   position?: string;
+  positions?: string[];
 }
 
 export function resolveFormationTemplate(
@@ -75,19 +77,36 @@ export function filterPlayers<
   T extends Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] }
 >(list: T[], opts: PlayerFilterOptions = {}): T[] {
   const name = opts.name?.toLowerCase() ?? "";
-  const pos = opts.position?.toLowerCase() ?? "";
+  const rosterIds = new Set<number>([
+    ...(opts.rosterId === undefined ? [] : [opts.rosterId]),
+    ...(opts.rosterIds ?? []),
+  ]);
+  const selectedPositions = Array.from(
+    new Set(
+      [
+        ...(opts.position ? [opts.position] : []),
+        ...(opts.positions ?? []),
+      ]
+        .map((p) => p.toLowerCase().trim())
+        .filter(Boolean)
+    )
+  );
   return list.filter((p) => {
     const matchName = !name || p.name.toLowerCase().includes(name);
     const matchRoster =
-      opts.rosterId === undefined ||
-      (p.rosterPlayers ?? []).some((rp) => rp.rosterId === opts.rosterId);
+      rosterIds.size === 0 ||
+      (p.rosterPlayers ?? []).some((rp) => rosterIds.has(rp.rosterId));
     const matchTournament =
       opts.tournamentId === undefined ||
       (p.rosterPlayers ?? []).some(
         (rp) => rp.roster?.tournamentId === opts.tournamentId
       );
     const matchPos =
-      !pos || p.position.some((pp) => pp.toLowerCase().includes(pos));
+      selectedPositions.length === 0 ||
+      p.position.some((pp) => {
+        const normalized = pp.toLowerCase();
+        return selectedPositions.some((pos) => normalized.includes(pos));
+      });
     return matchName && matchRoster && matchTournament && matchPos;
   });
 }

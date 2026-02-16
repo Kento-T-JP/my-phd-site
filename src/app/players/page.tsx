@@ -44,12 +44,12 @@ export default function PlayersPage({
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [selectedRoster, setSelectedRoster] = useState<string>("");
-  const [selectedPosition, setSelectedPosition] = useState<string>("");
+  const [selectedRosterIds, setSelectedRosterIds] = useState<string[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
   const [searchInput, setSearchInput] = useState("");
-  const [rosterInput, setRosterInput] = useState("");
-  const [positionInput, setPositionInput] = useState("");
+  const [rosterInputs, setRosterInputs] = useState<string[]>([]);
+  const [positionInputs, setPositionInputs] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteProgress, setDeleteProgress] = useState<{
@@ -109,11 +109,11 @@ export default function PlayersPage({
     setError("");
     setLoading(true);
     setSearch("");
-    setSelectedRoster("");
-    setSelectedPosition("");
+    setSelectedRosterIds([]);
+    setSelectedPositions([]);
     setSearchInput("");
-    setRosterInput("");
-    setPositionInput("");
+    setRosterInputs([]);
+    setPositionInputs([]);
 
     previousUserIdRef.current = currentId;
   }, [session?.user?.id]);
@@ -205,11 +205,13 @@ export default function PlayersPage({
   }, [session]);
 
   const filteredPlayers = useMemo(() => {
-    const rosterId = selectedRoster ? Number(selectedRoster) : undefined;
+    const rosterIds = selectedRosterIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id));
     return filterPlayers(players, {
       name: search,
-      rosterId,
-      position: selectedPosition,
+      rosterIds: rosterIds.length > 0 ? rosterIds : undefined,
+      positions: selectedPositions.length > 0 ? selectedPositions : undefined,
     }).sort((a, b) => {
       const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
       if (rankDiff !== 0) return rankDiff;
@@ -220,7 +222,7 @@ export default function PlayersPage({
       if (primaryDiff !== 0) return primaryDiff;
       return a.name.localeCompare(b.name, "ja");
     });
-  }, [players, search, selectedRoster, selectedPosition]);
+  }, [players, search, selectedRosterIds, selectedPositions]);
 
   const allSelected =
     filteredPlayers.length > 0 &&
@@ -345,11 +347,15 @@ export default function PlayersPage({
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <select
+          multiple
           className="w-full min-w-0 border p-2"
-          value={rosterInput}
-          onChange={(e) => setRosterInput(e.target.value)}
+          value={rosterInputs}
+          onChange={(e) =>
+            setRosterInputs(
+              Array.from(e.target.selectedOptions).map((opt) => opt.value)
+            )
+          }
         >
-          <option value="">全ての試合リスト</option>
           {rosters.map((r) => (
             <option key={r.id} value={r.id}>
               {rosterDisplayTitle(r)}
@@ -357,11 +363,15 @@ export default function PlayersPage({
           ))}
         </select>
         <select
+          multiple
           className="w-full min-w-0 border p-2"
-          value={positionInput}
-          onChange={(e) => setPositionInput(e.target.value)}
+          value={positionInputs}
+          onChange={(e) =>
+            setPositionInputs(
+              Array.from(e.target.selectedOptions).map((opt) => opt.value)
+            )
+          }
         >
-          <option value="">All positions</option>
           {positionOptions.map((pos) => (
             <option key={pos} value={pos}>
               {pos}
@@ -373,8 +383,8 @@ export default function PlayersPage({
           onClick={() => {
             play();
             setSearch(searchInput);
-            setSelectedPosition(positionInput);
-            setSelectedRoster(rosterInput);
+            setSelectedPositions(positionInputs);
+            setSelectedRosterIds(rosterInputs);
           }}
         >
           Apply Filters

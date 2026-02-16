@@ -52,6 +52,11 @@ describe('filterPlayers', () => {
     expect(filterPlayers(players, { name: 'b', rosterId: 1 })).toEqual([]);
   });
 
+  it('filters by multiple rosters', () => {
+    expect(filterPlayers(players, { rosterIds: [1, 2] })).toEqual(players);
+    expect(filterPlayers(players, { rosterIds: [2] })).toEqual([players[1]]);
+  });
+
   it('excludes players without roster when filtering', () => {
     expect(filterPlayers(mixedPlayers, { rosterId: 1 })).toEqual([
       players[0],
@@ -70,6 +75,13 @@ describe('filterPlayers', () => {
   it('filters by position', () => {
     expect(filterPlayers(players, { position: 'GK' })).toEqual([players[0]]);
     expect(filterPlayers(players, { position: 'FW' })).toEqual([players[2]]);
+  });
+
+  it('filters by multiple positions', () => {
+    expect(filterPlayers(players, { positions: ['GK', 'FW'] })).toEqual([
+      players[0],
+      players[2],
+    ]);
   });
 
   it('filters by custom position', () => {
