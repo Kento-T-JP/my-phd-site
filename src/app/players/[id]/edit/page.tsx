@@ -128,11 +128,12 @@ export default function EditPlayerPage() {
                   rp.rosterTitle.length > 0
               )
           );
-          const rp = p.rosterPlayers[0];
-          setTournamentName(rp.roster.tournament.name);
-          setRosterTitle(rp.roster.title);
+          setTournamentName("");
+          setRosterTitle("");
         } else {
           setCurrentAffiliations([]);
+          setTournamentName("");
+          setRosterTitle("");
         }
       }
       setLoading(false);

@@ -17,6 +17,21 @@ type PlayersPageProps = {
   getCsrfTokenFn?: typeof getCsrfToken;
 };
 
+const positionOrder = ["GK", "DF", "MF", "FW"] as const;
+
+function getPrimaryPosition(positions: string[]): string {
+  for (const key of positionOrder) {
+    if (positions.some((p) => p.includes(key))) return key;
+  }
+  return positions[0] ?? "";
+}
+
+function getPositionRank(positions: string[]): number {
+  const primary = getPrimaryPosition(positions);
+  const idx = positionOrder.indexOf(primary as (typeof positionOrder)[number]);
+  return idx === -1 ? positionOrder.length : idx;
+}
+
 export default function PlayersPage({
   getCsrfTokenFn = getCsrfToken,
 }: PlayersPageProps = {}) {
@@ -195,7 +210,16 @@ export default function PlayersPage({
       name: search,
       rosterId,
       position: selectedPosition,
-    }).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+    }).sort((a, b) => {
+      const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
+      if (rankDiff !== 0) return rankDiff;
+      const primaryDiff = getPrimaryPosition(a.position).localeCompare(
+        getPrimaryPosition(b.position),
+        "ja"
+      );
+      if (primaryDiff !== 0) return primaryDiff;
+      return a.name.localeCompare(b.name, "ja");
+    });
   }, [players, search, selectedRoster, selectedPosition]);
 
   const allSelected =
@@ -369,6 +393,7 @@ export default function PlayersPage({
               />
             </th>
             <th className="border-b px-2 py-1 text-left">背番号</th>
+            <th className="border-b px-2 py-1 text-left">ポジション</th>
             <th className="border-b px-2 py-1 text-left">名前</th>
             <th className="border-b px-2 py-1 text-center">★</th>
             <th className="border-b px-2 py-1" />
@@ -387,6 +412,7 @@ export default function PlayersPage({
                 />
               </td>
               <td className="px-2 py-1">{p.number ?? "-"}</td>
+              <td className="px-2 py-1">{p.position.join(", ")}</td>
               <td className="px-2 py-1 text-white">
                 <div className="flex items-center gap-2">
                   <span>{p.name}</span>
