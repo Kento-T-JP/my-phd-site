@@ -58,136 +58,143 @@ export default function ContactPage() {
   };
 
   const messageValue = watch('message', '');
+  const remaining = Math.max(0, 1000 - messageValue.length);
 
   return (
-    <main className="p-4 sm:p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-cyan-400">Contact</h1>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        <div className="flex flex-col">
-          <label htmlFor="name" className="mb-1 text-cyan-300">
-            Name
-          </label>
+    <main className="py-2">
+      <section className="mb-4 px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">お問い合わせ</h1>
+        <p className="text-sm text-cyan-100/75 mt-1">
+          不具合報告・改善要望・その他のご連絡を受け付けています。
+        </p>
+      </section>
+      <section className="glass-panel p-4 sm:p-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          <div className="flex flex-col">
+            <label htmlFor="name" className="mb-1 text-cyan-100 text-sm font-medium">
+              お名前
+            </label>
+            <input
+              id="name"
+              {...register('name')}
+              className="form-input"
+              placeholder="山田 太郎"
+            />
+            {errors.name && (
+              <span className="text-red-300 text-sm mt-1">{errors.name.message}</span>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="email" className="mb-1 text-cyan-100 text-sm font-medium">
+              メールアドレス
+            </label>
+            <input
+              id="email"
+              type="email"
+              {...register('email')}
+              className="form-input"
+              placeholder="name@example.com"
+            />
+            {errors.email && (
+              <span className="text-red-300 text-sm mt-1">{errors.email.message}</span>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="category" className="mb-1 text-cyan-100 text-sm font-medium">
+              種別
+            </label>
+            <select id="category" {...register('category')} className="form-input">
+              <option value="Bug">不具合報告</option>
+              <option value="Feature">機能要望</option>
+              <option value="General">その他</option>
+            </select>
+          </div>
+          <div className="md:col-span-2 flex flex-col">
+            <label htmlFor="message" className="mb-1 flex justify-between text-cyan-100 text-sm font-medium">
+              <span>内容</span>
+              <span className="text-xs text-cyan-100/70">
+                {messageValue.length}/1000（残り {remaining} 文字）
+              </span>
+            </label>
+            <textarea
+              id="message"
+              {...register('message')}
+              maxLength={1000}
+              rows={7}
+              className="form-input resize-y min-h-32"
+              placeholder="現象・再現手順・改善したい点などを記載してください。"
+            />
+            {errors.message && (
+              <span className="text-red-300 text-sm mt-1">{errors.message.message}</span>
+            )}
+          </div>
+          <div className="md:col-span-2">
+            <label
+              htmlFor="consent"
+              className="flex items-start gap-2 rounded-lg border border-cyan-300/25 bg-slate-900/35 px-3 py-2"
+            >
+              <input
+                id="consent"
+                type="checkbox"
+                {...register('consent')}
+                className="mt-1 h-4 w-4 accent-cyan-500"
+              />
+              <span className="text-sm text-cyan-100/90">
+                返信および運営改善のため、送信内容の保存に同意します。
+              </span>
+            </label>
+            {errors.consent && (
+              <span className="text-red-300 text-sm mt-1 block">{errors.consent.message}</span>
+            )}
+          </div>
           <input
-            id="name"
-            {...register('name')}
-            className="p-2 rounded bg-blue-900 text-cyan-100 border border-cyan-500"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            {...register('honeypot')}
+            className="hidden"
           />
-          {errors.name && (
-            <span className="text-red-400 text-sm mt-1">
-              {errors.name.message}
+          <div className="md:col-span-2 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              onClick={play}
+              className="primary-btn min-w-32 disabled:opacity-60"
+            >
+              {isSubmitting ? '送信中…' : '送信する'}
+            </button>
+            <span className="text-xs text-cyan-100/60">
+              送信後、受付IDを表示します。
             </span>
-          )}
-        </div>
-        <div className="flex flex-col">
-          <label htmlFor="email" className="mb-1 text-cyan-300">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            {...register('email')}
-            className="p-2 rounded bg-blue-900 text-cyan-100 border border-cyan-500"
-          />
-          {errors.email && (
-            <span className="text-red-400 text-sm mt-1">
-              {errors.email.message}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col">
-          <label htmlFor="category" className="mb-1 text-cyan-300">
-            Category
-          </label>
-          <select
-            id="category"
-            {...register('category')}
-            className="p-2 rounded bg-blue-900 text-cyan-100 border border-cyan-500"
-          >
-            <option value="Bug">Bug</option>
-            <option value="Feature">Feature</option>
-            <option value="General">General</option>
-          </select>
-        </div>
-        <div className="flex flex-col md:col-span-2">
-          <label
-            htmlFor="message"
-            className="mb-1 flex justify-between text-cyan-300"
-          >
-            <span>Message</span>
-            <span className="text-xs">{messageValue.length}/1000</span>
-          </label>
-          <textarea
-            id="message"
-            {...register('message')}
-            maxLength={1000}
-            rows={6}
-            className="p-2 rounded bg-blue-900 text-cyan-100 border border-cyan-500"
-          />
-          {errors.message && (
-            <span className="text-red-400 text-sm mt-1">
-              {errors.message.message}
-            </span>
-          )}
-        </div>
-        <div className="md:col-span-2 flex items-center space-x-2">
-          <input
-            id="consent"
-            type="checkbox"
-            {...register('consent')}
-            className="h-4 w-4 accent-cyan-600"
-          />
-          <label htmlFor="consent" className="text-cyan-300">
-            I consent to data storage
-          </label>
-          {errors.consent && (
-            <span className="text-red-400 text-sm">
-              {errors.consent.message}
-            </span>
-          )}
-        </div>
-        <input
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          {...register('honeypot')}
-          className="hidden"
-        />
-        <div className="md:col-span-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            onClick={play}
-            className="px-4 py-2 bg-cyan-600 text-blue-950 font-semibold rounded hover:bg-cyan-500 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Sending…' : 'Send'}
-          </button>
-        </div>
-      </form>
-      {result && (
-        <div className="mt-4">
-          {'id' in result ? (
-            <p className="text-green-400">
-              Message sent! ID: {result.id}
-            </p>
-          ) : (
-            <p className="text-red-400">
-              {result.error}{' '}
-              <button
-                onClick={() => {
-                  play();
-                  setResult(null);
-                }}
-                className="underline text-cyan-400"
-              >
-                Retry
-              </button>
-            </p>
-          )}
-        </div>
-      )}
+          </div>
+        </form>
+
+        {result && (
+          <div className="mt-4 rounded-lg border px-3 py-2 text-sm">
+            {'id' in result ? (
+              <p className="text-emerald-300">
+                送信が完了しました。受付ID: <span className="font-semibold">{result.id}</span>
+              </p>
+            ) : (
+              <p className="text-red-300">
+                {result.error}{' '}
+                <button
+                  onClick={() => {
+                    play();
+                    setResult(null);
+                  }}
+                  className="underline text-cyan-200 underline-offset-2"
+                >
+                  閉じる
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
