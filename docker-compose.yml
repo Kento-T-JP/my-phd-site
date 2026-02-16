@@ -5,7 +5,7 @@ services:
       - "3000:3000"
       - "5555:5555"
     env_file:
-      - .env
+      - .env.local
     # prisma は npx で、sh -lc でエラー時に即落ちるように
     command: ["./wait-for-it.sh", "db:5432", "--", "sh", "-lc", "npx prisma migrate deploy && npx prisma db seed && npm run dev"]
     environment:

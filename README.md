@@ -42,11 +42,14 @@ npm run dev
 
 ## Docker 開発
 
+`.env.local` を作成・更新してから起動します。
+
 ```bash
 docker compose up --build
 ```
 
-`app` 起動時に `prisma migrate deploy` と `prisma db seed` が実行されます。
+`app` は `docker-compose.yml` の `env_file` で `.env.local` を読み込みます。  
+起動時に `prisma migrate deploy` と `prisma db seed` が実行されます。
 
 ## 主要コマンド
 
@@ -93,10 +96,14 @@ npx prisma generate && npx prisma migrate deploy && next build
 
 ## セキュリティ
 
-- `.env` は Git 管理しない
-- APIキー/秘密情報を README に記載しない
-- 本番のシークレットは十分長いランダム値を使用
-- 認証・メール・Captcha 設定は本番ドメインで再確認
+- 認証: NextAuth（Credentials / Google OAuth）でセッション管理
+- パスワード: `bcrypt` でハッシュ化して保存（平文保存しない）
+- Bot対策: reCAPTCHA（ログイン / 登録 / 問い合わせ）
+- CSRF対策: 主要POST APIで `X-CSRF-Token` を検証
+- 入力検証: Zod スキーマでサーバー側バリデーション
+- ヘッダー対策: CSP / HSTS / X-Frame-Options / nosniff を middleware で付与
+- 問い合わせAPIに簡易レート制限（IP単位）
+- 運用面: `.env` / `.env.local` は Git 管理しない（秘密情報は Vercel の Environment Variables で管理）
 
 ## 今後の改善方針
 
@@ -122,4 +129,5 @@ npx prisma generate && npx prisma migrate deploy && next build
 
 ## ライセンス
 
-[MIT](LICENSE)
+- ソースコードは [MIT](LICENSE) ライセンスです。
+- ロゴ・画像・文章などコード以外のアセットは、特記がない限り `All rights reserved` です。
