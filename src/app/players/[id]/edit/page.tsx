@@ -455,21 +455,32 @@ export default function EditPlayerPage() {
             {rosterOptions.length > 0 && (
               <div className="mb-2 rounded border border-cyan-300/30 p-2">
                 <p className="text-xs text-cyan-100/90 mb-1">
-                  既存ロースター（チェックで追加/解除）
+                  既存ロースター（追加/解除）
                 </p>
                 <div className="space-y-1">
                   {rosterOptions.map((aff) => (
-                    <label
+                    <div
                       key={aff.rosterId}
-                      className="flex items-center gap-2 text-xs text-cyan-100"
+                      className="flex items-center justify-between gap-2 text-xs text-cyan-100"
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedRosterIds.has(aff.rosterId)}
-                        onChange={() => toggleRosterSelection(aff.rosterId)}
-                      />
-                      {aff.tournamentName} / {aff.rosterTitle}
-                    </label>
+                      <span>
+                        {aff.tournamentName} / {aff.rosterTitle}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          play();
+                          toggleRosterSelection(aff.rosterId);
+                        }}
+                        className={
+                          selectedRosterIds.has(aff.rosterId)
+                            ? "px-2 py-0.5 rounded bg-red-500 text-white"
+                            : "px-2 py-0.5 rounded bg-green-500 text-white"
+                        }
+                      >
+                        {selectedRosterIds.has(aff.rosterId) ? "解除" : "追加"}
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
