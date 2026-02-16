@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type Option = {
   value: string;
@@ -22,7 +22,18 @@ export default function MultiToggleGroup({
   emptyLabel = "候補がありません",
   className = "",
 }: Props) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const selectedSet = new Set(selectedValues);
+  const selectedLabel = useMemo(() => {
+    if (selectedValues.length === 0) return "すべて";
+    const labels = options
+      .filter((opt) => selectedSet.has(opt.value))
+      .map((opt) => opt.label);
+    if (labels.length === 0) return "すべて";
+    if (labels.length === 1) return labels[0];
+    return `${labels[0]} +${labels.length - 1}`;
+  }, [options, selectedSet, selectedValues.length]);
 
   const toggle = (value: string) => {
     const next = selectedSet.has(value)
@@ -31,45 +42,85 @@ export default function MultiToggleGroup({
     onChange(next);
   };
 
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      if (!rootRef.current) return;
+      if (event.target instanceof Node && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
   return (
-    <fieldset className={`rounded-xl border border-sky-200/30 bg-slate-900/35 p-2.5 ${className}`}>
-      <legend className="px-1 text-xs font-semibold tracking-wide text-cyan-100">
+    <div ref={rootRef} className={`relative ${className}`}>
+      <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
         {legend}
-      </legend>
-      <div className="mb-2 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          className="rounded-md border border-slate-500/70 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-700/45"
-          onClick={() => onChange([])}
-          disabled={selectedValues.length === 0}
-        >
-          Clear
-        </button>
-      </div>
-      <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto pr-1">
-        {options.length === 0 ? (
-          <span className="text-xs text-slate-300/80">{emptyLabel}</span>
-        ) : (
-          options.map((opt) => {
-            const selected = selectedSet.has(opt.value);
-            return (
+      </label>
+      <button
+        type="button"
+        className="form-input flex min-h-10 items-center justify-between gap-2 text-left"
+        aria-expanded={open}
+        aria-label={`${legend} filter`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="truncate text-sm">{selectedLabel}</span>
+        <span className="text-xs text-cyan-200/90">{selectedValues.length}件</span>
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1.5 w-full rounded-xl border border-sky-200/35 bg-slate-950/95 p-2 shadow-2xl backdrop-blur">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold tracking-wide text-cyan-100">
+              複数選択
+            </span>
+            <div className="flex items-center gap-1.5">
               <button
-                key={opt.value}
                 type="button"
-                className={`rounded-full border px-2.5 py-1 text-xs transition ${
-                  selected
-                    ? "border-cyan-200 bg-cyan-300 text-slate-950 shadow-[0_0_0_1px_rgba(160,230,255,0.35)]"
-                    : "border-slate-500/70 bg-slate-800/50 text-slate-100 hover:border-cyan-200/60 hover:bg-slate-700/70"
-                }`}
-                onClick={() => toggle(opt.value)}
-                aria-pressed={selected}
+                className="rounded-md border border-slate-500/70 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-700/45"
+                onClick={() => onChange(options.map((opt) => opt.value))}
+                disabled={options.length === 0 || selectedValues.length === options.length}
               >
-                {opt.label}
+                All
               </button>
-            );
-          })
-        )}
-      </div>
-    </fieldset>
+              <button
+                type="button"
+                className="rounded-md border border-slate-500/70 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-700/45"
+                onClick={() => onChange([])}
+                disabled={selectedValues.length === 0}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div className="max-h-56 space-y-1 overflow-auto pr-1">
+            {options.length === 0 ? (
+              <span className="text-xs text-slate-300/80">{emptyLabel}</span>
+            ) : (
+              options.map((opt) => {
+                const selected = selectedSet.has(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs transition ${
+                      selected
+                        ? "bg-cyan-400/15 text-cyan-100"
+                        : "text-slate-100 hover:bg-slate-800/75"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggle(opt.value)}
+                    />
+                    <span className="truncate">{opt.label}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
