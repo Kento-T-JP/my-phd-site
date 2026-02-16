@@ -797,6 +797,12 @@ export default function Formation({
   );
 
   useEffect(() => {
+    const hasActiveFilter =
+      Boolean(filter.name?.trim()) ||
+      filter.rosterId !== undefined ||
+      filter.tournamentId !== undefined ||
+      Boolean(filter.position?.trim());
+    if (!hasActiveFilter) return;
     handleReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
