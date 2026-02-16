@@ -83,14 +83,15 @@ docker compose up --build
 3. Build Command を設定
 
 ```bash
-npx prisma generate && next build
+npx prisma generate && npx prisma migrate deploy && next build
 ```
 
 4. デプロイ
 
 補足:
-- `prisma migrate deploy` は Build Command から分離し、CI/CDの単独ジョブで直列実行を推奨
-  - advisory lock 競合（`P1002`）回避のため
+- まれに `prisma migrate deploy` の advisory lock 競合（`P1002`）で失敗することがあります
+  - この場合は `redeploy` で解消するケースがあります
+- 将来的には `prisma migrate deploy` を Build Command から分離し、CI/CD の単独ジョブで直列実行する運用も検討対象です
 - `seed` は毎デプロイで自動実行しない運用を推奨（必要時のみ手動）
 - Prisma migrate は pooler ではなく direct URL を使う運用が安全です
 
