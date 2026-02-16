@@ -214,11 +214,18 @@ export default function PlayersPage() {
     const ids = Array.from(selectedIds);
     setDeleteProgress({ total: ids.length, done: 0 });
     try {
+      const token = csrf || (await getCsrfToken()) || "";
+      if (!token) {
+        throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
+      }
+      if (!csrf) {
+        setCsrf(token);
+      }
       const res = await fetch("/api/players", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
+          "X-CSRF-Token": token,
         },
         body: JSON.stringify({ ids }),
       });
@@ -240,7 +247,9 @@ export default function PlayersPage() {
       setSelectedIds(new Set());
     } catch (err) {
       console.error(err);
-      setError("Failed to delete selected players");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete selected players"
+      );
     } finally {
       setTimeout(() => setDeleteProgress(null), 250);
     }

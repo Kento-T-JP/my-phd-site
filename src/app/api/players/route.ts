@@ -271,7 +271,7 @@ export async function DELETE(req: Request) {
 
     await prisma.$transaction(async (tx) => {
       for (const player of players) {
-        if (!player.userId || (player.userId !== userId && !isAdmin)) {
+        if ((player.userId == null && !isAdmin) || (player.userId != null && player.userId !== userId && !isAdmin)) {
           skipped += 1;
           continue;
         }
