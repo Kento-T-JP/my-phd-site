@@ -10,6 +10,7 @@ import useClickSound from "@/lib/useClickSound";
 import { normalizeUploadImage } from "@/lib/imageUpload";
 import FaceImageUploader, { defaultFaceCrop } from "@/components/FaceImageUploader";
 import { rosterDisplayTitle } from "@/lib/format";
+import MultiToggleGroup from "@/components/MultiToggleGroup";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -34,7 +35,7 @@ export default function NewPlayerPage() {
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
   const [rosters, setRosters] = useState<Roster[]>([]);
-  const [selectedRosterId, setSelectedRosterId] = useState("");
+  const [selectedRosterIds, setSelectedRosterIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
   const [message, setMessage] = useState<string[]>([]);
@@ -103,9 +104,10 @@ export default function NewPlayerPage() {
       form.append("image", normalizedImage);
     }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
-    if (selectedRosterId.trim() !== "") {
-      form.append("rosterId", selectedRosterId);
-    } else if (rosterTitle.trim() !== "") {
+    if (selectedRosterIds.length > 0) {
+      selectedRosterIds.forEach((id) => form.append("rosterId", id));
+    }
+    if (rosterTitle.trim() !== "") {
       if (tournamentName.trim() !== "") {
         form.append("tournament", tournamentName);
       }
@@ -246,46 +248,35 @@ export default function NewPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
-            <label className="block mb-1">既存ロースター (任意)</label>
-            <select
-              data-testid="existing-roster"
-              className="w-full p-2 border rounded"
-              value={selectedRosterId}
-              onChange={(e) => setSelectedRosterId(e.target.value)}
-            >
-              <option value="">選択しない（大会名から作成/紐付け）</option>
-              {rosters.map((r) => (
-                <option key={r.id} value={String(r.id)}>
-                  {rosterDisplayTitle(r)}
-                </option>
-              ))}
-            </select>
-            {selectedRosterId.trim() === "" && (
+            <MultiToggleGroup
+              className="mb-2"
+              legend={`既存ロースター (任意) (${selectedRosterIds.length})`}
+              options={rosters.map((r) => ({
+                value: String(r.id),
+                label: rosterDisplayTitle(r),
+              }))}
+              selectedValues={selectedRosterIds}
+              onChange={setSelectedRosterIds}
+              emptyLabel="ロースターがありません"
+            />
+            <p className="mb-2 text-xs text-cyan-200">
+              既存ロースターは複数選択できます。下の大会/ロースター自由入力と併用も可能です。
+            </p>
+            <TournamentSelect
+              value={tournamentName}
+              onChange={setTournamentName}
+            />
+            {/* Optional roster name; leave blank to assign only tournament */}
+            {tournamentName.trim() !== "" && (
               <>
-                <div className="mt-2">
-                  <TournamentSelect
-                    value={tournamentName}
-                    onChange={setTournamentName}
-                  />
-                </div>
-                {/* Optional roster name; leave blank to assign only tournament */}
-                {tournamentName.trim() !== "" && (
-                  <>
-                    <label className="block mb-1 mt-2">Roster (optional)</label>
-                    <input
-                      data-testid="roster"
-                      className="w-full p-2 border rounded"
-                      value={rosterTitle}
-                      onChange={(e) => setRosterTitle(e.target.value)}
-                    />
-                  </>
-                )}
+                <label className="block mb-1 mt-2">Roster (optional)</label>
+                <input
+                  data-testid="roster"
+                  className="w-full p-2 border rounded"
+                  value={rosterTitle}
+                  onChange={(e) => setRosterTitle(e.target.value)}
+                />
               </>
-            )}
-            {selectedRosterId.trim() !== "" && (
-              <p className="mt-2 text-sm text-cyan-200">
-                既存ロースターに紐付けて登録します。
-              </p>
             )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>

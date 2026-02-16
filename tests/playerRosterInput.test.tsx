@@ -52,7 +52,7 @@ describe('player roster input', () => {
     expect(rosterInput).toHaveValue('');
   });
 
-  it('submits rosterId when existing roster is selected', async () => {
+  it('submits multiple rosterIds and keeps free roster input available', async () => {
     vi.spyOn(nextAuthReact, 'getCsrfToken').mockResolvedValue('test-csrf');
     const session = { user: { id: 1 }, expires: '' } as any;
     const fetchMock = vi.fn((input: RequestInfo | URL, options?: RequestInit) => {
@@ -65,7 +65,15 @@ describe('player roster input', () => {
               id: 10,
               title: 'Main',
               tournament: { name: 'Cup' },
+              tournamentId: 1,
               date: '2025-01-01T00:00:00.000Z',
+            },
+            {
+              id: 11,
+              title: 'Sub',
+              tournament: { name: 'Cup' },
+              tournamentId: 1,
+              date: '2025-01-02T00:00:00.000Z',
             },
           ],
         });
@@ -83,9 +91,18 @@ describe('player roster input', () => {
       </SessionProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('existing-roster')).toBeTruthy());
-    fireEvent.change(screen.getByTestId('existing-roster'), {
-      target: { value: '10' },
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /既存ロースター/i })).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /既存ロースター/i }));
+    fireEvent.click(screen.getByLabelText('Main'));
+    fireEvent.click(screen.getByLabelText('Sub'));
+
+    fireEvent.change(screen.getByTestId('tournament'), {
+      target: { value: 'Cup' },
+    });
+    fireEvent.change(screen.getByTestId('roster'), {
+      target: { value: 'FreeInputRoster' },
     });
     fireEvent.change(screen.getAllByRole('textbox')[0], {
       target: { value: 'Test Player' },
@@ -104,8 +121,8 @@ describe('player roster input', () => {
       const body = postCall?.[1] && (postCall[1] as RequestInit).body;
       expect(body).toBeInstanceOf(FormData);
       const form = body as FormData;
-      expect(form.get('rosterId')).toBe('10');
-      expect(form.get('roster')).toBeNull();
+      expect(form.getAll('rosterId')).toEqual(['10', '11']);
+      expect(form.get('roster')).toBe('FreeInputRoster');
     });
   });
 });

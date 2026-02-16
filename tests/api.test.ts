@@ -241,6 +241,42 @@ describe('player API routes', () => {
     expect(data.roster.id).toBe(7);
   });
 
+  it('POST links player to multiple selected rosters and free-input roster', async () => {
+    const { POST } = await import('../src/app/api/players/route');
+    createSpy.mockResolvedValue({ id: 1, name: 'C', position: ['GK'], role: 'player' });
+    upsertTournamentSpy.mockResolvedValue({ id: 2, name: 'Cup' });
+    upsertRosterSpy.mockResolvedValue({ id: 9, title: 'FreeInput', tournamentId: 2 });
+    prisma.roster.findUnique.mockResolvedValue({ id: 9, title: 'FreeInput', tournament: { id: 2, name: 'Cup' } });
+    const form = new FormData();
+    form.append('name', 'C');
+    form.append('position', 'GK');
+    form.append('rosterId', '10');
+    form.append('rosterId', '11');
+    form.append('tournament', 'Cup');
+    form.append('roster', 'FreeInput');
+    const req = new Request('http://test', { method: 'POST', body: form });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(addSpy).toHaveBeenCalledTimes(3);
+    expect(addSpy).toHaveBeenCalledWith(
+      10,
+      [{ playerId: 1, number: undefined, position: ['GK'] }],
+      expect.anything(),
+    );
+    expect(addSpy).toHaveBeenCalledWith(
+      11,
+      [{ playerId: 1, number: undefined, position: ['GK'] }],
+      expect.anything(),
+    );
+    expect(addSpy).toHaveBeenCalledWith(
+      9,
+      [{ playerId: 1, number: undefined, position: ['GK'] }],
+      expect.anything(),
+    );
+    const data = await res.json();
+    expect(data.roster.id).toBe(9);
+  });
+
   it('PUT uses tournament when roster not selected', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
     prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
