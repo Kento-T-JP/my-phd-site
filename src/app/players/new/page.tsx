@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
 import { formations } from "@/data/formations";
-import type { PositionKey } from "@/types/player";
+import type { PositionKey, Roster } from "@/types/player";
 import { useRouter } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 import useClickSound from "@/lib/useClickSound";
 import { normalizeUploadImage } from "@/lib/imageUpload";
 import FaceImageUploader, { defaultFaceCrop } from "@/components/FaceImageUploader";
+import { rosterDisplayTitle } from "@/lib/format";
 
 const positionOptions: PositionKey[] = Array.from(
   new Set([
@@ -32,6 +33,8 @@ export default function NewPlayerPage() {
   const [wikiUrl, setWikiUrl] = useState("");
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
+  const [rosters, setRosters] = useState<Roster[]>([]);
+  const [selectedRosterId, setSelectedRosterId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
   const [message, setMessage] = useState<string[]>([]);
@@ -61,6 +64,19 @@ export default function NewPlayerPage() {
     return null;
   }
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    async function fetchRosters() {
+      try {
+        const res = await fetch("/api/rosters");
+        if (!res.ok) throw new Error("Failed to fetch rosters");
+        setRosters((await res.json()) as Roster[]);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchRosters();
+  }, [session?.user?.id]);
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -87,7 +103,9 @@ export default function NewPlayerPage() {
       form.append("image", normalizedImage);
     }
     if (wikiUrl.trim() !== "") form.append("wikiUrl", wikiUrl);
-    if (rosterTitle.trim() !== "") {
+    if (selectedRosterId.trim() !== "") {
+      form.append("rosterId", selectedRosterId);
+    } else if (rosterTitle.trim() !== "") {
       if (tournamentName.trim() !== "") {
         form.append("tournament", tournamentName);
       }
@@ -228,21 +246,46 @@ export default function NewPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
-            <TournamentSelect
-              value={tournamentName}
-              onChange={setTournamentName}
-            />
-            {/* Optional roster name; leave blank to assign only tournament */}
-            {tournamentName.trim() !== "" && (
+            <label className="block mb-1">既存ロースター (任意)</label>
+            <select
+              data-testid="existing-roster"
+              className="w-full p-2 border rounded"
+              value={selectedRosterId}
+              onChange={(e) => setSelectedRosterId(e.target.value)}
+            >
+              <option value="">選択しない（大会名から作成/紐付け）</option>
+              {rosters.map((r) => (
+                <option key={r.id} value={String(r.id)}>
+                  {rosterDisplayTitle(r)}
+                </option>
+              ))}
+            </select>
+            {selectedRosterId.trim() === "" && (
               <>
-                <label className="block mb-1 mt-2">Roster (optional)</label>
-                <input
-                  data-testid="roster"
-                  className="w-full p-2 border rounded"
-                  value={rosterTitle}
-                  onChange={(e) => setRosterTitle(e.target.value)}
-                />
+                <div className="mt-2">
+                  <TournamentSelect
+                    value={tournamentName}
+                    onChange={setTournamentName}
+                  />
+                </div>
+                {/* Optional roster name; leave blank to assign only tournament */}
+                {tournamentName.trim() !== "" && (
+                  <>
+                    <label className="block mb-1 mt-2">Roster (optional)</label>
+                    <input
+                      data-testid="roster"
+                      className="w-full p-2 border rounded"
+                      value={rosterTitle}
+                      onChange={(e) => setRosterTitle(e.target.value)}
+                    />
+                  </>
+                )}
               </>
+            )}
+            {selectedRosterId.trim() !== "" && (
+              <p className="mt-2 text-sm text-cyan-200">
+                既存ロースターに紐付けて登録します。
+              </p>
             )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
