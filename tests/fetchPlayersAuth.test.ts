@@ -23,7 +23,7 @@ describe('fetchPlayers auth', () => {
     const fetchStub = vi.fn(async (_url: string, options?: any) => {
       expect(options?.headers?.cookie).toBe(cookieString);
       const { GET } = await import('../src/app/api/players/route');
-      return GET();
+      return GET(new Request('http://test/api/players'));
     });
     vi.stubGlobal('fetch', fetchStub as any);
 
@@ -34,7 +34,10 @@ describe('fetchPlayers auth', () => {
       { id: 1, name: 'User', position: [], role: 'player' },
     ]);
     expect(sessionSpy).toHaveBeenCalled();
-    expect(playersSpy).toHaveBeenCalledWith(undefined, 1);
+    expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
+      includeImage: true,
+      includeExtra: true,
+    });
 
     vi.unstubAllGlobals();
   });

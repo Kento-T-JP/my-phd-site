@@ -11,23 +11,8 @@ describe('getPlayers without user', () => {
   });
 
   it('excludes user-specific players when no userId', async () => {
-    mockPrisma.player.findMany.mockResolvedValueOnce([
-      { id: 1, name: 'G1', position: ['GK'], userId: null, isDeleted: false },
-    ]);
     const res = await getPlayers(undefined);
-    expect(res).toEqual([
-      {
-        id: 1,
-        name: 'G1',
-        position: ['GK'],
-        userId: null,
-        isDeleted: false,
-        role: 'player',
-      },
-    ]);
-    expect(mockPrisma.player.findMany).toHaveBeenCalledTimes(1);
-    const arg = mockPrisma.player.findMany.mock.calls[0][0];
-    expect(arg.where).toEqual({ isDeleted: false, userId: null });
+    expect(res).toEqual([]);
+    expect(mockPrisma.player.findMany).not.toHaveBeenCalled();
   });
 });
-

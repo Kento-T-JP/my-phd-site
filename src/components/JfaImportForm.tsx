@@ -59,7 +59,22 @@ export default function JfaImportForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="rounded-md border border-cyan-300/35 bg-cyan-900/20 p-3">
           <p className="text-sm font-semibold text-cyan-100">
-            召集メンバーのページを開き、取り込みたいページURLを入力してください。
+            取り込みたい召集メンバーのページURLを入力してください。
+          </p>
+          <p className="mt-2 text-xs text-cyan-100/80">
+            URLがわからない場合は、まず以下を試してください。
+          </p>
+          <a
+            href="https://www.jfa.jp/samuraiblue/20251014/member.html"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-sm font-medium text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
+          >
+            2025/10/14 日本代表 vs ブラジル代表 のメンバーURL
+          </a>
+          <p className="mt-2 text-xs text-cyan-100/80">
+            他の試合を探す場合は、以下の一覧ページから対象試合を開き、
+            `member.html` のURLを貼り付けてください。
           </p>
           <a
             href="https://www.jfa.jp/samuraiblue_2025/member/"
@@ -70,7 +85,7 @@ export default function JfaImportForm() {
             https://www.jfa.jp/samuraiblue_2025/member/
           </a>
           <p className="mt-1 text-xs text-cyan-100/75">
-            上記サイトで対象の召集メンバーを選択した後、そのページURLをそのまま貼り付けてください。
+            例: `https://www.jfa.jp/samuraiblue/20251014/member.html`
           </p>
         </div>
         <input

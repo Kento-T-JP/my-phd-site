@@ -117,9 +117,12 @@ describe('player API routes', () => {
   it('GET players uses session user id', async () => {
     const { GET } = await import('../src/app/api/players/route');
     playersSpy.mockResolvedValue([{ id: 1, name: 'P', position: [], role: 'player' }]);
-    const res = await GET();
+    const res = await GET(new Request('http://test/api/players'));
     expect(res.status).toBe(200);
-    expect(playersSpy).toHaveBeenCalledWith(undefined, 1);
+    expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
+      includeImage: true,
+      includeExtra: true,
+    });
   });
 
   it('GET returns a player', async () => {
@@ -176,9 +179,9 @@ describe('player API routes', () => {
     expect(upsertRosterSpy).toHaveBeenCalledWith(
       2,
       'R',
+      1,
       expect.anything(),
       undefined,
-      1,
     );
     expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
@@ -206,9 +209,9 @@ describe('player API routes', () => {
     expect(upsertRosterSpy).toHaveBeenCalledWith(
       3,
       'R2',
+      1,
       expect.anything(),
       undefined,
-      1,
     );
     expect(addSpy).toHaveBeenCalled();
     const data = await res.json();
@@ -228,7 +231,7 @@ describe('player API routes', () => {
     const res = await POST(req);
     expect(res.status).toBe(201);
     expect(createSpy.mock.calls[0][0].userId).toBe(1);
-    expect(ensureSpy).toHaveBeenCalledWith('Cup', expect.anything(), undefined, 1);
+    expect(ensureSpy).toHaveBeenCalledWith('Cup', 1, expect.anything(), undefined);
     expect(addSpy).toHaveBeenCalled();
     expect(upsertTournamentSpy).not.toHaveBeenCalled();
     expect(upsertRosterSpy).not.toHaveBeenCalled();
@@ -251,7 +254,7 @@ describe('player API routes', () => {
     const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);
     expect(updateSpy).toHaveBeenCalled();
-    expect(ensureSpy).toHaveBeenCalledWith('Cup2', expect.anything(), undefined, 1);
+    expect(ensureSpy).toHaveBeenCalledWith('Cup2', 1, expect.anything(), undefined);
     expect(addSpy).toHaveBeenCalled();
     expect(upsertTournamentSpy).not.toHaveBeenCalled();
     expect(upsertRosterSpy).not.toHaveBeenCalled();
@@ -263,14 +266,13 @@ describe('player API routes', () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
     sessionSpy.mockResolvedValue({ user: { id: 5, isAdmin: false } });
     prisma.player.findUnique.mockResolvedValue({ id: 2, userId: null, name: 'G', position: ['GK'] });
-    createSpy.mockResolvedValue({ id: 10, name: 'G', position: ['GK'], userId: 5, basePlayerId: 2, role: 'player' });
     const form = new FormData();
     form.append('name', 'G');
     form.append('position', 'GK');
     const req = new Request('http://test', { method: 'PUT', body: form });
     const res = await PUT(req, { params: Promise.resolve({ id: '2' }) });
-    expect(res.status).toBe(200);
-    expect(createSpy.mock.calls[0][0]).toMatchObject({ userId: 5, basePlayerId: 2 });
+    expect(res.status).toBe(403);
+    expect(createSpy).not.toHaveBeenCalled();
     expect(updateSpy).not.toHaveBeenCalled();
   });
 });
@@ -398,7 +400,7 @@ describe('lookup API routes', () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(upsertTournamentSpy).toHaveBeenCalledWith('New');
+    expect(upsertTournamentSpy).toHaveBeenCalledWith('New', 1);
     const data = await res.json();
     expect(data.name).toBe('New');
   });
@@ -422,15 +424,18 @@ describe('jfa import route', () => {
   beforeEach(async () => {
     const mod = await import('@/lib/db');
     prisma = mod.default as any;
-    upsertSpy = mod.upsertPlayer as any;
     linkSlugSpy = mod.upsertTournamentRosterPlayersBySlug as any;
     const jfa = await import('@/lib/jfa');
     validateSpy = jfa.validateJfaUrl as any;
     scrapeSpy = jfa.scrapeJfaPlayers as any;
-    upsertSpy.mockReset();
     linkSlugSpy.mockReset();
     validateSpy.mockReset();
     scrapeSpy.mockReset();
+    prisma.player.findMany = vi.fn();
+    prisma.player.createMany = vi.fn();
+    prisma.player.update = vi.fn();
+    prisma.player.updateMany = vi.fn();
+    prisma.rosterPlayer = { count: vi.fn() };
     const auth = await import('next-auth/next');
     sessionSpy = auth.getServerSession as any;
     sessionSpy.mockReset();
@@ -450,7 +455,14 @@ describe('jfa import route', () => {
       rosterTitle: 'Cup - 2024/07/20',
       rosterDate: date,
     });
-    upsertSpy.mockResolvedValue({ id: 10 });
+    prisma.player.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 10, name: 'John', number: 1, position: ['GK'] },
+      ]);
+    prisma.player.createMany.mockResolvedValue({ count: 1 });
+    prisma.player.updateMany.mockResolvedValue({ count: 1 });
+    prisma.rosterPlayer.count.mockResolvedValue(1);
     linkSlugSpy.mockResolvedValue({ id: 5, title: 'Cup - 2024/07/20', date });
 
     const res = await POST(
@@ -466,9 +478,9 @@ describe('jfa import route', () => {
       'Cup',
       'Cup - 2024/07/20',
       [{ playerId: 10, number: 1, position: ['GK'] }],
+      1,
       date,
       expect.anything(),
-      1,
     );
   });
 });

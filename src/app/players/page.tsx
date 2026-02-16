@@ -13,7 +13,13 @@ import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
 
-export default function PlayersPage() {
+type PlayersPageProps = {
+  getCsrfTokenFn?: typeof getCsrfToken;
+};
+
+export default function PlayersPage({
+  getCsrfTokenFn = getCsrfToken,
+}: PlayersPageProps = {}) {
   const { data: session, status } = useSession();
   const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
   const router = useRouter();
@@ -51,6 +57,16 @@ export default function PlayersPage() {
   const playDeleteSound = () => {
     const audio = deleteAudioRef.current;
     if (!audio) return;
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+    try {
+      if (localStorage.getItem("mute") === "true") return;
+    } catch {
+      return;
+    }
     try {
       audio.currentTime = 0;
       const result = audio.play();
@@ -140,8 +156,8 @@ export default function PlayersPage() {
   }, [session]);
 
   useEffect(() => {
-    getCsrfToken().then((token) => setCsrf(token ?? ""));
-  }, []);
+    getCsrfTokenFn().then((token) => setCsrf(token ?? ""));
+  }, [getCsrfTokenFn]);
 
   useEffect(() => {
     if (!session) return;
@@ -214,7 +230,7 @@ export default function PlayersPage() {
     const ids = Array.from(selectedIds);
     setDeleteProgress({ total: ids.length, done: 0 });
     try {
-      const token = csrf || (await getCsrfToken()) || "";
+      const token = csrf || (await getCsrfTokenFn()) || "";
       if (!token) {
         throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
       }

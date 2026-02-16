@@ -94,6 +94,14 @@ npx prisma generate && npx prisma migrate deploy && next build
 - `ADMIN_PASSWORD`
 - `JFA_MEMBER_URL`（seed / JFA import を使う場合）
 
+## JFAインポートURLの使い方
+
+- URLがわからない場合は、まず以下をそのまま試してください。  
+  `https://www.jfa.jp/samuraiblue/20251014/member.html`  
+  （2025年10月14日 日本代表 vs ブラジル代表）
+- 他の試合のメンバーを探す場合は、以下の一覧ページから対象試合を開いて `member.html` のURLを取得します。  
+  `https://www.jfa.jp/samuraiblue_2025/member/`
+
 ## セキュリティ
 
 - 認証: NextAuth（Credentials / Google OAuth）でセッション管理

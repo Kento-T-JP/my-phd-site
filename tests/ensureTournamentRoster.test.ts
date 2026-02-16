@@ -68,8 +68,8 @@ describe('ensureTournamentRoster', () => {
     const d1 = new Date('2024-01-01');
     const d2 = new Date('2024-02-01');
 
-    const r1 = await ensureTournamentRoster('Cup', client as any, d1);
-    const r2 = await ensureTournamentRoster('Cup', client as any, d2);
+    const r1 = await ensureTournamentRoster('Cup', 1, client as any, d1);
+    const r2 = await ensureTournamentRoster('Cup', 1, client as any, d2);
 
     expect(r1.id).not.toBe(r2.id);
     expect(r1.date).toEqual(d1);

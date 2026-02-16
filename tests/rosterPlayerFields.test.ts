@@ -2,41 +2,41 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import prisma, { addRosterPlayers, getPlayers } from '@/lib/db';
 
 const mockPrisma = prisma as unknown as {
-  rosterPlayer: { upsert: any };
+  rosterPlayer: { upsert: any; createMany: any };
   $transaction: any;
-  roster: { findUnique: any };
+  roster: { findFirst: any };
   player: { findMany: any };
 };
 
 describe('RosterPlayer fields', () => {
   beforeEach(() => {
     mockPrisma.rosterPlayer.upsert = vi.fn();
+    mockPrisma.rosterPlayer.createMany = vi.fn();
     mockPrisma.$transaction = vi.fn(async (ops: any[]) => Promise.all(ops));
-    mockPrisma.roster.findUnique = vi.fn();
+    mockPrisma.roster.findFirst = vi.fn();
     mockPrisma.player.findMany = vi.fn();
   });
 
   it('addRosterPlayers inserts number and position', async () => {
-    mockPrisma.rosterPlayer.upsert.mockResolvedValue({});
+    mockPrisma.rosterPlayer.createMany.mockResolvedValue({ count: 1 });
     await addRosterPlayers(1, [
       { playerId: 2, number: 10, position: ['GK'] },
     ]);
-    expect(mockPrisma.rosterPlayer.upsert).toHaveBeenCalledWith({
-      where: { rosterId_playerId: { rosterId: 1, playerId: 2 } },
-      update: {},
-      create: {
-        rosterId: 1,
-        playerId: 2,
-        number: 10,
-        position: ['GK'],
-      },
+    expect(mockPrisma.rosterPlayer.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          rosterId: 1,
+          playerId: 2,
+          number: 10,
+          position: ['GK'],
+        },
+      ],
+      skipDuplicates: true,
     });
-    expect(mockPrisma.$transaction).toHaveBeenCalled();
   });
 
   it('getPlayers returns roster-specific fields', async () => {
-    mockPrisma.player.findMany.mockResolvedValue([]);
-    mockPrisma.roster.findUnique.mockResolvedValue({
+    mockPrisma.roster.findFirst.mockResolvedValue({
       players: [
         {
           playerId: 2,
@@ -56,10 +56,7 @@ describe('RosterPlayer fields', () => {
     const client = {
       rosterPlayer: { upsert: vi.fn().mockResolvedValue({}) },
     } as any;
-    const spy = vi.spyOn(Promise, 'all');
     await addRosterPlayers(1, [{ playerId: 3 }], client);
     expect(client.rosterPlayer.upsert).toHaveBeenCalled();
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
   });
 });

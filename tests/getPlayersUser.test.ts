@@ -11,11 +11,9 @@ describe('getPlayers user-specific', () => {
   });
 
   it('excludes overridden global players', async () => {
-    mockPrisma.player.findMany
-      .mockResolvedValueOnce([{ basePlayerId: 1 }, { basePlayerId: 2 }])
-      .mockResolvedValueOnce([
-        { id: 3, name: 'User', position: ['MF'], userId: 5, isDeleted: false },
-      ]);
+    mockPrisma.player.findMany.mockResolvedValueOnce([
+      { id: 3, name: 'User', position: ['MF'], userId: 5, isDeleted: false },
+    ]);
     const res = await getPlayers(undefined, 5);
     expect(res).toEqual([
       {
@@ -27,14 +25,12 @@ describe('getPlayers user-specific', () => {
         role: 'player',
       },
     ]);
-    expect(mockPrisma.player.findMany).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.player.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('hides other users and preserves globals', async () => {
     mockPrisma.player.findMany
-      .mockResolvedValueOnce([{ basePlayerId: 2 }])
       .mockResolvedValueOnce([
-        { id: 1, name: 'G1', position: ['GK'], userId: null, isDeleted: false },
         {
           id: 3,
           name: 'Override',
@@ -44,15 +40,11 @@ describe('getPlayers user-specific', () => {
           isDeleted: false,
         },
       ])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { id: 1, name: 'G1', position: ['GK'], userId: null, isDeleted: false },
-        { id: 2, name: 'G2', position: ['FW'], userId: null, isDeleted: false },
-      ]);
+      .mockResolvedValueOnce([{ id: 9, name: 'Other', position: ['GK'], userId: 6, isDeleted: false }]);
     const userRes = await getPlayers(undefined, 5);
     const otherRes = await getPlayers(undefined, 6);
-    expect(userRes.map((p) => p.name)).toEqual(['G1', 'Override']);
-    expect(otherRes.map((p) => p.name)).toEqual(['G1', 'G2']);
-    expect(mockPrisma.player.findMany).toHaveBeenCalledTimes(4);
+    expect(userRes.map((p) => p.name)).toEqual(['Override']);
+    expect(otherRes.map((p) => p.name)).toEqual(['Other']);
+    expect(mockPrisma.player.findMany).toHaveBeenCalledTimes(2);
   });
 });

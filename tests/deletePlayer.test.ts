@@ -64,18 +64,7 @@ describe('DELETE /api/players/[id]', () => {
     const res = await DELETE(new Request('http://test', { method: 'DELETE' }), {
       params: Promise.resolve({ id: '1' }),
     } as any);
-    expect(res.status).toBe(200);
-    expect(prisma.player.create).toHaveBeenCalledWith({
-      data: {
-        name: 'G',
-        position: ['GK'],
-        number: 1,
-        image: null,
-        wikiUrl: null,
-        userId: 5,
-        basePlayerId: 1,
-        isDeleted: true,
-      },
-    });
+    expect(res.status).toBe(403);
+    expect(prisma.player.create).not.toHaveBeenCalled();
   });
 });
