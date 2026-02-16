@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 export default function Footer() {
+  const year = new Date().getFullYear();
   return (
     <footer className="app-shell text-xs text-left text-cyan-100/70 mt-16 pb-6">
       <div className="glass-panel p-4 sm:p-5 space-y-2">
@@ -17,6 +18,9 @@ export default function Footer() {
             お問い合わせフォーム
           </Link>
           よりご連絡ください。
+        </p>
+        <p className="pt-2 text-cyan-100/60">
+          © {year} Start XI. All rights reserved.
         </p>
       </div>
     </footer>
