@@ -57,20 +57,15 @@ describe('Roster filter UI', () => {
     });
   });
 
-  it('keeps roster and position selects available after selecting a roster', async () => {
+  it('keeps roster and position filters available after selecting a roster', async () => {
     global.fetch = mockFetch();
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
-    // two multi-selects: roster and position
-    expect(screen.getAllByRole('listbox').length).toBe(2);
-    const mainSelect = screen.getAllByRole('listbox')[0] as HTMLSelectElement;
-    const option = Array.from(mainSelect.options).find((opt) => opt.value === '1');
-    if (option) option.selected = true;
-    fireEvent.change(mainSelect);
-    await waitFor(() => expect(screen.getAllByRole('listbox').length).toBe(2));
-    expect(
-      screen.getAllByText('Cup - 2024/01/01-2024/01/10').length
-    ).toBeGreaterThan(0);
+    expect(screen.getByText('Roster (0)')).toBeTruthy();
+    expect(screen.getByText('Position (0)')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cup - 2024/01/01-2024/01/10' }));
+    await waitFor(() => expect(screen.getByText('Roster (1)')).toBeTruthy());
+    expect(screen.getByText('Position (0)')).toBeTruthy();
   });
 
   it('includes custom player positions in position select', async () => {
@@ -90,9 +85,6 @@ describe('Roster filter UI', () => {
     });
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
-    const posSelect = screen.getAllByRole('listbox')[1] as HTMLSelectElement;
-    expect(
-      Array.from(posSelect.options).some((opt) => opt.value === 'Sweeper')
-    ).toBe(true);
+    expect(screen.getByRole('button', { name: 'Sweeper' })).toBeTruthy();
   });
 });
