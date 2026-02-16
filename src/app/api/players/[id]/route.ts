@@ -3,7 +3,6 @@ import prisma, {
   updatePlayer,
   ensureTournamentRoster,
   addRosterPlayers,
-  syncRosterPlayers,
   upsertTournament,
   upsertRoster,
 } from '@/lib/db';
@@ -61,7 +60,6 @@ export async function GET(
     include: {
       rosterPlayers: {
         orderBy: { rosterId: 'desc' },
-        take: 1,
         include: { roster: { include: { tournament: true } } },
       },
     },
@@ -141,14 +139,6 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
     let player;
     let rosterInfo: RosterInfo | undefined;
     await prisma.$transaction(async (tx) => {
-      let prev;
-      if (!overrideUserId) {
-        prev = await tx.rosterPlayer.findFirst({
-          where: { playerId: id },
-          orderBy: { rosterId: 'desc' },
-        });
-      }
-
       player = await updatePlayer(
         id,
         {
@@ -177,9 +167,6 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           ],
           tx,
         );
-        if (prev && prev.rosterId !== rosterId) {
-          await syncRosterPlayers(player.id, prev.rosterId, tx);
-        }
         rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
         if (!ownerId) {
@@ -204,9 +191,6 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           ],
           tx,
         );
-        if (prev && prev.rosterId !== roster.id) {
-          await syncRosterPlayers(player.id, prev.rosterId, tx);
-        }
         rosterInfo = roster;
       } else if (tournamentName) {
         if (!ownerId) {
@@ -229,11 +213,6 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           ],
           tx,
         );
-        if (prev && prev.rosterId !== rosterInfo.id) {
-          await syncRosterPlayers(player.id, prev.rosterId, tx);
-        }
-      } else if (prev) {
-        await syncRosterPlayers(player.id, prev.rosterId, tx);
       }
     });
 

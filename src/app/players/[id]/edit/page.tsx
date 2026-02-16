@@ -47,6 +47,7 @@ export default function EditPlayerPage() {
   const [loading, setLoading] = useState(true);
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
+  const [currentAffiliations, setCurrentAffiliations] = useState<string[]>([]);
   const [errors, setErrors] = useState<{
     name?: string;
     position?: string;
@@ -100,9 +101,20 @@ export default function EditPlayerPage() {
         setWikiUrl(p.wikiUrl ?? "");
         setExtra(p.extra ?? {});
         if (p.rosterPlayers?.length) {
+          setCurrentAffiliations(
+            p.rosterPlayers
+              .map((rp: { roster?: { tournament?: { name?: string }; title?: string } }) => {
+                const tournament = rp.roster?.tournament?.name ?? "";
+                const roster = rp.roster?.title ?? "";
+                return [tournament, roster].filter(Boolean).join(" / ");
+              })
+              .filter(Boolean)
+          );
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
           setRosterTitle(rp.roster.title);
+        } else {
+          setCurrentAffiliations([]);
         }
       }
       setLoading(false);
@@ -370,6 +382,11 @@ export default function EditPlayerPage() {
         <fieldset>
           <legend className="font-semibold mb-1">Tournament assignment</legend>
           <div className="mb-2">
+            {currentAffiliations.length > 0 && (
+              <p className="text-xs text-cyan-100 mb-2">
+                現在の所属: {currentAffiliations.join(" / ")}
+              </p>
+            )}
             <TournamentSelect
               value={tournamentName}
               onChange={setTournamentName}
