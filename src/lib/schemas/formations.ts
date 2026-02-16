@@ -7,6 +7,7 @@ const PositionsSchema = z.object({
   lineupOrder: z.array(z.number()).optional(),
   benchOrder: z.array(z.number()).optional(),
   playerPositions: z.record(z.string(), PlayerPosSchema).optional(),
+  baseFormationName: z.string().optional(),
 });
 
 export const FormationCreateSchema = z.object({
