@@ -105,6 +105,7 @@ describe('admin user API', () => {
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
       tournament: {
+        findMany: vi.fn().mockResolvedValue([]),
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
       pendingRegistration: {

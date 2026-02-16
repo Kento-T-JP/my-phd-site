@@ -65,6 +65,12 @@ export async function DELETE(
   }
 
   await prisma.$transaction(async (tx) => {
+    const ownedTournaments = await tx.tournament.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+    const ownedTournamentIds = ownedTournaments.map((t) => t.id);
+
     const ownedPlayers = await tx.player.findMany({
       where: { userId: id },
       select: { id: true },
@@ -72,7 +78,14 @@ export async function DELETE(
     const ownedPlayerIds = ownedPlayers.map((p) => p.id);
 
     const ownedRosters = await tx.roster.findMany({
-      where: { userId: id },
+      where: {
+        OR: [
+          { userId: id },
+          ...(ownedTournamentIds.length > 0
+            ? [{ tournamentId: { in: ownedTournamentIds } }]
+            : []),
+        ],
+      },
       select: { id: true },
     });
     const ownedRosterIds = ownedRosters.map((r) => r.id);
@@ -112,10 +125,12 @@ export async function DELETE(
       });
     }
 
-    await tx.roster.deleteMany({ where: { userId: id } });
-    await tx.tournament.deleteMany({
-      where: { rosters: { some: { userId: id } } },
-    });
+    if (ownedRosterIds.length > 0) {
+      await tx.roster.deleteMany({ where: { id: { in: ownedRosterIds } } });
+    }
+    if (ownedTournamentIds.length > 0) {
+      await tx.tournament.deleteMany({ where: { id: { in: ownedTournamentIds } } });
+    }
     await tx.player.deleteMany({ where: { userId: id } });
 
     await tx.pendingRegistration.deleteMany({ where: { email: user.email } });
