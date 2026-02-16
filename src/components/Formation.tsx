@@ -29,6 +29,7 @@ export interface InitialFormation {
     lineupOrder: number[];
     benchOrder: number[];
     playerPositions: Record<number, { top: number; left: number }>;
+    baseFormationName?: string;
   };
 }
 
@@ -60,6 +61,14 @@ export interface PlayerFilterOptions {
   rosterId?: number;
   tournamentId?: number;
   position?: string;
+}
+
+export function resolveFormationTemplate(
+  initial: Pick<InitialFormation, "name" | "positions"> | undefined,
+  fallback: Formation
+): Formation {
+  const templateName = initial?.positions?.baseFormationName ?? initial?.name;
+  return formations.find((f) => f.name === templateName) ?? fallback;
 }
 
 export function filterPlayers<
@@ -196,9 +205,7 @@ export default function Formation({
   /* ───────── state ───────── */
   const defaultFormation =
     formations.find((f) => f.name === DEFAULT_FORMATION_NAME) ?? formations[0];
-  const base = initialFormation
-    ? formations.find((f) => f.name === initialFormation.name) ?? defaultFormation
-    : defaultFormation;
+  const base = resolveFormationTemplate(initialFormation, defaultFormation);
   const [formation, setFormation] = useState<Formation>(base);
   const [lineupOrder, setLineupOrder] = useState<number[]>(
     initialFormation?.positions.lineupOrder ?? []
@@ -311,8 +318,7 @@ export default function Formation({
   // update when a different formation is supplied from props
   useEffect(() => {
     if (!initialFormation) return;
-    const base =
-      formations.find((f) => f.name === initialFormation.name) ?? defaultFormation;
+    const base = resolveFormationTemplate(initialFormation, defaultFormation);
     setFormation(base);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
@@ -708,7 +714,12 @@ export default function Formation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          positions: { lineupOrder, benchOrder, playerPositions },
+          positions: {
+            lineupOrder,
+            benchOrder,
+            playerPositions,
+            baseFormationName: formation.name,
+          },
         }),
       });
       if (res.ok) {
@@ -750,7 +761,12 @@ export default function Formation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          positions: { lineupOrder, benchOrder, playerPositions },
+          positions: {
+            lineupOrder,
+            benchOrder,
+            playerPositions,
+            baseFormationName: formation.name,
+          },
         }),
       });
       if (res.ok) {
