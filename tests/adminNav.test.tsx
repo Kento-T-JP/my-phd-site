@@ -20,32 +20,29 @@ describe('AdminNav active links', () => {
     mockedPath = '/admin';
     render(<AdminNav />);
     const dashboard = screen.getByRole('link', { name: 'Dashboard' });
-    expect(dashboard).toHaveClass('font-bold bg-blue-600 text-white');
+    expect(dashboard).toHaveClass('border-cyan-300/60 bg-cyan-300/20 text-cyan-50');
     const users = screen.getByRole('link', { name: 'Users' });
-    expect(users).not.toHaveClass('font-bold');
-    expect(users).not.toHaveClass('bg-blue-600');
-    expect(users).not.toHaveClass('text-white');
+    expect(users).not.toHaveClass('border-cyan-300/60');
+    expect(users).not.toHaveClass('bg-cyan-300/20');
   });
 
   it('activates users on /admin/users', () => {
     mockedPath = '/admin/users';
     render(<AdminNav />);
     const users = screen.getByRole('link', { name: 'Users' });
-    expect(users).toHaveClass('font-bold bg-blue-600 text-white');
+    expect(users).toHaveClass('border-cyan-300/60 bg-cyan-300/20 text-cyan-50');
     const dashboard = screen.getByRole('link', { name: 'Dashboard' });
-    expect(dashboard).not.toHaveClass('font-bold');
-    expect(dashboard).not.toHaveClass('bg-blue-600');
-    expect(dashboard).not.toHaveClass('text-white');
+    expect(dashboard).not.toHaveClass('border-cyan-300/60');
+    expect(dashboard).not.toHaveClass('bg-cyan-300/20');
   });
 
   it('activates users on /admin/users subpath', () => {
     mockedPath = '/admin/users/123';
     render(<AdminNav />);
     const users = screen.getByRole('link', { name: 'Users' });
-    expect(users).toHaveClass('font-bold bg-blue-600 text-white');
+    expect(users).toHaveClass('border-cyan-300/60 bg-cyan-300/20 text-cyan-50');
     const dashboard = screen.getByRole('link', { name: 'Dashboard' });
-    expect(dashboard).not.toHaveClass('font-bold');
-    expect(dashboard).not.toHaveClass('bg-blue-600');
-    expect(dashboard).not.toHaveClass('text-white');
+    expect(dashboard).not.toHaveClass('border-cyan-300/60');
+    expect(dashboard).not.toHaveClass('bg-cyan-300/20');
   });
 });

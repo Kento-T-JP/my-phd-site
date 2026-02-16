@@ -45,7 +45,7 @@ describe('admin inquiries page', () => {
       .fn()
       .mockResolvedValue({ ok: true, json: async () => inquiries }) as any;
     render(<AdminInquiriesPage />);
-    await screen.findByText('123');
+    expect(await screen.findAllByText('123')).toHaveLength(2);
     expect(screen.getByRole('columnheader', { name: 'ID' })).toBeInTheDocument();
     const firstRow = screen.getAllByRole('row')[1];
     expect(firstRow).toHaveTextContent('123');

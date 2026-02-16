@@ -417,7 +417,7 @@ export default function Formation({
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/players?includeRosterLinks=1');
+      const res = await fetch('/api/players?includeRosterLinks=1&includeExtra=0');
       if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
       const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
       setPlayers(data.filter((p) => p.position.length > 0));
