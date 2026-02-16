@@ -72,10 +72,11 @@ export async function getAdminStats() {
 export async function getPlayers(
   rosterId?: number,
   userId?: number | string,
-  opts?: { includeImage?: boolean; includeExtra?: boolean },
+  opts?: { includeImage?: boolean; includeExtra?: boolean; includeRosterLinks?: boolean },
 ) {
   const includeImage = opts?.includeImage ?? true;
   const includeExtra = opts?.includeExtra ?? true;
+  const includeRosterLinks = opts?.includeRosterLinks ?? false;
   const uid = typeof userId === 'string' ? Number(userId) : userId;
   const hasUid = typeof uid === 'number' && Number.isFinite(uid);
   if (!hasUid) {
@@ -135,11 +136,15 @@ export async function getPlayers(
       basePlayerId: true,
       isDeleted: true,
       extra: includeExtra,
-      rosterPlayers: {
-        include: {
-          roster: { select: { tournamentId: true } },
-        },
-      },
+      ...(includeRosterLinks
+        ? {
+            rosterPlayers: {
+              include: {
+                roster: { select: { tournamentId: true } },
+              },
+            },
+          }
+        : {}),
     },
   });
   return players.map((p) => ({ ...p, role: 'player' }));

@@ -217,7 +217,7 @@ async function runBench() {
 
   const results = [];
   results.push(
-    await timed('players_list_query', 8, async () => {
+    await timed('players_list_query_with_links', 8, async () => {
       await prisma.player.findMany({
         where: { userId, isDeleted: false },
         orderBy: { id: 'asc' },
@@ -231,6 +231,21 @@ async function runBench() {
               roster: { select: { tournamentId: true } },
             },
           },
+        },
+      });
+    })
+  );
+
+  results.push(
+    await timed('players_list_query_lite', 8, async () => {
+      await prisma.player.findMany({
+        where: { userId, isDeleted: false },
+        orderBy: { id: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          number: true,
         },
       });
     })
@@ -262,6 +277,33 @@ async function runBench() {
                 roster: { select: { tournamentId: true } },
               },
             },
+          },
+        }),
+      ]);
+    })
+  );
+
+  results.push(
+    await timed('players_list_paged_filtered_query_lite', 20, async () => {
+      const where = {
+        userId,
+        isDeleted: false,
+        AND: [{ NOT: { name: { equals: 'unknown', mode: 'insensitive' } } }],
+        rosterPlayers: { some: { rosterId: { in: benchRosterIds } } },
+        position: { hasSome: ['DF', 'MF'] },
+      };
+      await Promise.all([
+        prisma.player.count({ where }),
+        prisma.player.findMany({
+          where,
+          orderBy: { id: 'asc' },
+          skip: 0,
+          take: 200,
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            number: true,
           },
         }),
       ]);

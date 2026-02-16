@@ -123,6 +123,19 @@ describe('player API routes', () => {
     expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
       includeImage: true,
       includeExtra: true,
+      includeRosterLinks: false,
+    });
+  });
+
+  it('GET players includes roster links when requested', async () => {
+    const { GET } = await import('../src/app/api/players/route');
+    playersSpy.mockResolvedValue([{ id: 1, name: 'P', position: [], role: 'player' }]);
+    const res = await GET(new Request('http://test/api/players?includeRosterLinks=1'));
+    expect(res.status).toBe(200);
+    expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
+      includeImage: true,
+      includeExtra: true,
+      includeRosterLinks: true,
     });
   });
 

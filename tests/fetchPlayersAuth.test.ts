@@ -37,6 +37,7 @@ describe('fetchPlayers auth', () => {
     expect(playersSpy).toHaveBeenCalledWith(undefined, 1, {
       includeImage: true,
       includeExtra: true,
+      includeRosterLinks: false,
     });
 
     vi.unstubAllGlobals();
