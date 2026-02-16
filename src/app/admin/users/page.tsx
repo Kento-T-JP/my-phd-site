@@ -86,11 +86,14 @@ export default function UsersPage() {
     if (!confirm("削除してもよろしいですか？")) return;
     try {
       const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "削除に失敗しました");
+      }
       alert("削除しました");
       await load();
-    } catch {
-      alert("削除に失敗しました");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "削除に失敗しました");
     }
   }
 

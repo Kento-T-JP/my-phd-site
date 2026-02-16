@@ -64,79 +64,58 @@ export async function DELETE(
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  await prisma.$transaction(async (tx) => {
-    const ownedTournaments = await tx.tournament.findMany({
-      where: { userId: id },
-      select: { id: true },
-    });
-    const ownedTournamentIds = ownedTournaments.map((t) => t.id);
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.favoritePlayer.deleteMany({
+          where: {
+            OR: [{ userId: id }, { player: { userId: id } }],
+          },
+        });
 
-    const ownedPlayers = await tx.player.findMany({
-      where: { userId: id },
-      select: { id: true },
-    });
-    const ownedPlayerIds = ownedPlayers.map((p) => p.id);
+        await tx.formation.deleteMany({ where: { userId: id } });
+        await tx.formationNode.deleteMany({
+          where: { player: { userId: id } },
+        });
 
-    const ownedRosters = await tx.roster.findMany({
-      where: {
-        OR: [
-          { userId: id },
-          ...(ownedTournamentIds.length > 0
-            ? [{ tournamentId: { in: ownedTournamentIds } }]
-            : []),
-        ],
+        await tx.rosterPlayer.deleteMany({
+          where: {
+            OR: [
+              { player: { userId: id } },
+              {
+                roster: {
+                  OR: [{ userId: id }, { tournament: { userId: id } }],
+                },
+              },
+            ],
+          },
+        });
+
+        await tx.roster.deleteMany({
+          where: {
+            OR: [{ userId: id }, { tournament: { userId: id } }],
+          },
+        });
+
+        await tx.player.updateMany({
+          where: {
+            basePlayer: { userId: id },
+            NOT: { userId: id },
+          },
+          data: { basePlayerId: null },
+        });
+
+        await tx.player.deleteMany({ where: { userId: id } });
+        await tx.tournament.deleteMany({ where: { userId: id } });
+        await tx.pendingRegistration.deleteMany({ where: { email: user.email } });
+        await tx.user.delete({ where: { id } });
       },
-      select: { id: true },
-    });
-    const ownedRosterIds = ownedRosters.map((r) => r.id);
+      { maxWait: 10_000, timeout: 30_000 },
+    );
 
-    await tx.favoritePlayer.deleteMany({ where: { userId: id } });
-    if (ownedPlayerIds.length > 0) {
-      await tx.favoritePlayer.deleteMany({
-        where: { playerId: { in: ownedPlayerIds } },
-      });
-    }
-
-    await tx.formation.deleteMany({ where: { userId: id } });
-    if (ownedPlayerIds.length > 0) {
-      await tx.formationNode.deleteMany({
-        where: { playerId: { in: ownedPlayerIds } },
-      });
-    }
-
-    if (ownedRosterIds.length > 0) {
-      await tx.rosterPlayer.deleteMany({
-        where: { rosterId: { in: ownedRosterIds } },
-      });
-    }
-    if (ownedPlayerIds.length > 0) {
-      await tx.rosterPlayer.deleteMany({
-        where: { playerId: { in: ownedPlayerIds } },
-      });
-    }
-
-    if (ownedPlayerIds.length > 0) {
-      await tx.player.updateMany({
-        where: {
-          basePlayerId: { in: ownedPlayerIds },
-          NOT: { userId: id },
-        },
-        data: { basePlayerId: null },
-      });
-    }
-
-    if (ownedRosterIds.length > 0) {
-      await tx.roster.deleteMany({ where: { id: { in: ownedRosterIds } } });
-    }
-    if (ownedTournamentIds.length > 0) {
-      await tx.tournament.deleteMany({ where: { id: { in: ownedTournamentIds } } });
-    }
-    await tx.player.deleteMany({ where: { userId: id } });
-
-    await tx.pendingRegistration.deleteMany({ where: { email: user.email } });
-
-    await tx.user.delete({ where: { id } });
-  });
-
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete user';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
