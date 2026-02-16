@@ -105,6 +105,17 @@ npx prisma generate && npx prisma migrate deploy && next build
 - 問い合わせAPIに簡易レート制限（IP単位）
 - 運用面: `.env` / `.env.local` は Git 管理しない（秘密情報は Vercel の Environment Variables で管理）
 
+## 軽量化と性能の現状
+
+- 不要な毎回 seed を避け、デプロイ時の処理負荷を抑制
+- 一部の重い処理はバッチ化・トランザクション見直しでタイムアウトを低減
+- モバイルでは描画演出を弱め、体感速度を改善
+- Vercel Analytics / Speed Insights で実測を継続
+
+重要:
+- 現状の主要ボトルネックは DB アクセスです。
+- Neon(PostgreSQL) との往復遅延（リージョン差）や、書き込みが多い処理（登録・削除・インポート）で待ち時間が出やすい構成です。
+
 ## 今後の改善方針
 
 今後は以下を重点的に進めます。
