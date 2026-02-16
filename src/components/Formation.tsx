@@ -689,6 +689,32 @@ export default function Formation({
     setSelectedIsBench(null);
   };
 
+  const handleRestoreSaved = () => {
+    if (!initialFormation) return;
+    const restored = resolveFormationTemplate(initialFormation, defaultFormation);
+    setFormation(restored);
+    setLineupOrder(initialFormation.positions.lineupOrder ?? []);
+    setBenchOrder(initialFormation.positions.benchOrder ?? []);
+    setPlayerPositions(initialFormation.positions.playerPositions ?? {});
+    setFormationStates((prev) => ({
+      ...prev,
+      [restored.name]: {
+        lineupOrder: initialFormation.positions.lineupOrder ?? [],
+        benchOrder: initialFormation.positions.benchOrder ?? [],
+        playerPositions: initialFormation.positions.playerPositions ?? {},
+      },
+      [initialFormation.name]: {
+        lineupOrder: initialFormation.positions.lineupOrder ?? [],
+        benchOrder: initialFormation.positions.benchOrder ?? [],
+        playerPositions: initialFormation.positions.playerPositions ?? {},
+      },
+    }));
+    setCustomMode(false);
+    setDefaultsFrozen(false);
+    setSelectedId(null);
+    setSelectedIsBench(null);
+  };
+
   const handleSave = async () => {
     play();
     if (!session) {
@@ -1267,6 +1293,17 @@ export default function Formation({
         >
           Reset
         </button>
+        {initialFormation?.id && (
+          <button
+            className="px-3 py-1 border rounded bg-cyan-600 text-white"
+            onClick={() => {
+              play();
+              handleRestoreSaved();
+            }}
+          >
+            保存状態に戻す
+          </button>
+        )}
       </div>
 
       {!screenshotMode && (
