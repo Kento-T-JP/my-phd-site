@@ -4,6 +4,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { FormationCreateSchema } from "@/lib/schemas/formations";
 
+export const dynamic = "force-dynamic";
+
+const noStoreHeaders = { "Cache-Control": "no-store" };
+
 async function getUser() {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.email) return null;
@@ -13,14 +17,17 @@ async function getUser() {
 export async function GET() {
   const user = await getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: noStoreHeaders }
+    );
   }
   const list = await prisma.formation.findMany({
     where: { userId: user.id },
     orderBy: { id: "asc" },
     include: { nodes: true },
   });
-  return NextResponse.json(list);
+  return NextResponse.json(list, { headers: noStoreHeaders });
 }
 
 export async function POST(req: Request) {
