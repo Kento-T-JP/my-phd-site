@@ -108,7 +108,7 @@ describe('player roster input', () => {
       target: { value: 'Test Player' },
     });
     fireEvent.click(screen.getByLabelText('GK'));
-    fireEvent.click(screen.getByRole('button', { name: '送信' }));
+    fireEvent.click(screen.getByRole('button', { name: '登録' }));
 
     await waitFor(() => {
       const postCall = fetchMock.mock.calls.find(

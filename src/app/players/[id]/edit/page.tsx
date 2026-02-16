@@ -234,9 +234,16 @@ export default function EditPlayerPage() {
     setIsDeleting(true);
     setActionStatus("選手を削除しています...");
     try {
+      const token = (await getCsrfToken()) || csrf || "";
+      if (!token) {
+        throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
+      }
+      if (token !== csrf) {
+        setCsrf(token);
+      }
       const res = await fetch(`/api/players/${id}`, {
         method: "DELETE",
-        headers: { "X-CSRF-Token": csrf },
+        headers: { "X-CSRF-Token": token },
       });
       setErrors({});
       setMessage([]);
@@ -299,9 +306,16 @@ export default function EditPlayerPage() {
     }
 
     try {
+      const token = (await getCsrfToken()) || csrf || "";
+      if (!token) {
+        throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
+      }
+      if (token !== csrf) {
+        setCsrf(token);
+      }
       const res = await fetch(`/api/players/${id}`, {
         method: "PUT",
-        headers: { "X-CSRF-Token": csrf },
+        headers: { "X-CSRF-Token": token },
         body: form,
       });
 

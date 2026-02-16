@@ -117,9 +117,16 @@ export default function NewPlayerPage() {
     }
 
     try {
+      const token = (await getCsrfToken()) || csrf || "";
+      if (!token) {
+        throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
+      }
+      if (token !== csrf) {
+        setCsrf(token);
+      }
       const res = await fetch("/api/players", {
         method: "POST",
-        headers: { "X-CSRF-Token": csrf },
+        headers: { "X-CSRF-Token": token },
         body: form,
       });
 
@@ -302,7 +309,7 @@ export default function NewPlayerPage() {
           onClick={play}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "登録中..." : "送信"}
+          {isSubmitting ? "登録中..." : "登録"}
         </button>
         <button
           type="button"
