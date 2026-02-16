@@ -11,6 +11,35 @@ const prisma = new PrismaClient();
 const JFA_URL = process.env.JFA_MEMBER_URL || '';
 
 async function main() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  let seedOwnerId: number | undefined;
+
+  if (!adminEmail || !adminPassword) {
+    console.log(
+      '❌ ADMIN_EMAIL or ADMIN_PASSWORD environment variable is not set; admin user not created.'
+    );
+  } else {
+    const hashedPassword = await hash(adminPassword, 10);
+    const admin = await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        hashedPassword,
+        isAdmin: true,
+      },
+      create: {
+        email: adminEmail,
+        hashedPassword,
+        isAdmin: true,
+      },
+      select: { id: true, email: true },
+    });
+    seedOwnerId = admin.id;
+    console.log('✅ Admin user ensured');
+    console.log(`🛈 Admin email: ${admin.email}`);
+    console.log(`🛈 Admin password: ${adminPassword}`);
+  }
+
   const count = await prisma.player.count();
   if (count === 0) {
     if (validateJfaUrl(JFA_URL)) {
@@ -28,7 +57,7 @@ async function main() {
           image: p.image,
           position: p.position,
           role: 'player',
-          userId: undefined,
+          userId: seedOwnerId,
         })
       );
       const inserted = await Promise.all(promises);
@@ -37,45 +66,24 @@ async function main() {
         number: players[idx].number ?? undefined,
         position: players[idx].position,
       }));
-      await upsertTournamentRosterPlayersBySlug(
-        tournamentSlug,
-        tournamentName,
-        rosterTitle,
-        rosterEntries,
-        rosterDate,
-      );
+      if (typeof seedOwnerId === 'number' && Number.isFinite(seedOwnerId)) {
+        await upsertTournamentRosterPlayersBySlug(
+          tournamentSlug,
+          tournamentName,
+          rosterTitle,
+          rosterEntries,
+          seedOwnerId,
+          rosterDate,
+        );
+      } else {
+        console.log('⚠️ Seed owner not found, skipped tournament/roster seed.');
+      }
       console.log(`✅ Seeded ${inserted.length} players from JFA`);
     } else {
       console.log('❌ Invalid or missing JFA_MEMBER_URL environment variable');
     }
   } else {
     console.log(`✅ Players already exist, skipping seed.`);
-  }
-
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  if (!adminEmail || !adminPassword) {
-    console.log(
-      '❌ ADMIN_EMAIL or ADMIN_PASSWORD environment variable is not set; admin user not created.'
-    );
-  } else {
-    const hashedPassword = await hash(adminPassword, 10);
-    await prisma.user.upsert({
-      where: { email: adminEmail },
-      update: {
-        hashedPassword,
-        isAdmin: true,
-      },
-      create: {
-        email: adminEmail,
-        hashedPassword,
-        isAdmin: true,
-      },
-    });
-    console.log('✅ Admin user ensured');
-    console.log(`🛈 Admin email: ${adminEmail}`);
-    console.log(`🛈 Admin password: ${adminPassword}`);
   }
 }
 
