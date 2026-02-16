@@ -294,6 +294,24 @@ describe('player API routes', () => {
     });
   });
 
+  it('PUT adds selected roster links when addRosterId is provided', async () => {
+    const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
+    updateSpy.mockResolvedValue({ id: 1, name: 'E', position: ['MF'], role: 'player', userId: 1 });
+    const form = new FormData();
+    form.append('name', 'E');
+    form.append('position', 'MF');
+    form.append('addRosterId', '20');
+    const req = new Request('http://test', { method: 'PUT', body: form });
+    const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
+    expect(res.status).toBe(200);
+    expect(addSpy).toHaveBeenCalledWith(
+      20,
+      [{ playerId: 1, number: undefined, position: ['MF'] }],
+      expect.anything(),
+    );
+  });
+
   it('PUT creates override for global player', async () => {
     const { PUT } = await import('../src/app/api/players/[id]/route');
     sessionSpy.mockResolvedValue({ user: { id: 5, isAdmin: false } });

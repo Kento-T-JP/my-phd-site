@@ -117,6 +117,14 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           .filter((v) => Number.isFinite(v) && v > 0),
       ),
     );
+    const addRosterIds = Array.from(
+      new Set(
+        form
+          .getAll('addRosterId')
+          .map((v) => Number(typeof v === 'string' ? v : ''))
+          .filter((v) => Number.isFinite(v) && v > 0),
+      ),
+    );
 
     if (rosterTitle && !tournamentName) {
       return NextResponse.json(
@@ -168,6 +176,21 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
             rosterId: { in: removeRosterIds },
           },
         });
+      }
+      if (addRosterIds.length > 0) {
+        for (const addRosterId of addRosterIds) {
+          await addRosterPlayers(
+            addRosterId,
+            [
+              {
+                playerId: player.id,
+                number: parsed.data.number,
+                position: parsed.data.position,
+              },
+            ],
+            tx,
+          );
+        }
       }
       const rosterUserId = overrideUserId ?? player.userId ?? undefined;
       const ownerId = Number.isFinite(rosterUserId) ? (rosterUserId as number) : undefined;
