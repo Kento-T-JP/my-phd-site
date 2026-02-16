@@ -6,6 +6,10 @@ import { authOptions } from "@/lib/authOptions";
 import { FormationUpdateSchema } from "@/lib/schemas/formations";
 import { unwrapParams } from "@/lib/unwrap";
 
+export const dynamic = "force-dynamic";
+
+const noStoreHeaders = { "Cache-Control": "no-store" };
+
 async function getUser() {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session?.user?.email) return null;
@@ -17,20 +21,29 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await unwrapParams(params);
   const num = Number(id);
   if (Number.isNaN(num)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid id" },
+      { status: 400, headers: noStoreHeaders }
+    );
   }
   const user = await getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: noStoreHeaders }
+    );
   }
   const formation = await prisma.formation.findUnique({
     where: { id: num },
     include: { nodes: true },
   });
   if (!formation || formation.userId !== user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Not found" },
+      { status: 404, headers: noStoreHeaders }
+    );
   }
-  return NextResponse.json(formation);
+  return NextResponse.json(formation, { headers: noStoreHeaders });
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {

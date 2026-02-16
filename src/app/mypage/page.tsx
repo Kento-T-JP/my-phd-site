@@ -21,7 +21,7 @@ export default function MyPage() {
   useEffect(() => {
     if (!session) return;
     async function load() {
-      const res = await fetch("/api/formations");
+      const res = await fetch("/api/formations", { cache: "no-store" });
       if (res.ok) {
         setList((await res.json()) as SavedFormation[]);
       }

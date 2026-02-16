@@ -21,7 +21,7 @@ function FormationsPageContent() {
   const storageKey = `selectedFormation_${session?.user?.id ?? "anonymous"}`;
 
   const loadList = useCallback(async () => {
-    const res = await fetch("/api/formations");
+    const res = await fetch("/api/formations", { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as SavedFormation[];
       setList(data);
