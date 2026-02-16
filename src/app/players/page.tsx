@@ -12,6 +12,7 @@ import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
+import MultiToggleGroup from "@/components/MultiToggleGroup";
 
 type PlayersPageProps = {
   getCsrfTokenFn?: typeof getCsrfToken;
@@ -341,45 +342,30 @@ export default function PlayersPage({
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <input
           type="text"
-          className="w-full min-w-0 border p-2"
+          className="form-input w-full min-w-0"
           placeholder="Filter players..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
-        <select
-          multiple
-          className="w-full min-w-0 border p-2"
-          value={rosterInputs}
-          onChange={(e) =>
-            setRosterInputs(
-              Array.from(e.target.selectedOptions).map((opt) => opt.value)
-            )
-          }
-        >
-          {rosters.map((r) => (
-            <option key={r.id} value={r.id}>
-              {rosterDisplayTitle(r)}
-            </option>
-          ))}
-        </select>
-        <select
-          multiple
-          className="w-full min-w-0 border p-2"
-          value={positionInputs}
-          onChange={(e) =>
-            setPositionInputs(
-              Array.from(e.target.selectedOptions).map((opt) => opt.value)
-            )
-          }
-        >
-          {positionOptions.map((pos) => (
-            <option key={pos} value={pos}>
-              {pos}
-            </option>
-          ))}
-        </select>
+        <MultiToggleGroup
+          legend={`Roster (${rosterInputs.length})`}
+          options={rosters.map((r) => ({
+            value: String(r.id),
+            label: rosterDisplayTitle(r),
+          }))}
+          selectedValues={rosterInputs}
+          onChange={setRosterInputs}
+          emptyLabel="ロースターがありません"
+        />
+        <MultiToggleGroup
+          legend={`Position (${positionInputs.length})`}
+          options={positionOptions.map((pos) => ({ value: pos, label: pos }))}
+          selectedValues={positionInputs}
+          onChange={setPositionInputs}
+          emptyLabel="ポジションがありません"
+        />
         <button
-          className="w-full px-3 py-2 bg-blue-500 text-white rounded sm:justify-self-end sm:w-auto"
+          className="primary-btn w-full sm:justify-self-end sm:w-auto"
           onClick={() => {
             play();
             setSearch(searchInput);
