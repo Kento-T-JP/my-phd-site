@@ -214,6 +214,7 @@ describe('player API routes', () => {
       undefined,
     );
     expect(addSpy).toHaveBeenCalled();
+    expect(syncSpy).not.toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(6);
   });
@@ -245,7 +246,6 @@ describe('player API routes', () => {
     updateSpy.mockResolvedValue({ id: 1, name: 'D', position: ['DF'], role: 'player', userId: 1 });
     ensureSpy.mockResolvedValue({ id: 8, tournamentId: 3, title: 'R2', date: new Date() });
     prisma.roster.findUnique.mockResolvedValue({ id: 8, tournament: { id: 3, name: 'Cup2' }, date: new Date(), title: 'R2' });
-    prisma.rosterPlayer.findFirst.mockResolvedValue(null);
     const form = new FormData();
     form.append('name', 'D');
     form.append('position', 'DF');
@@ -256,10 +256,25 @@ describe('player API routes', () => {
     expect(updateSpy).toHaveBeenCalled();
     expect(ensureSpy).toHaveBeenCalledWith('Cup2', 1, expect.anything(), undefined);
     expect(addSpy).toHaveBeenCalled();
+    expect(syncSpy).not.toHaveBeenCalled();
     expect(upsertTournamentSpy).not.toHaveBeenCalled();
     expect(upsertRosterSpy).not.toHaveBeenCalled();
     const data = await res.json();
     expect(data.roster.id).toBe(8);
+  });
+
+  it('PUT without tournament keeps existing roster links', async () => {
+    const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
+    updateSpy.mockResolvedValue({ id: 1, name: 'E', position: ['MF'], role: 'player', userId: 1 });
+    const form = new FormData();
+    form.append('name', 'E');
+    form.append('position', 'MF');
+    const req = new Request('http://test', { method: 'PUT', body: form });
+    const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
+    expect(res.status).toBe(200);
+    expect(addSpy).not.toHaveBeenCalled();
+    expect(syncSpy).not.toHaveBeenCalled();
   });
 
   it('PUT creates override for global player', async () => {

@@ -38,7 +38,7 @@ export default function JfaImportForm() {
         const restored = typeof data.restored === "number" ? data.restored : 0;
         const skipped = typeof data.skipped === "number" ? data.skipped : 0;
         setMessage(
-          `${linked}人を反映しました（対象: ${requested} / 処理: ${processed} / 新規: ${created} / 更新: ${updated} / 復元: ${restored} / スキップ: ${skipped}）`
+          `${linked}人を反映しました（対象: ${requested} / 処理: ${processed} / 新規: ${created} / 上書き更新: ${updated} / 復元: ${restored} / 更新見送り: ${skipped}）`
         );
         setTimeout(() => {
           router.push("/home");
@@ -104,8 +104,11 @@ export default function JfaImportForm() {
             onChange={(e) => setSkipExisting(e.target.checked)}
             disabled={isImporting}
           />
-          同じ名前の選手は import しない（既存データを維持）
+          同じ名前の選手は上書き更新しない（既存データを維持）
         </label>
+        <p className="text-xs text-cyan-100/70">
+          既定では、同じ名前の選手は既存データを上書き更新します。
+        </p>
         <button
           type="submit"
           className="px-4 py-2 bg-yellow-400 text-blue-900 rounded disabled:opacity-60"
