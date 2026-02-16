@@ -437,17 +437,15 @@ export async function addRosterPlayers(
 
   // Prefer bulk insert to reduce query count on large imports.
   if (typeof (client as any).rosterPlayer?.createMany === 'function') {
-    await (client as any).rosterPlayer.createMany({
+    const result = await (client as any).rosterPlayer.createMany({
       data,
       skipDuplicates: true,
     });
-    const linkedCount = await client.rosterPlayer.count({
-      where: {
-        rosterId,
-        playerId: { in: players.map((p) => p.playerId) },
-      },
-    });
-    return linkedCount;
+    // Avoid extra queries inside interactive transactions to reduce timeout risk.
+    if (typeof result?.count === 'number') {
+      return result.count;
+    }
+    return players.length;
   }
 
   const upserts = data.map((p) =>
