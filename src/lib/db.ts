@@ -28,6 +28,14 @@ export default prisma;
  */
 export async function getAdminStats() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const uniqueVisitorsPromise = prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*)::bigint AS count
+    FROM (
+      SELECT DISTINCT ip
+      FROM "Visit"
+      WHERE ip IS NOT NULL
+    ) AS distinct_ips
+  `;
   const [
     totalUsers,
     verifiedUsers,
@@ -35,7 +43,7 @@ export async function getAdminStats() {
     totalContactInquiries,
     registrationsLast7Days,
     pageViews,
-    uniqueVisitors,
+    uniqueVisitorRows,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { emailVerified: { not: null } } }),
@@ -43,10 +51,9 @@ export async function getAdminStats() {
     prisma.contactSubmission.count(),
     prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
     prisma.visit.count(),
-    prisma.visit
-      .findMany({ distinct: ['ip'], select: { ip: true } })
-      .then((rows) => rows.length),
+    uniqueVisitorsPromise,
   ]);
+  const uniqueVisitors = Number(uniqueVisitorRows[0]?.count ?? 0);
   return {
     totalUsers,
     verifiedUsers,

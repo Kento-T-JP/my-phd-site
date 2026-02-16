@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useSession, getCsrfToken } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import WikiLink from "@/components/WikiLink";
 import type { Player, PositionKey, Roster } from "@/types/player";
 import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
-import { filterPlayers } from "@/components/Formation";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
@@ -16,6 +15,12 @@ import MultiToggleGroup from "@/components/MultiToggleGroup";
 
 type PlayersPageProps = {
   getCsrfTokenFn?: typeof getCsrfToken;
+};
+type PagedPlayersResponse = {
+  players: Player[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 const positionOrder = ["GK", "DF", "MF", "FW"] as const;
@@ -37,12 +42,16 @@ export default function PlayersPage({
   getCsrfTokenFn = getCsrfToken,
 }: PlayersPageProps = {}) {
   const { data: session, status } = useSession();
+  const sessionUserIdKey = session?.user?.id ?? "";
   const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(200);
+  const [totalPlayers, setTotalPlayers] = useState(0);
 
   const [search, setSearch] = useState("");
   const [selectedRosterIds, setSelectedRosterIds] = useState<string[]>([]);
@@ -112,6 +121,8 @@ export default function PlayersPage({
     setSearch("");
     setSelectedRosterIds([]);
     setSelectedPositions([]);
+    setPage(1);
+    setTotalPlayers(0);
     setSearchInput("");
     setRosterInputs([]);
     setPositionInputs([]);
@@ -149,34 +160,57 @@ export default function PlayersPage({
     });
   };
 
-  useEffect(() => {
-    if (!session) return;
-    async function load() {
+  const loadPlayers = useCallback(
+    async (opts?: { resetPage?: boolean }) => {
+      if (!sessionUserIdKey) return;
+      const nextPage = opts?.resetPage ? 1 : page;
+      if (opts?.resetPage && page !== 1) {
+        setPage(1);
+      }
+      setLoading(true);
+      setError("");
       try {
-        const res = await fetch("/api/players?lite=1");
+        const params = new URLSearchParams();
+        params.set("lite", "1");
+        params.set("paged", "1");
+        params.set("page", String(nextPage));
+        params.set("pageSize", String(pageSize));
+        if (search.trim()) params.set("q", search.trim());
+        if (selectedRosterIds.length > 0) {
+          params.set("rosterIds", selectedRosterIds.join(","));
+        }
+        if (selectedPositions.length > 0) {
+          params.set("positions", selectedPositions.join(","));
+        }
+        const res = await fetch(`/api/players?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch players");
-        const data = (await res.json()) as Player[];
-        // API から返却されたセッションユーザーの結果をそのまま利用しつつ、
-        // もし万が一 isDeleted フラグが付いている場合は除外する
-        setPlayers(data.filter((p) => !p.isDeleted));
+        const data = (await res.json()) as PagedPlayersResponse;
+        setPlayers((data.players ?? []).filter((p) => !p.isDeleted));
+        setTotalPlayers(data.total ?? 0);
       } catch (err) {
         console.error(err);
+        setPlayers([]);
+        setTotalPlayers(0);
         setError(
           err instanceof Error ? err.message : "Failed to load players"
         );
       } finally {
         setLoading(false);
       }
-    }
-    load();
-  }, [session]);
+    },
+    [page, pageSize, search, selectedPositions, selectedRosterIds, sessionUserIdKey]
+  );
+
+  useEffect(() => {
+    loadPlayers();
+  }, [loadPlayers]);
 
   useEffect(() => {
     getCsrfTokenFn().then((token) => setCsrf(token ?? ""));
   }, [getCsrfTokenFn]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!sessionUserIdKey) return;
     async function fetchRosters() {
       try {
         const res = await fetch("/api/rosters");
@@ -187,10 +221,10 @@ export default function PlayersPage({
       }
     }
     fetchRosters();
-  }, [session]);
+  }, [sessionUserIdKey]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!sessionUserIdKey) return;
     async function loadFavorites() {
       try {
         const res = await fetch("/api/favorites");
@@ -203,17 +237,21 @@ export default function PlayersPage({
       }
     }
     loadFavorites();
-  }, [session]);
+  }, [sessionUserIdKey]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const visible = new Set(players.map((p) => p.id));
+      const next = new Set<number>();
+      prev.forEach((id) => {
+        if (visible.has(id)) next.add(id);
+      });
+      return next;
+    });
+  }, [players]);
 
   const filteredPlayers = useMemo(() => {
-    const rosterIds = selectedRosterIds
-      .map((id) => Number(id))
-      .filter((id) => Number.isFinite(id));
-    return filterPlayers(players, {
-      name: search,
-      rosterIds: rosterIds.length > 0 ? rosterIds : undefined,
-      positions: selectedPositions.length > 0 ? selectedPositions : undefined,
-    }).sort((a, b) => {
+    return [...players].sort((a, b) => {
       const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
       if (rankDiff !== 0) return rankDiff;
       const primaryDiff = getPrimaryPosition(a.position).localeCompare(
@@ -223,7 +261,7 @@ export default function PlayersPage({
       if (primaryDiff !== 0) return primaryDiff;
       return a.name.localeCompare(b.name, "ja");
     });
-  }, [players, search, selectedRosterIds, selectedPositions]);
+  }, [players]);
 
   const allSelected =
     filteredPlayers.length > 0 &&
@@ -282,6 +320,7 @@ export default function PlayersPage({
         : [];
       if (typeof data.deleted === "number" && data.deleted > 0 && deletedIds.length > 0) {
         setPlayers((prev) => prev.filter((p) => !deletedIds.includes(p.id)));
+        setTotalPlayers((prev) => Math.max(0, prev - deletedIds.length));
         playDeleteSound();
       }
       if (typeof data.skipped === "number" && data.skipped > 0) {
@@ -371,10 +410,33 @@ export default function PlayersPage({
             setSearch(searchInput);
             setSelectedPositions(positionInputs);
             setSelectedRosterIds(rosterInputs);
+            setPage(1);
           }}
         >
           Apply Filters
         </button>
+      </div>
+      <div className="mb-3 flex items-center justify-between text-xs text-cyan-100/80">
+        <span>
+          表示 {filteredPlayers.length}件 / 合計 {totalPlayers}件
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            className="ghost-btn px-2 py-1 disabled:opacity-40"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || loading}
+          >
+            Prev
+          </button>
+          <span>Page {page}</span>
+          <button
+            className="ghost-btn px-2 py-1 disabled:opacity-40"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading || page * pageSize >= totalPlayers}
+          >
+            Next
+          </button>
+        </div>
       </div>
       <table className="w-full table-auto border-collapse">
         <thead>

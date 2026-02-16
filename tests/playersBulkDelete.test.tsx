@@ -26,7 +26,10 @@ function mockFetch() {
   return vi.fn((input: RequestInfo | URL, options?: RequestInit) => {
     const url = normalizeUrl(input);
     if (url.includes('/api/players?lite=1'))
-      return Promise.resolve({ ok: true, json: async () => players });
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ players, total: players.length, page: 1, pageSize: 200 }),
+      });
     if (url.includes('/api/auth/csrf'))
       return Promise.resolve({ ok: true, json: async () => ({ csrfToken: 'test-csrf' }) });
     if (url.includes('/api/players') && options?.method === 'DELETE')
