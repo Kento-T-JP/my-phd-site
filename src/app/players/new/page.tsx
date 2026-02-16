@@ -52,19 +52,6 @@ export default function NewPlayerPage() {
     getCsrfToken().then((token) => setCsrf(token ?? ""));
   }, []);
 
-  if (status === "loading") {
-    return (
-      <main className="p-4 sm:p-8 max-w-md mx-auto">
-        <p>Loading...</p>
-      </main>
-    );
-  }
-
-  if (!session) {
-    router.push("/login");
-    return null;
-  }
-
   useEffect(() => {
     if (!session?.user?.id) return;
     async function fetchRosters() {
@@ -78,6 +65,19 @@ export default function NewPlayerPage() {
     }
     fetchRosters();
   }, [session?.user?.id]);
+
+  if (status === "loading") {
+    return (
+      <main className="p-4 sm:p-8 max-w-md mx-auto">
+        <p>Loading...</p>
+      </main>
+    );
+  }
+
+  if (!session) {
+    router.push("/login");
+    return null;
+  }
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -117,9 +117,16 @@ export default function NewPlayerPage() {
     }
 
     try {
+      const token = (await getCsrfToken()) || csrf || "";
+      if (!token) {
+        throw new Error("CSRFトークンを取得できませんでした。ページを再読み込みしてください。");
+      }
+      if (token !== csrf) {
+        setCsrf(token);
+      }
       const res = await fetch("/api/players", {
         method: "POST",
-        headers: { "X-CSRF-Token": csrf },
+        headers: { "X-CSRF-Token": token },
         body: form,
       });
 
