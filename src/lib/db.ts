@@ -315,7 +315,7 @@ export async function upsertTournament(
   }
   const existingByName = await client.tournament.findFirst({
     where: {
-      userId,
+      user: { id: userId },
       name: { equals: normalizedName, mode: 'insensitive' },
     },
   });
@@ -323,10 +323,17 @@ export async function upsertTournament(
     return existingByName;
   }
   const slug = normalizeSlug(normalizedName);
-  return client.tournament.upsert({
-    where: { userId_slug: { userId, slug } },
-    update: { name: normalizedName },
-    create: { name: normalizedName, slug, userId },
+  const existingBySlug = await client.tournament.findFirst({
+    where: { user: { id: userId }, slug },
+  });
+  if (existingBySlug) {
+    return client.tournament.update({
+      where: { id: existingBySlug.id },
+      data: { name: normalizedName },
+    });
+  }
+  return client.tournament.create({
+    data: { name: normalizedName, slug, user: { connect: { id: userId } } },
   });
 }
 
@@ -346,17 +353,24 @@ export async function upsertTournamentBySlug(
   }
   const existingByName = await client.tournament.findFirst({
     where: {
-      userId,
+      user: { id: userId },
       name: { equals: normalizedName, mode: 'insensitive' },
     },
   });
   if (existingByName) {
     return existingByName;
   }
-  return client.tournament.upsert({
-    where: { userId_slug: { userId, slug } },
-    update: { name: normalizedName },
-    create: { name: normalizedName, slug, userId },
+  const existingBySlug = await client.tournament.findFirst({
+    where: { user: { id: userId }, slug },
+  });
+  if (existingBySlug) {
+    return client.tournament.update({
+      where: { id: existingBySlug.id },
+      data: { name: normalizedName },
+    });
+  }
+  return client.tournament.create({
+    data: { name: normalizedName, slug, user: { connect: { id: userId } } },
   });
 }
 
@@ -534,7 +548,7 @@ export async function getRosters(slug?: string, userId?: number) {
   }
   const where: Prisma.RosterWhereInput = {
     userId: uid,
-    ...(slug ? { tournament: { slug, userId: uid } } : {}),
+    ...(slug ? { tournament: { slug } } : {}),
   };
   return prisma.roster.findMany({
     where,
@@ -558,7 +572,7 @@ export async function getTournaments(userId?: number) {
     return [];
   }
   const where: Prisma.TournamentWhereInput = {
-    userId: uid,
+    user: { id: uid },
     rosters: { some: { userId: uid } },
   };
   return prisma.tournament.findMany({
@@ -577,7 +591,7 @@ export async function getTournamentNames(search?: string, userId?: number) {
   }
   return prisma.tournament.findMany({
     where: {
-      userId: uid,
+      user: { id: uid },
       ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
       rosters: { some: { userId: uid } },
     },
