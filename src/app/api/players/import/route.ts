@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import prisma, { upsertPlayer } from '@/lib/db';
 import { normalizePosition } from '@/lib/positions';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -87,8 +88,8 @@ export async function PUT(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = Number(session.user.id);
-  if (!Number.isFinite(userId)) {
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
       { status: 401 }
@@ -114,7 +115,7 @@ export async function PUT(req: Request) {
           },
           undefined,
           tx,
-          userId,
+          Number.isFinite(userId) ? userId : undefined,
         );
         inserted += 1;
       }

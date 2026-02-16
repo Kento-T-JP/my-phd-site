@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
 import prisma, {
-  upsertPlayer,
   upsertTournamentRosterPlayersBySlug,
 } from '@/lib/db';
 import { validateJfaUrl, scrapeJfaPlayers } from '@/lib/jfa';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 export async function POST(req: Request) {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const rawId = session.user?.id;
-  const userId = rawId === undefined ? undefined : Number(rawId);
-  if (!Number.isFinite(userId)) {
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
       { status: 401 }
@@ -48,7 +47,9 @@ export async function POST(req: Request) {
     let updated = 0;
     let restored = 0;
     let skipped = 0;
-    const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
+    const toCreate: typeof players = [];
+    const toUpdate: { playerId: number; payload: (typeof players)[number] }[] = [];
+    const processedNames: string[] = [];
     for (const p of players) {
       const before = existingByName.get(p.name);
       if (skipExisting && before) {
@@ -62,16 +63,58 @@ export async function POST(req: Request) {
       } else {
         updated += 1;
       }
-      const player = await upsertPlayer({
-        name: p.name,
-        number: p.number,
-        image: p.image,
-        position: p.position,
-        isDeleted: false,
-        role: 'player',
+      processedNames.push(p.name);
+      if (!before) {
+        toCreate.push(p);
+      } else {
+        toUpdate.push({ playerId: before.id, payload: p });
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await prisma.player.createMany({
+        data: toCreate.map((p) => ({
+          name: p.name,
+          position: p.position,
+          number: p.number,
+          image: p.image,
+          userId: null,
+          isDeleted: false,
+        })),
       });
+    }
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map(({ playerId, payload }) =>
+          prisma.player.update({
+            where: { id: playerId },
+            data: {
+              name: payload.name,
+              position: payload.position,
+              number: payload.number,
+              image: payload.image,
+              isDeleted: false,
+            },
+          })
+        )
+      );
+    }
+
+    const processedPlayers =
+      processedNames.length > 0
+        ? await prisma.player.findMany({
+            where: { userId: null, name: { in: processedNames } },
+            select: { id: true, name: true, number: true, position: true },
+          })
+        : [];
+    const playerByName = new Map(processedPlayers.map((p) => [p.name, p]));
+
+    const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
+    for (const name of processedNames) {
+      const p = playerByName.get(name);
+      if (!p) continue;
       rosterEntries.push({
-        playerId: player.id,
+        playerId: p.id,
         number: p.number ?? undefined,
         position: p.position,
       });
@@ -84,7 +127,7 @@ export async function POST(req: Request) {
       rosterEntries,
       rosterDate,
       prisma,
-      userId,
+      Number.isFinite(userId) ? userId : undefined,
     );
 
     const importedPlayerIds = rosterEntries.map((entry) => entry.playerId);

@@ -121,7 +121,7 @@ export default function PlayersPage() {
     if (!session) return;
     async function load() {
       try {
-        const res = await fetch("/api/players");
+        const res = await fetch("/api/players?lite=1");
         if (!res.ok) throw new Error("Failed to fetch players");
         const data = (await res.json()) as Player[];
         // API から返却されたセッションユーザーの結果をそのまま利用しつつ、
@@ -212,35 +212,38 @@ export default function PlayersPage() {
     if (selectedIds.size === 0) return;
     if (!window.confirm("選択した選手を削除しますか？")) return;
     const ids = Array.from(selectedIds);
-    const deleted: number[] = [];
     setDeleteProgress({ total: ids.length, done: 0 });
-    for (const id of ids) {
-      try {
-        const res = await fetch(`/api/players/${id}`, {
-          method: "DELETE",
-          headers: { "X-CSRF-Token": csrf },
-        });
-        if (res.ok) {
-          deleted.push(id);
-        } else {
-          throw new Error("Failed to delete");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to delete selected players");
-        break;
-      } finally {
-        setDeleteProgress((prev) =>
-          prev ? { ...prev, done: Math.min(prev.total, prev.done + 1) } : prev
-        );
+    try {
+      const res = await fetch("/api/players", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete selected players");
       }
+      setDeleteProgress({ total: ids.length, done: ids.length });
+      const deletedIds: number[] = Array.isArray(data.deletedIds)
+        ? data.deletedIds.filter((id: unknown) => typeof id === "number")
+        : [];
+      if (typeof data.deleted === "number" && data.deleted > 0 && deletedIds.length > 0) {
+        setPlayers((prev) => prev.filter((p) => !deletedIds.includes(p.id)));
+        playDeleteSound();
+      }
+      if (typeof data.skipped === "number" && data.skipped > 0) {
+        setError(`${data.skipped}件は権限不足のため削除されませんでした`);
+      }
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete selected players");
+    } finally {
+      setTimeout(() => setDeleteProgress(null), 250);
     }
-    if (deleted.length > 0) {
-      setPlayers((prev) => prev.filter((p) => !deleted.includes(p.id)));
-      playDeleteSound();
-    }
-    setSelectedIds(new Set());
-    setDeleteProgress(null);
   };
 
   if (status === "loading") return <LoadingSpinner />;

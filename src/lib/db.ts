@@ -62,7 +62,13 @@ export async function getAdminStats() {
  * すべての選手を id 昇順で取得するユーティリティ関数。
  * API ルート（/api/players）などから呼び出して使用します。
  */
-export async function getPlayers(rosterId?: number, userId?: number | string) {
+export async function getPlayers(
+  rosterId?: number,
+  userId?: number | string,
+  opts?: { includeImage?: boolean; includeExtra?: boolean },
+) {
+  const includeImage = opts?.includeImage ?? true;
+  const includeExtra = opts?.includeExtra ?? true;
   // Safely normalize userId: accept string or number, ignore invalid
   const uid = typeof userId === 'string' ? Number(userId) : userId;
   const hasUid = typeof uid === 'number' && Number.isFinite(uid);
@@ -92,7 +98,22 @@ export async function getPlayers(rosterId?: number, userId?: number | string) {
       include: {
         players: {
           where: { player: playerWhere },
-          include: { player: true },
+          include: {
+            player: {
+              select: {
+                id: true,
+                name: true,
+                position: true,
+                number: true,
+                image: includeImage,
+                wikiUrl: true,
+                userId: true,
+                basePlayerId: true,
+                isDeleted: true,
+                extra: includeExtra,
+              },
+            },
+          },
           orderBy: { playerId: 'asc' },
         },
       },
@@ -109,7 +130,17 @@ export async function getPlayers(rosterId?: number, userId?: number | string) {
   const players = await prisma.player.findMany({
     where: playerWhere,
     orderBy: { id: 'asc' },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      position: true,
+      number: true,
+      image: includeImage,
+      wikiUrl: true,
+      userId: true,
+      basePlayerId: true,
+      isDeleted: true,
+      extra: includeExtra,
       rosterPlayers: {
         include: {
           roster: { select: { tournamentId: true } },

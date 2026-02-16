@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import prisma, { getRosters, ensureTournamentRoster } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug') || undefined;
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  const userId = session?.user?.id ? Number(session.user.id) : undefined;
+  const { userId } = await resolveSessionUserId(session);
   const rosters = await getRosters(slug, userId);
   return NextResponse.json(rosters);
 }
@@ -17,8 +18,8 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = Number(session.user.id);
-  if (!Number.isFinite(userId)) {
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
       { status: 401 }
@@ -29,7 +30,12 @@ export async function POST(req: Request) {
     if (!tournament || typeof tournament !== 'string') {
       return NextResponse.json({ error: 'Invalid tournament' }, { status: 400 });
     }
-    const roster = await ensureTournamentRoster(tournament, prisma, undefined, userId);
+    const roster = await ensureTournamentRoster(
+      tournament,
+      prisma,
+      undefined,
+      Number.isFinite(userId) ? userId : undefined
+    );
     const full = await prisma.roster.findUnique({
       where: { id: roster.id },
       include: { tournament: true },

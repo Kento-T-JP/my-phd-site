@@ -14,6 +14,7 @@ import path from 'path';
 import { RosterInfo } from '@/types/roster';
 import { verifyCsrfToken } from '@/lib/csrf';
 import { PlayerSchema } from '@/lib/schemas/player';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -35,13 +36,15 @@ async function savePlayerImage(file: File): Promise<string> {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const lite = searchParams.get('lite') === '1';
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  const rawId = session?.user?.id;
-  const userId = rawId === undefined ? undefined : Number(rawId);
+  const { userId } = await resolveSessionUserId(session);
   const players = await getPlayers(
     undefined,
     Number.isFinite(userId) ? userId : undefined,
+    { includeImage: !lite, includeExtra: !lite },
   );
   const filtered = players.filter(
     (p) => p.name.toLowerCase() !== 'unknown'
@@ -57,9 +60,8 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const rawId = session.user.id;
-  const userId = Number(rawId);
-  if (!Number.isFinite(userId)) {
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
       { status: 401 }
@@ -137,7 +139,7 @@ export async function POST(req: Request) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
-          userId,
+          userId: Number.isFinite(userId) ? userId : undefined,
           role: 'player',
         },
         undefined,
@@ -163,7 +165,7 @@ export async function POST(req: Request) {
           rosterTitle,
           tx,
           tournamentDate,
-          userId,
+          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           roster.id,
@@ -182,7 +184,7 @@ export async function POST(req: Request) {
           tournamentName,
           tx,
           tournamentDate,
-          userId,
+          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           rosterInfo.id,
@@ -208,6 +210,96 @@ export async function POST(req: Request) {
     return NextResponse.json({ player, roster: rosterInfo }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : '選手の登録に失敗しました';
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  if (!verifyCsrfToken(req)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const body = await req.json();
+    const ids = Array.isArray(body?.ids)
+      ? body.ids.map((id: unknown) => Number(id)).filter((id: number) => Number.isFinite(id))
+      : [];
+    if (ids.length === 0) {
+      return NextResponse.json({ error: 'ids is required' }, { status: 400 });
+    }
+
+    const players = await prisma.player.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        number: true,
+        image: true,
+        wikiUrl: true,
+        userId: true,
+      },
+    });
+
+    let deleted = 0;
+    let skipped = 0;
+    const deletedIds: number[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      for (const player of players) {
+        if (player.userId && player.userId !== userId && !isAdmin) {
+          skipped += 1;
+          continue;
+        }
+        if (!player.userId && !isAdmin) {
+          await tx.player.upsert({
+            where: {
+              userId_name: { userId: userId as number, name: player.name },
+            },
+            update: {
+              isDeleted: true,
+              basePlayerId: player.id,
+              position: player.position,
+              number: player.number,
+              image: player.image,
+              wikiUrl: player.wikiUrl,
+            },
+            create: {
+              name: player.name,
+              position: player.position,
+              number: player.number,
+              image: player.image,
+              wikiUrl: player.wikiUrl,
+              userId: userId as number,
+              basePlayerId: player.id,
+              isDeleted: true,
+            },
+          });
+        } else {
+          await tx.player.update({
+            where: { id: player.id },
+            data: { isDeleted: true },
+          });
+        }
+        deleted += 1;
+        deletedIds.push(player.id);
+      }
+    });
+
+    return NextResponse.json({ deleted, skipped, requested: ids.length, deletedIds });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '選手の削除に失敗しました';
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -44,7 +44,7 @@ export async function normalizeUploadImage(
       const srcY = Math.round(
         (image.naturalHeight - srcSize) / 2 + (offsetY / 100) * maxShiftY
       );
-      const targetSize = Math.min(1024, srcSize);
+      const targetSize = Math.min(512, srcSize);
       canvas.width = targetSize;
       canvas.height = targetSize;
       ctx.drawImage(
@@ -72,7 +72,7 @@ export async function normalizeUploadImage(
     }
 
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((nextBlob) => resolve(nextBlob), "image/jpeg", 0.85);
+      canvas.toBlob((nextBlob) => resolve(nextBlob), "image/jpeg", 0.78);
     });
     URL.revokeObjectURL(objectUrl);
     if (!blob) return file;

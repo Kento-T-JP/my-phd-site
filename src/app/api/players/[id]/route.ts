@@ -15,6 +15,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { RosterInfo } from '@/types/roster';
 import { unwrapParams } from '@/lib/unwrap';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -254,9 +255,7 @@ export async function PUT(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
-  const rawId = session.user.id;
-  const userId = Number(rawId);
+  const { userId, isAdmin } = await resolveSessionUserId(session);
   if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
@@ -283,7 +282,7 @@ export async function PUT(
       return handleUpdate(
         req,
         num,
-        userId,
+        userId as number,
     );
   }
   return handleUpdate(req, num);
@@ -297,9 +296,7 @@ export async function DELETE(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
-  const rawId = session.user.id;
-  const userId = Number(rawId);
+  const { userId, isAdmin } = await resolveSessionUserId(session);
   if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
       { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
@@ -330,7 +327,7 @@ export async function DELETE(
         number: player.number,
         image: player.image,
         wikiUrl: player.wikiUrl,
-        userId,
+        userId: userId as number,
         basePlayerId: id,
         isDeleted: true,
       },

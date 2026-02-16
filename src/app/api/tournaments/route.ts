@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma, { getTournaments, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
+import { resolveSessionUserId } from '@/lib/sessionUser';
 
 function normalizeTournamentName(name: string) {
   return name.normalize('NFKC').trim().replace(/\s+/g, ' ');
@@ -9,7 +10,7 @@ function normalizeTournamentName(name: string) {
 
 export async function GET() {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  const userId = session?.user?.id ? Number(session.user.id) : undefined;
+  const { userId } = await resolveSessionUserId(session);
   const list = await getTournaments(userId);
   return NextResponse.json(list);
 }
@@ -30,14 +31,16 @@ export async function POST(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const userId = session?.user?.id ? Number(session.user.id) : undefined;
-    if (!Number.isFinite(userId)) {
+    const { userId, isAdmin } = await resolveSessionUserId(session);
+    if (!isAdmin && !Number.isFinite(userId)) {
       return NextResponse.json(
         { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
         { status: 401 }
       );
     }
-    const tournaments = await getTournaments(userId);
+    const tournaments = await getTournaments(
+      Number.isFinite(userId) ? userId : undefined
+    );
     const duplicate = tournaments.some(
       (t) => normalizeTournamentName(t.name).toLowerCase() === normalizedName.toLowerCase()
     );
