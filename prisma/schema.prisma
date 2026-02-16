@@ -27,6 +27,7 @@ model Player {
   extra           Json?
 
   @@unique([userId, name])
+  @@index([userId, isDeleted, id])
 }
 
 model Tournament {
@@ -38,6 +39,7 @@ model Tournament {
   rosters Roster[]
 
   @@unique([userId, slug])
+  @@index([userId, name])
 }
 
 model Roster {
@@ -52,6 +54,8 @@ model Roster {
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, title])
+  @@index([userId, date])
+  @@index([tournamentId, userId])
 }
 
 model RosterPlayer {
@@ -63,6 +67,8 @@ model RosterPlayer {
   roster   Roster   @relation(fields: [rosterId], references: [id])
 
   @@unique([rosterId, playerId])
+  @@index([playerId])
+  @@index([rosterId])
 }
 
 model User {
@@ -129,6 +135,8 @@ model Formation {
   updatedAt DateTime        @updatedAt
   user      User            @relation(fields: [userId], references: [id])
   nodes     FormationNode[]
+
+  @@index([userId, updatedAt])
 }
 
 model FormationNode {
@@ -160,6 +168,8 @@ model ContactSubmission {
   ip        String?
   userAgent String?
   status    String   @default("received")
+
+  @@index([createdAt])
 }
 
 model EmailVerificationToken {
@@ -184,4 +194,7 @@ model Visit {
   ip        String?
   userAgent String?
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([ip])
 }
