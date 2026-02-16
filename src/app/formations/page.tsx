@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
 import Formation from "@/components/Formation";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -10,12 +10,15 @@ import useClickSound from "@/lib/useClickSound";
 
 function FormationsPageContent() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const formationId = searchParams.get("formationId");
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | "">("");
   const { play } = useClickSound();
+  const storageKey = `selectedFormation_${session?.user?.id ?? "anonymous"}`;
 
   const loadList = useCallback(async () => {
     const res = await fetch("/api/formations");
@@ -24,17 +27,25 @@ function FormationsPageContent() {
       setList(data);
       if (data.length > 0) {
         setSelectedId((prev) => {
-          if (prev !== "") return prev;
+          if (prev !== "" && data.some((f) => f.id === prev)) return prev;
           const paramId = formationId ? Number(formationId) : NaN;
           if (!Number.isNaN(paramId) && data.some((f) => f.id === paramId)) {
             return paramId;
           }
+          if (typeof window !== "undefined") {
+            const stored = Number(localStorage.getItem(storageKey));
+            if (!Number.isNaN(stored) && data.some((f) => f.id === stored)) {
+              return stored;
+            }
+          }
           return data[0].id;
         });
+      } else {
+        setSelectedId("");
       }
     }
     setLoading(false);
-  }, [formationId]);
+  }, [formationId, storageKey]);
 
   useEffect(() => {
     if (!session) return;
@@ -54,6 +65,27 @@ function FormationsPageContent() {
 
   const selectedFormation =
     selectedId === "" ? null : list.find((f) => f.id === selectedId) || null;
+
+  useEffect(() => {
+    if (selectedId === "") {
+      localStorage.removeItem(storageKey);
+      return;
+    }
+    localStorage.setItem(storageKey, String(selectedId));
+  }, [selectedId, storageKey]);
+
+  useEffect(() => {
+    const current = selectedId === "" ? null : String(selectedId);
+    if (current === formationId) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (selectedId === "") {
+      params.delete("formationId");
+    } else {
+      params.set("formationId", String(selectedId));
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [formationId, pathname, router, searchParams, selectedId]);
 
   if (!session) {
     return (
