@@ -15,6 +15,7 @@ import { RosterInfo } from '@/types/roster';
 import { verifyCsrfToken } from '@/lib/csrf';
 import { PlayerSchema } from '@/lib/schemas/player';
 import { resolveSessionUserId } from '@/lib/sessionUser';
+import type { Prisma } from '@prisma/client';
 
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -39,17 +40,79 @@ async function savePlayerImage(file: File): Promise<string> {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lite = searchParams.get('lite') === '1';
+  const paged = searchParams.get('paged') === '1';
+  const q = (searchParams.get('q') ?? '').trim();
+  const rosterIds = (searchParams.get('rosterIds') ?? '')
+    .split(',')
+    .map((v) => Number(v))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  const positions = (searchParams.get('positions') ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
+  const pageSizeRaw = Number(searchParams.get('pageSize') ?? '200') || 200;
+  const pageSize = Math.min(500, Math.max(20, pageSizeRaw));
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const { userId } = await resolveSessionUserId(session);
-  const players = await getPlayers(
-    undefined,
-    Number.isFinite(userId) ? userId : undefined,
-    { includeImage: !lite, includeExtra: !lite },
-  );
-  const filtered = players.filter(
-    (p) => p.name.toLowerCase() !== 'unknown'
-  );
-  return NextResponse.json(filtered);
+  const uid = Number.isFinite(userId) ? Number(userId) : undefined;
+  if (!uid) {
+    return NextResponse.json(paged ? { players: [], total: 0, page, pageSize } : []);
+  }
+
+  const where: Prisma.PlayerWhereInput = {
+    userId: uid,
+    isDeleted: false,
+    ...(rosterIds.length > 0
+      ? { rosterPlayers: { some: { rosterId: { in: rosterIds } } } }
+      : {}),
+    ...(positions.length > 0 ? { position: { hasSome: positions } } : {}),
+    AND: [
+      { NOT: { name: { equals: 'unknown', mode: 'insensitive' as const } } },
+      ...(q ? [{ name: { contains: q, mode: 'insensitive' as const } }] : []),
+    ],
+  };
+
+  if (paged) {
+    const [players, total] = await Promise.all([
+      prisma.player.findMany({
+        where,
+        orderBy: { id: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          number: true,
+          image: !lite,
+          wikiUrl: true,
+          userId: true,
+          basePlayerId: true,
+          isDeleted: true,
+          extra: !lite,
+          rosterPlayers: {
+            include: {
+              roster: { select: { tournamentId: true } },
+            },
+          },
+        },
+      }),
+      prisma.player.count({ where }),
+    ]);
+    return NextResponse.json({
+      players: players.map((p) => ({ ...p, role: 'player' })),
+      total,
+      page,
+      pageSize,
+    });
+  }
+
+  const players = await getPlayers(undefined, uid, {
+    includeImage: !lite,
+    includeExtra: !lite,
+  });
+  return NextResponse.json(players.filter((p) => p.name.toLowerCase() !== 'unknown'));
 }
 
 export async function POST(req: Request) {

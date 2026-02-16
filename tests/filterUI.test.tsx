@@ -31,7 +31,12 @@ const tournaments = [{ id: 1, name: 'Cup', slug: 'cup' }];
 
 function mockFetch() {
   return vi.fn((url: string) => {
-    if (url.startsWith('/api/players')) return Promise.resolve({ ok: true, json: async () => [] });
+    if (url.startsWith('/api/players')) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ players: [], total: 0, page: 1, pageSize: 200 }),
+      });
+    }
     if (url.startsWith('/api/rosters')) return Promise.resolve({ ok: true, json: async () => rosters });
     if (url.startsWith('/api/tournaments')) return Promise.resolve({ ok: true, json: async () => tournaments });
     if (url.startsWith('/api/favorites')) return Promise.resolve({ ok: true, json: async () => [] });
@@ -75,7 +80,10 @@ describe('Roster filter UI', () => {
     ];
     global.fetch = vi.fn((url: string) => {
       if (url.startsWith('/api/players'))
-        return Promise.resolve({ ok: true, json: async () => players });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ players, total: players.length, page: 1, pageSize: 200 }),
+        });
       if (url.startsWith('/api/rosters'))
         return Promise.resolve({ ok: true, json: async () => rosters });
       if (url.startsWith('/api/tournaments'))

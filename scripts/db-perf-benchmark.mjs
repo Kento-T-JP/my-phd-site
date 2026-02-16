@@ -188,6 +188,14 @@ async function runExplain(userId) {
 
 async function runBench() {
   const { userId } = await ensureBenchData();
+  const benchRosterIds = (
+    await prisma.roster.findMany({
+      where: { userId },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+      take: 8,
+    })
+  ).map((r) => r.id);
 
   const oldUniqueVisitorsQuery = async () => {
     const rows = await prisma.visit.findMany({ distinct: ['ip'], select: { ip: true } });
@@ -225,6 +233,38 @@ async function runBench() {
           },
         },
       });
+    })
+  );
+
+  results.push(
+    await timed('players_list_paged_filtered_query', 20, async () => {
+      const where = {
+        userId,
+        isDeleted: false,
+        AND: [{ NOT: { name: { equals: 'unknown', mode: 'insensitive' } } }],
+        rosterPlayers: { some: { rosterId: { in: benchRosterIds } } },
+        position: { hasSome: ['DF', 'MF'] },
+      };
+      await Promise.all([
+        prisma.player.count({ where }),
+        prisma.player.findMany({
+          where,
+          orderBy: { id: 'asc' },
+          skip: 0,
+          take: 200,
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            number: true,
+            rosterPlayers: {
+              include: {
+                roster: { select: { tournamentId: true } },
+              },
+            },
+          },
+        }),
+      ]);
     })
   );
 
