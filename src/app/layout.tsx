@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import AuthProvider from "@/components/AuthProvider";
 import CanvasParticles from "@/components/CanvasParticles";
 import Analytics from "@/components/Analytics";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import HomeNav from "@/components/HomeNav";
 import Footer from "@/components/Footer";
 import "./globals.css";
@@ -52,6 +53,7 @@ export default function RootLayout({
             <HomeNav />
             <div className="pt-24 pb-10">
               <Analytics />
+              <VercelAnalytics />
               <div id="main-content" className="app-shell">
                 {children}
               </div>
