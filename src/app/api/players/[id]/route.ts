@@ -167,6 +167,7 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         );
       }
       const rosterUserId = overrideUserId ?? player.userId ?? undefined;
+      const ownerId = Number.isFinite(rosterUserId) ? (rosterUserId as number) : undefined;
       if (rosterId) {
         await addRosterPlayers(
           rosterId,
@@ -184,13 +185,16 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         }
         rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
-        const tournament = await upsertTournament(tournamentName, tx);
+        if (!ownerId) {
+          throw new Error('Tournament owner could not be resolved.');
+        }
+        const tournament = await upsertTournament(tournamentName, ownerId, tx);
         const roster = await upsertRoster(
           tournament.id,
           rosterTitle,
+          ownerId,
           tx,
           tournamentDate,
-          rosterUserId,
         );
         await addRosterPlayers(
           roster.id,
@@ -208,11 +212,14 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         }
         rosterInfo = roster;
       } else if (tournamentName) {
+        if (!ownerId) {
+          throw new Error('Tournament owner could not be resolved.');
+        }
         rosterInfo = await ensureTournamentRoster(
           tournamentName,
+          ownerId,
           tx,
           tournamentDate,
-          rosterUserId,
         );
         await addRosterPlayers(
           rosterInfo.id,

@@ -3,9 +3,8 @@ import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 
-function parseUserId(value: unknown): number | null | undefined {
+function parseUserId(value: unknown): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
-  if (value === 'shared') return null;
   const num = Number(value);
   if (!Number.isFinite(num)) return undefined;
   return num;
@@ -28,10 +27,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const rosterWhere =
-      userId === null
-        ? { tournamentId, userId: null }
-        : { tournamentId, userId };
+    const rosterWhere = { tournamentId, userId };
 
     const rosterIds = (
       await prisma.roster.findMany({ where: rosterWhere, select: { id: true } })

@@ -56,6 +56,70 @@ export async function DELETE(
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
   }
-  await prisma.user.delete({ where: { id } });
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true },
+  });
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const ownedPlayers = await tx.player.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+    const ownedPlayerIds = ownedPlayers.map((p) => p.id);
+
+    const ownedRosters = await tx.roster.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+    const ownedRosterIds = ownedRosters.map((r) => r.id);
+
+    await tx.favoritePlayer.deleteMany({ where: { userId: id } });
+    if (ownedPlayerIds.length > 0) {
+      await tx.favoritePlayer.deleteMany({
+        where: { playerId: { in: ownedPlayerIds } },
+      });
+    }
+
+    await tx.formation.deleteMany({ where: { userId: id } });
+    if (ownedPlayerIds.length > 0) {
+      await tx.formationNode.deleteMany({
+        where: { playerId: { in: ownedPlayerIds } },
+      });
+    }
+
+    if (ownedRosterIds.length > 0) {
+      await tx.rosterPlayer.deleteMany({
+        where: { rosterId: { in: ownedRosterIds } },
+      });
+    }
+    if (ownedPlayerIds.length > 0) {
+      await tx.rosterPlayer.deleteMany({
+        where: { playerId: { in: ownedPlayerIds } },
+      });
+    }
+
+    if (ownedPlayerIds.length > 0) {
+      await tx.player.updateMany({
+        where: {
+          basePlayerId: { in: ownedPlayerIds },
+          NOT: { userId: id },
+        },
+        data: { basePlayerId: null },
+      });
+    }
+
+    await tx.roster.deleteMany({ where: { userId: id } });
+    await tx.tournament.deleteMany({ where: { userId: id } });
+    await tx.player.deleteMany({ where: { userId: id } });
+
+    await tx.pendingRegistration.deleteMany({ where: { email: user.email } });
+
+    await tx.user.delete({ where: { id } });
+  });
+
   return NextResponse.json({ success: true });
 }

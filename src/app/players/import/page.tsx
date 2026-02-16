@@ -13,6 +13,14 @@ interface ImportedPlayer {
   selected?: boolean;
 }
 
+type SaveResult = {
+  count: number;
+  created?: number;
+  updated?: number;
+  restored?: number;
+  requested?: number;
+};
+
 export default function ImportPlayersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -26,6 +34,7 @@ export default function ImportPlayersPage() {
   const [saving, setSaving] = useState(false);
   const [rowErrors, setRowErrors] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [saveResult, setSaveResult] = useState<SaveResult | null>(null);
 
   if (status === "loading") {
     return (
@@ -47,12 +56,14 @@ export default function ImportPlayersPage() {
     setError("");
     setMessage("");
     setRowErrors([]);
+    setSaveResult(null);
   };
 
   const handleImport = async () => {
     if (!file) return;
     setError("");
     setMessage("");
+    setSaveResult(null);
     const form = new FormData();
     form.append("file", file);
     setUploading(true);
@@ -128,6 +139,7 @@ export default function ImportPlayersPage() {
   const handleSubmit = async () => {
     setError("");
     setMessage("");
+    setSaveResult(null);
     setRowErrors([]);
     const selected = players
       .filter((p) => p.selected)
@@ -157,7 +169,12 @@ export default function ImportPlayersPage() {
         setRowErrors([]);
       }
       const count = typeof data.count === "number" ? data.count : 0;
-      setMessage(`${count}件の選手を保存しました`);
+      const created = typeof data.created === "number" ? data.created : 0;
+      const updated = typeof data.updated === "number" ? data.updated : 0;
+      const restored = typeof data.restored === "number" ? data.restored : 0;
+      const requested = typeof data.requested === "number" ? data.requested : count;
+      setSaveResult({ count, created, updated, restored, requested });
+      setMessage(`${count}件の選手を反映しました`);
       setPlayers([]);
       setFile(null);
       if (fileInputRef.current) {
@@ -175,30 +192,48 @@ export default function ImportPlayersPage() {
   };
 
   return (
-    <main className="p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
-      <h1 className="text-xl font-bold">選手インポート</h1>
-      <p className="text-sm text-white-600">
-        Upload an Excel file (<code>.xlsx</code>) that includes the required columns:
-        <code>name</code> (Japanese: 名前) and <code>position</code> or <code>positions</code>
-        (Japanese: ポジション). Multiple positions should be separated by commas or spaces.
-        <br />
-        <br />
-        エクセルファイル（<code>.xlsx</code>）には、必ず列（カラム）として
-        <code>name</code>（日本語：名前）と <code>position</code> または
-        <code>positions</code>（日本語：ポジション）を含めてください。
-        複数のポジションはカンマまたは空白で区切って入力できます。
-        日本語の列名 <code>名前</code> と <code>ポジション</code> も使用できます。
-      </p>
-      <div className="flex items-center gap-2">
+    <main className="p-4 sm:p-8 max-w-4xl mx-auto space-y-4">
+      <h1 className="text-xl font-bold">選手インポート（Excel）</h1>
+
+      <section className="rounded-lg border border-slate-700/70 bg-slate-900/60 p-4 space-y-3">
+        <p className="text-sm leading-6 text-slate-200">
+          <span className="font-semibold text-cyan-200">必須列:</span>{" "}
+          <code>name</code>（または <code>名前</code>） /{" "}
+          <code>position</code>・<code>positions</code>（または <code>ポジション</code>）
+          <br />
+          ポジションはカンマ or 空白区切りで複数指定できます（例: <code>CB RB</code>）。
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-[560px] w-full text-sm border border-slate-700">
+            <thead className="bg-slate-800 text-slate-100">
+              <tr>
+                <th className="border border-slate-700 px-2 py-1 text-left">name / 名前</th>
+                <th className="border border-slate-700 px-2 py-1 text-left">position / ポジション</th>
+                <th className="border border-slate-700 px-2 py-1 text-left">その他列</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-200">
+              <tr>
+                <td className="border border-slate-700 px-2 py-1">久保 建英</td>
+                <td className="border border-slate-700 px-2 py-1">RW AM</td>
+                <td className="border border-slate-700 px-2 py-1">number, wikiUrl, memo ...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input
           ref={fileInputRef}
           type="file"
           accept=".xlsx"
           onChange={handleFileChange}
           disabled={uploading || saving}
+          className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-slate-700 file:px-3 file:py-2 file:text-slate-100 hover:file:bg-slate-600"
         />
         <button
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50 sm:w-auto w-full"
           onClick={() => {
             play();
             void handleImport();
@@ -216,8 +251,20 @@ export default function ImportPlayersPage() {
       </div>
       {error && <p className="text-red-600">{error}</p>}
       {message && <p className="text-green-600">{message}</p>}
+      {saveResult && (
+        <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-emerald-100">
+          <p className="font-semibold">保存結果</p>
+          <p>
+            反映: {saveResult.count}件 / 処理対象: {saveResult.requested ?? saveResult.count}件
+          </p>
+          <p>
+            新規作成: {saveResult.created ?? 0}件 / 更新: {saveResult.updated ?? 0}件 / 復元:{" "}
+            {saveResult.restored ?? 0}件
+          </p>
+        </div>
+      )}
       {rowErrors.length > 0 && (
-        <ul className="text-red-600 list-disc pl-5">
+        <ul className="text-red-600 list-disc pl-5 rounded-lg border border-red-700/60 bg-red-950/20 p-3">
           {rowErrors.map((e, i) =>
             e ? (
               <li key={i}>{`Row ${i + 1}: ${e}`}</li>
@@ -227,13 +274,17 @@ export default function ImportPlayersPage() {
       )}
       {players.length > 0 && (
         <div>
-          <table className="w-full border border-collapse">
+          <div className="mb-2 text-sm text-slate-200">
+            解析成功: {players.length}件 / 選択中: {players.filter((p) => p.selected).length}件
+          </div>
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] border border-collapse border-slate-700">
             <thead>
-              <tr className="bg-gray-100 text-gray-800">
-                <th className="border px-2 py-1">選択</th>
-                <th className="border px-2 py-1">名前</th>
-                <th className="border px-2 py-1">ポジション</th>
-                <th className="border px-2 py-1">詳細</th>
+              <tr className="bg-slate-800 text-slate-100">
+                <th className="border border-slate-700 px-2 py-1">選択</th>
+                <th className="border border-slate-700 px-2 py-1">名前</th>
+                <th className="border border-slate-700 px-2 py-1">ポジション</th>
+                <th className="border border-slate-700 px-2 py-1">詳細</th>
               </tr>
             </thead>
             <tbody>
@@ -247,7 +298,7 @@ export default function ImportPlayersPage() {
                     }}
                     className="cursor-pointer"
                   >
-                    <td className="border px-2 py-1 text-center">
+                    <td className="border border-slate-700 px-2 py-1 text-center">
                       <input
                         type="checkbox"
                         checked={p.selected}
@@ -258,9 +309,9 @@ export default function ImportPlayersPage() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td className="border px-2 py-1">{p.name}</td>
-                    <td className="border px-2 py-1">{p.position.join(", ")}</td>
-                    <td className="border px-2 py-1 text-center">
+                    <td className="border border-slate-700 px-2 py-1">{p.name}</td>
+                    <td className="border border-slate-700 px-2 py-1">{p.position.join(", ")}</td>
+                    <td className="border border-slate-700 px-2 py-1 text-center">
                       {Object.keys(p.extra).length > 0 && (expanded === idx ? "▲" : "▼")}
                     </td>
                   </tr>
@@ -268,7 +319,7 @@ export default function ImportPlayersPage() {
                     <tr key={`extra-${idx}`} className="bg-gray-50">
                       <td
                         colSpan={4}
-                        className="border px-2 py-1 text-sm text-gray-800"
+                        className="border border-slate-700 px-2 py-1 text-sm text-slate-200"
                       >
                         <pre className="whitespace-pre-wrap break-words">
                           {JSON.stringify(p.extra, null, 2)}
@@ -280,6 +331,7 @@ export default function ImportPlayersPage() {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="mt-4 flex items-center gap-2">
             <button
               className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"

@@ -25,18 +25,22 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/lib/db', () => {
-  const client = { $transaction: vi.fn() } as any;
+  const client = {
+    player: {
+      findMany: vi.fn(),
+      createMany: vi.fn(),
+      update: vi.fn(),
+    },
+  } as any;
   return {
     __esModule: true,
     default: client,
-    upsertPlayer: vi.fn(),
   };
 });
 
 describe('player import API', () => {
   let sessionSpy: any;
   let prisma: any;
-  let upsertSpy: any;
 
   beforeEach(async () => {
     const auth = await import('next-auth/next');
@@ -46,9 +50,12 @@ describe('player import API', () => {
 
     const mod = await import('@/lib/db');
     prisma = mod.default as any;
-    upsertSpy = mod.upsertPlayer as any;
-    prisma.$transaction.mockImplementation(async (fn: any) => fn(prisma));
-    upsertSpy.mockReset();
+    prisma.player.findMany.mockReset();
+    prisma.player.createMany.mockReset();
+    prisma.player.update.mockReset();
+    prisma.player.findMany.mockResolvedValue([]);
+    prisma.player.createMany.mockResolvedValue({ count: 0 });
+    prisma.player.update.mockResolvedValue({});
   });
 
   it('rejects non-xlsx files', async () => {
@@ -163,15 +170,22 @@ describe('player import API', () => {
     const req = { json: async () => body } as any;
     const res = await PUT(req);
     expect(res.status).toBe(200);
-    expect(upsertSpy).toHaveBeenCalledTimes(1);
-    expect(upsertSpy).toHaveBeenCalledWith(
-      { name: 'A', position: ['GK'], role: 'player', extra: { note: 'x' } },
-      undefined,
-      prisma,
-      1,
-    );
+    expect(prisma.player.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.player.createMany).toHaveBeenCalledTimes(1);
+    expect(prisma.player.update).not.toHaveBeenCalled();
+    const createArg = prisma.player.createMany.mock.calls[0]?.[0];
+    expect(createArg.data).toEqual([
+      {
+        name: 'A',
+        position: ['GK'],
+        isDeleted: false,
+        userId: 1,
+        extra: { note: 'x' },
+      },
+    ]);
     const data = await res.json();
     expect(data.count).toBe(1);
+    expect(data.created).toBe(1);
+    expect(data.updated).toBe(0);
   });
 });
-

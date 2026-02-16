@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       { status: 401 }
     );
   }
+  const ownerId = Number.isFinite(userId) ? (userId as number) : undefined;
   try {
     const form = await req.formData();
     const name = form.get('name');
@@ -139,7 +140,7 @@ export async function POST(req: Request) {
           number: parsed.data.number,
           image: imagePath,
           wikiUrl: parsed.data.wikiUrl,
-          userId: Number.isFinite(userId) ? userId : undefined,
+          userId: ownerId,
           role: 'player',
         },
         undefined,
@@ -159,13 +160,16 @@ export async function POST(req: Request) {
         );
         rosterInfo = { id: rosterId };
       } else if (rosterTitle && tournamentName) {
-        const tournament = await upsertTournament(tournamentName, tx);
+        if (!ownerId) {
+          throw new Error('Tournament owner could not be resolved.');
+        }
+        const tournament = await upsertTournament(tournamentName, ownerId, tx);
         const roster = await upsertRoster(
           tournament.id,
           rosterTitle,
+          ownerId,
           tx,
           tournamentDate,
-          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           roster.id,
@@ -180,11 +184,14 @@ export async function POST(req: Request) {
         );
         rosterInfo = roster;
       } else if (tournamentName) {
+        if (!ownerId) {
+          throw new Error('Tournament owner could not be resolved.');
+        }
         rosterInfo = await ensureTournamentRoster(
           tournamentName,
+          ownerId,
           tx,
           tournamentDate,
-          Number.isFinite(userId) ? userId : undefined,
         );
         await addRosterPlayers(
           rosterInfo.id,

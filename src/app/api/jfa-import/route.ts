@@ -19,6 +19,13 @@ export async function POST(req: Request) {
       { status: 401 }
     );
   }
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'Tournament owner could not be resolved.' },
+      { status: 400 }
+    );
+  }
+  const ownerId = userId as number;
   try {
     const body = await req.json();
     const url = body?.url;
@@ -125,9 +132,9 @@ export async function POST(req: Request) {
       tournamentName,
       rosterTitle,
       rosterEntries,
+      ownerId,
       rosterDate,
       prisma,
-      Number.isFinite(userId) ? userId : undefined,
     );
 
     const importedPlayerIds = rosterEntries.map((entry) => entry.playerId);

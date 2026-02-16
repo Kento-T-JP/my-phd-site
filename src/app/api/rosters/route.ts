@@ -25,16 +25,22 @@ export async function POST(req: Request) {
       { status: 401 }
     );
   }
+  const ownerId = Number.isFinite(userId) ? (userId as number) : undefined;
   try {
     const { tournament } = await req.json();
     if (!tournament || typeof tournament !== 'string') {
       return NextResponse.json({ error: 'Invalid tournament' }, { status: 400 });
     }
+    if (!ownerId) {
+      return NextResponse.json(
+        { error: 'Tournament owner could not be resolved.' },
+        { status: 400 },
+      );
+    }
     const roster = await ensureTournamentRoster(
       tournament,
+      ownerId,
       prisma,
-      undefined,
-      Number.isFinite(userId) ? userId : undefined
     );
     const full = await prisma.roster.findUnique({
       where: { id: roster.id },

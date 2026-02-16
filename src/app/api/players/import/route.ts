@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
-import prisma, { upsertPlayer } from '@/lib/db';
+import prisma from '@/lib/db';
 import { normalizePosition } from '@/lib/positions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
+import type { Prisma } from '@prisma/client';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.id) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { userId, isAdmin } = await resolveSessionUserId(session);
@@ -100,28 +101,102 @@ export async function PUT(req: Request) {
     if (!Array.isArray(players)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
-    const count = await prisma.$transaction(async (tx) => {
-      let inserted = 0;
-      for (const p of players) {
-        if (!p || typeof p.name !== 'string' || !Array.isArray(p.position)) {
-          continue;
-        }
-        await upsertPlayer(
-          {
-            name: p.name,
-            position: p.position,
-            role: 'player',
-            extra: p.extra as Record<string, unknown> | undefined,
-          },
-          undefined,
-          tx,
-          Number.isFinite(userId) ? userId : undefined,
-        );
-        inserted += 1;
-      }
-      return inserted;
+    const ownerId = Number.isFinite(userId) ? (userId as number) : null;
+    const normalized = players
+      .filter(
+        (p): p is { name: string; position: string[]; extra?: Record<string, unknown> } =>
+          Boolean(
+            p &&
+              typeof p.name === 'string' &&
+              p.name.trim() &&
+              Array.isArray(p.position) &&
+              p.position.length > 0,
+          ),
+      )
+      .map((p) => ({
+        name: p.name.trim(),
+        position: Array.from(
+          new Set(
+            p.position
+              .map((pos) => normalizePosition(String(pos ?? '')))
+              .filter((pos) => pos.length > 0),
+          ),
+        ),
+        extra:
+          p.extra && typeof p.extra === 'object'
+            ? (p.extra as Prisma.InputJsonValue)
+            : undefined,
+      }))
+      .filter((p) => p.position.length > 0);
+
+    if (normalized.length === 0) {
+      return NextResponse.json({ error: '保存対象の選手がありません' }, { status: 400 });
+    }
+
+    const names = Array.from(new Set(normalized.map((p) => p.name)));
+    const existing = await prisma.player.findMany({
+      where: { userId: ownerId, name: { in: names } },
+      select: { id: true, name: true, isDeleted: true },
     });
-    return NextResponse.json({ count });
+    const existingByName = new Map(existing.map((p) => [p.name, p]));
+    const latestByName = new Map(normalized.map((p) => [p.name, p]));
+
+    const toCreate: {
+      name: string;
+      position: string[];
+      isDeleted: false;
+      userId: number | null;
+      extra?: Prisma.InputJsonValue;
+    }[] = [];
+    const toUpdate: {
+      id: number;
+      data: { name: string; position: string[]; isDeleted: false; extra?: Prisma.InputJsonValue };
+      restored: boolean;
+    }[] = [];
+
+    latestByName.forEach((payload, name) => {
+      const before = existingByName.get(name);
+      if (!before) {
+        toCreate.push({
+          name: payload.name,
+          position: payload.position,
+          isDeleted: false,
+          userId: ownerId,
+          extra: payload.extra,
+        });
+        return;
+      }
+      toUpdate.push({
+        id: before.id,
+        data: {
+          name: payload.name,
+          position: payload.position,
+          isDeleted: false,
+          extra: payload.extra,
+        },
+        restored: before.isDeleted,
+      });
+    });
+
+    if (toCreate.length > 0) {
+      await prisma.player.createMany({ data: toCreate });
+    }
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map((p) =>
+          prisma.player.update({
+            where: { id: p.id },
+            data: p.data,
+          }),
+        ),
+      );
+    }
+
+    const created = toCreate.length;
+    const updated = toUpdate.filter((p) => !p.restored).length;
+    const restored = toUpdate.filter((p) => p.restored).length;
+    const count = created + updated + restored;
+    return NextResponse.json({ count, created, updated, restored, requested: normalized.length });
   } catch (err) {
     const msg = err instanceof Error ? err.message : '保存に失敗しました';
     return NextResponse.json({ error: msg }, { status: 500 });

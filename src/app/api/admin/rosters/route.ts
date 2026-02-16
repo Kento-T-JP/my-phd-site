@@ -3,9 +3,8 @@ import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 
-function parseUserFilter(value: string | null): number | null | undefined {
+function parseUserFilter(value: string | null): number | undefined {
   if (value === null || value === '') return undefined;
-  if (value === 'shared') return null;
   const num = Number(value);
   if (!Number.isFinite(num)) return undefined;
   return num;
@@ -22,9 +21,7 @@ export async function GET(req: Request) {
   const where =
     userFilter === undefined
       ? undefined
-      : userFilter === null
-        ? { userId: null }
-        : { userId: userFilter };
+      : { userId: userFilter };
 
   const rosters = await prisma.roster.findMany({
     where,
@@ -59,7 +56,7 @@ export async function DELETE(req: Request) {
 
     const roster = await prisma.roster.findUnique({
       where: { id: rosterId },
-      select: { id: true, title: true, tournamentId: true },
+      select: { id: true, title: true, tournamentId: true, userId: true },
     });
     if (!roster) {
       return NextResponse.json({ error: 'Roster not found' }, { status: 404 });

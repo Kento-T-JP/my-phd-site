@@ -32,8 +32,12 @@ model Player {
 model Tournament {
   id      Int      @id @default(autoincrement())
   name    String
-  slug    String   @unique
+  slug    String
+  userId  Int
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rosters Roster[]
+
+  @@unique([userId, slug])
 }
 
 model Roster {
@@ -44,8 +48,8 @@ model Roster {
   endDate      DateTime?
   tournament   Tournament     @relation(fields: [tournamentId], references: [id])
   players      RosterPlayer[]
-  userId       Int?
-  user         User?          @relation(fields: [userId], references: [id])
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, title])
 }
@@ -77,6 +81,7 @@ model User {
   formations         Formation[]
   players            Player[]
   rosters            Roster[]
+  tournaments        Tournament[]
   accounts           Account[]
   sessions           Session[]
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma, { getTournaments, upsertTournament } from '@/lib/db';
+import { getTournaments, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
@@ -38,9 +38,14 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-    const tournaments = await getTournaments(
-      Number.isFinite(userId) ? userId : undefined
-    );
+    if (!Number.isFinite(userId)) {
+      return NextResponse.json(
+        { error: 'Tournament owner could not be resolved.' },
+        { status: 400 }
+      );
+    }
+    const ownerId = userId as number;
+    const tournaments = await getTournaments(ownerId);
     const duplicate = tournaments.some(
       (t) => normalizeTournamentName(t.name).toLowerCase() === normalizedName.toLowerCase()
     );
@@ -51,7 +56,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const tournament = await upsertTournament(normalizedName);
+    const tournament = await upsertTournament(normalizedName, ownerId);
     return NextResponse.json(tournament);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to upsert tournament';
@@ -70,47 +75,9 @@ export async function DELETE(req: Request) {
       { status: 403 }
     );
   }
+  return NextResponse.json(
+    { error: 'Use /api/admin/tournaments for user-scoped tournament deletion.' },
+    { status: 400 },
+  );
 
-  try {
-    const body = await req.json();
-    const nameRaw = typeof body?.name === 'string' ? body.name : '';
-    const name = normalizeTournamentName(nameRaw);
-    if (!name) {
-      return NextResponse.json({ error: 'Tournament name is required' }, { status: 400 });
-    }
-
-    const tournament = await prisma.tournament.findFirst({
-      where: {
-        name: {
-          equals: name,
-          mode: 'insensitive',
-        },
-      },
-      select: { id: true, name: true },
-    });
-    if (!tournament) {
-      return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.rosterPlayer.deleteMany({
-        where: {
-          roster: {
-            tournamentId: tournament.id,
-          },
-        },
-      });
-      await tx.roster.deleteMany({
-        where: { tournamentId: tournament.id },
-      });
-      await tx.tournament.delete({
-        where: { id: tournament.id },
-      });
-    });
-
-    return NextResponse.json({ ok: true, name: tournament.name });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to delete tournament';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
 }

@@ -35,7 +35,7 @@ export default function AdminRostersPage() {
   const { data: session, status } = useSession();
   const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>("shared");
+  const [selectedUser, setSelectedUser] = useState<string>("");
   const [rosters, setRosters] = useState<AdminRoster[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
@@ -44,7 +44,6 @@ export default function AdminRostersPage() {
   const { play } = useClickSound();
 
   const selectedUserLabel = useMemo(() => {
-    if (selectedUser === "shared") return "共有データ";
     const found = users.find((u) => String(u.id) === selectedUser);
     return found?.email ?? "ユーザー";
   }, [selectedUser, users]);
@@ -71,12 +70,6 @@ export default function AdminRostersPage() {
     );
   }, [rosters]);
 
-  async function loadUsers() {
-    const res = await fetch("/api/admin/users");
-    if (!res.ok) throw new Error("Failed to fetch users");
-    setUsers(await res.json());
-  }
-
   async function loadRosters(userId: string) {
     setIsLoading(true);
     setError(null);
@@ -99,8 +92,17 @@ export default function AdminRostersPage() {
       setIsLoading(true);
       setError(null);
       try {
-        await loadUsers();
-        await loadRosters(selectedUser);
+        const res = await fetch("/api/admin/users");
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const userList: AdminUser[] = await res.json();
+        setUsers(userList);
+        const defaultUser = userList.length > 0 ? String(userList[0].id) : "";
+        setSelectedUser(defaultUser);
+        if (defaultUser) {
+          await loadRosters(defaultUser);
+        } else {
+          setRosters([]);
+        }
       } catch {
         setError("初期データの取得に失敗しました");
       } finally {
@@ -110,9 +112,9 @@ export default function AdminRostersPage() {
   }, [status, isAdmin]);
 
   useEffect(() => {
-    if (status !== "authenticated" || !isAdmin) return;
+    if (status !== "authenticated" || !isAdmin || !selectedUser) return;
     loadRosters(selectedUser);
-  }, [selectedUser]);
+  }, [selectedUser, status, isAdmin]);
 
   if (status === "loading") {
     return (
@@ -209,7 +211,6 @@ export default function AdminRostersPage() {
           }}
           disabled={isLoading || deletingKey !== null}
         >
-          <option value="shared">共有データ（userId: null）</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.email}
