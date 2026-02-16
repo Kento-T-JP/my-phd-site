@@ -113,7 +113,9 @@ export async function DELETE(
     }
 
     await tx.roster.deleteMany({ where: { userId: id } });
-    await tx.tournament.deleteMany({ where: { userId: id } });
+    await tx.tournament.deleteMany({
+      where: { rosters: { some: { userId: id } } },
+    });
     await tx.player.deleteMany({ where: { userId: id } });
 
     await tx.pendingRegistration.deleteMany({ where: { email: user.email } });
