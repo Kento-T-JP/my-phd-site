@@ -63,7 +63,8 @@ describe('Roster filter UI', () => {
     await screen.findByText('Apply Filters');
     expect(screen.getByText('Roster (0)')).toBeTruthy();
     expect(screen.getByText('Position (0)')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Cup - 2024/01/01-2024/01/10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Roster (0) filter' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Cup - 2024/01/01-2024/01/10' }));
     await waitFor(() => expect(screen.getByText('Roster (1)')).toBeTruthy());
     expect(screen.getByText('Position (0)')).toBeTruthy();
   });
@@ -85,6 +86,7 @@ describe('Roster filter UI', () => {
     });
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
-    expect(screen.getByRole('button', { name: 'Sweeper' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Position (0) filter' }));
+    expect(screen.getByRole('checkbox', { name: 'Sweeper' })).toBeTruthy();
   });
 });
