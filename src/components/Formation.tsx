@@ -264,6 +264,7 @@ export default function Formation({
   const [viewportWidth, setViewportWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
+  const didRunFilterEffectRef = useRef(false);
 
   const positionOptions = useMemo(() => {
     const defaultPositions = formations.flatMap((f) =>
@@ -412,7 +413,6 @@ export default function Formation({
   useEffect(() => {
     fetchPlayers();
     fetchRosters();
-    setFilter({});
   }, [session?.user?.id, fetchPlayers, fetchRosters]);
 
   const refetchPlayersAndRosters = useCallback(() => {
@@ -797,12 +797,10 @@ export default function Formation({
   );
 
   useEffect(() => {
-    const hasActiveFilter =
-      Boolean(filter.name?.trim()) ||
-      filter.rosterId !== undefined ||
-      filter.tournamentId !== undefined ||
-      Boolean(filter.position?.trim());
-    if (!hasActiveFilter) return;
+    if (!didRunFilterEffectRef.current) {
+      didRunFilterEffectRef.current = true;
+      return;
+    }
     handleReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);

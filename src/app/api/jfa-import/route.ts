@@ -56,9 +56,10 @@ export async function POST(req: Request) {
     let skipped = 0;
     const toCreate: typeof players = [];
     const toUpdate: { playerId: number; payload: (typeof players)[number] }[] = [];
-    const processedNames: string[] = [];
+    const processedNames = new Set<string>();
     for (const p of players) {
       const before = existingByName.get(p.name);
+      processedNames.add(p.name);
       if (skipExisting && before) {
         skipped += 1;
         continue;
@@ -70,7 +71,6 @@ export async function POST(req: Request) {
       } else {
         updated += 1;
       }
-      processedNames.push(p.name);
       if (!before) {
         toCreate.push(p);
       } else {
@@ -107,17 +107,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const processedNameList = Array.from(processedNames);
     const processedPlayers =
-      processedNames.length > 0
+      processedNameList.length > 0
         ? await prisma.player.findMany({
-            where: { userId: ownerId, name: { in: processedNames } },
+            where: { userId: ownerId, name: { in: processedNameList } },
             select: { id: true, name: true, number: true, position: true },
           })
         : [];
     const playerByName = new Map(processedPlayers.map((p) => [p.name, p]));
 
     const rosterEntries: { playerId: number; number?: number; position?: string[] }[] = [];
-    for (const name of processedNames) {
+    for (const name of processedNameList) {
       const p = playerByName.get(name);
       if (!p) continue;
       rosterEntries.push({

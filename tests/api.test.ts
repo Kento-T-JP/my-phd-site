@@ -498,4 +498,47 @@ describe('jfa import route', () => {
       expect.anything(),
     );
   });
+
+  it('links existing players to roster even when skipExisting is true', async () => {
+    const { POST } = await import('../src/app/api/jfa-import/route');
+    validateSpy.mockReturnValue(true);
+    scrapeSpy.mockResolvedValue({
+      players: [{ name: 'John', number: 7, image: 'img', position: ['FW'] }],
+      tournamentName: 'Cup',
+      tournamentSlug: 'cup',
+      rosterTitle: 'Cup - 2024/07/21',
+      rosterDate: new Date('2024-07-21'),
+    });
+    prisma.player.findMany
+      .mockResolvedValueOnce([{ id: 10, name: 'John', isDeleted: false }])
+      .mockResolvedValueOnce([{ id: 10, name: 'John', number: 7, position: ['FW'] }]);
+    prisma.player.createMany.mockResolvedValue({ count: 0 });
+    prisma.player.updateMany.mockResolvedValue({ count: 1 });
+    prisma.rosterPlayer.count.mockResolvedValue(1);
+    linkSlugSpy.mockResolvedValue({ id: 6, title: 'Cup - 2024/07/21' });
+
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({
+          url: 'https://www.jfa.jp/samuraiblue/member.html',
+          skipExisting: true,
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(linkSlugSpy).toHaveBeenCalledWith(
+      'cup',
+      'Cup',
+      'Cup - 2024/07/21',
+      [{ playerId: 10, number: 7, position: ['FW'] }],
+      1,
+      new Date('2024-07-21'),
+      expect.anything(),
+    );
+    const data = await res.json();
+    expect(data.skipped).toBe(1);
+    expect(data.linked).toBe(1);
+  });
 });
