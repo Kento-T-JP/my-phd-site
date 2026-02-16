@@ -477,7 +477,7 @@ export default function PlayersPage({
                   <WikiLink
                     name={p.name}
                     wikiUrl={p.wikiUrl}
-                    className="ml-2"
+                    className="ml-2 hide-mobile-portrait"
                   />
                 </div>
               </td>
