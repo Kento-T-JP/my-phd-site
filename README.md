@@ -109,7 +109,7 @@ npx prisma generate && npx prisma migrate deploy && next build
 - Bot対策: reCAPTCHA（ログイン / 登録 / 問い合わせ）
 - CSRF対策: 主要POST APIで `X-CSRF-Token` を検証
 - 入力検証: Zod スキーマでサーバー側バリデーション
-- ヘッダー対策: CSP / HSTS / X-Frame-Options / nosniff を middleware で付与
+- ヘッダー対策: CSP / HSTS / X-Frame-Options / nosniff を proxy で付与
 - 問い合わせAPIに簡易レート制限（IP単位）
 - 運用面: `.env` / `.env.local` は Git 管理しない（秘密情報は Vercel の Environment Variables で管理）
 

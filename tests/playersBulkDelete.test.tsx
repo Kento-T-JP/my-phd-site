@@ -61,7 +61,7 @@ describe('Bulk delete players', () => {
     render(<PlayersPage getCsrfTokenFn={async () => 'test-csrf'} />);
     await screen.findByText('A');
 
-    const deleteButton = screen.getByText('Delete selected') as HTMLButtonElement;
+    const deleteButton = screen.getByText('Delete') as HTMLButtonElement;
     expect(deleteButton.disabled).toBe(true);
     fireEvent.click(deleteButton);
     await waitFor(() => {
@@ -88,7 +88,7 @@ describe('Bulk delete players', () => {
     fireEvent.click(screen.getByLabelText('Select player 1'));
     fireEvent.click(screen.getByLabelText('Select player 2'));
 
-    const deleteButton = screen.getByText('Delete selected') as HTMLButtonElement;
+    const deleteButton = screen.getByText('Delete') as HTMLButtonElement;
     await waitFor(() => expect(deleteButton.disabled).toBe(false));
     fireEvent.click(deleteButton);
 
