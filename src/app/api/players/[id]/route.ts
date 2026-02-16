@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma, {
   updatePlayer,
-  createPlayer,
   ensureTournamentRoster,
   addRosterPlayers,
   syncRosterPlayers,
@@ -41,6 +40,17 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   const unwrapped = await unwrapParams(params);
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
@@ -58,6 +68,9 @@ export async function GET(
   });
   if (!player) {
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
+  }
+  if (!isAdmin && player.userId !== userId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   return NextResponse.json({ ...player, role: 'player' });
 }
@@ -136,36 +149,20 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         });
       }
 
-      if (overrideUserId) {
-        player = await createPlayer(
-          {
-            name: parsed.data.name,
-            position: parsed.data.position,
-            number: parsed.data.number,
-            image: imagePath,
-            wikiUrl: parsed.data.wikiUrl,
-            userId: Number.isFinite(overrideUserId) ? overrideUserId : undefined,
-            basePlayerId: id,
-            role: 'player',
-          },
-          undefined,
-          tx,
-        );
-      } else {
-        player = await updatePlayer(
-          id,
-          {
-            name: parsed.data.name,
-            position: parsed.data.position,
-            number: parsed.data.number,
-            image: imagePath,
-            wikiUrl: parsed.data.wikiUrl,
-            role: 'player',
-          },
-          undefined,
-          tx,
-        );
-      }
+      player = await updatePlayer(
+        id,
+        {
+          name: parsed.data.name,
+          position: parsed.data.position,
+          number: parsed.data.number,
+          image: imagePath,
+          wikiUrl: parsed.data.wikiUrl,
+          userId: Number.isFinite(overrideUserId) ? overrideUserId : undefined,
+          role: 'player',
+        },
+        undefined,
+        tx,
+      );
       const rosterUserId = overrideUserId ?? player.userId ?? undefined;
       const ownerId = Number.isFinite(rosterUserId) ? (rosterUserId as number) : undefined;
       if (rosterId) {
@@ -279,20 +276,12 @@ export async function PUT(
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
   if (
-    player.userId &&
     player.userId !== userId &&
     !isAdmin
   ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (!player.userId && !isAdmin) {
-      return handleUpdate(
-        req,
-        num,
-        userId as number,
-    );
-  }
-  return handleUpdate(req, num);
+  return handleUpdate(req, num, Number.isFinite(userId) ? (userId as number) : undefined);
 }
 
 export async function DELETE(
@@ -320,31 +309,15 @@ export async function DELETE(
     return NextResponse.json({ error: '選手が見つかりません' }, { status: 404 });
   }
   if (
-    player.userId &&
     player.userId !== userId &&
     !isAdmin
   ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (!player.userId && !isAdmin) {
-    await prisma.player.create({
-      data: {
-        name: player.name,
-        position: player.position,
-        number: player.number,
-        image: player.image,
-        wikiUrl: player.wikiUrl,
-        userId: userId as number,
-        basePlayerId: id,
-        isDeleted: true,
-      },
-    });
-  } else {
-    await prisma.player.update({
-      where: { id },
-      data: { isDeleted: true },
-    });
-  }
+  await prisma.player.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
   return NextResponse.json({ success: true });
 }
 

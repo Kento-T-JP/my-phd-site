@@ -69,32 +69,19 @@ export async function getPlayers(
 ) {
   const includeImage = opts?.includeImage ?? true;
   const includeExtra = opts?.includeExtra ?? true;
-  // Safely normalize userId: accept string or number, ignore invalid
   const uid = typeof userId === 'string' ? Number(userId) : userId;
   const hasUid = typeof uid === 'number' && Number.isFinite(uid);
-
-  const baseIds: number[] = [];
-  if (hasUid) {
-    const overrides = await prisma.player.findMany({
-      where: { userId: uid, basePlayerId: { not: null } },
-      select: { basePlayerId: true },
-    });
-    for (const o of overrides) {
-      if (o.basePlayerId !== null) {
-        baseIds.push(o.basePlayerId);
-      }
-    }
+  if (!hasUid) {
+    return [];
   }
-  const playerWhere: Prisma.PlayerWhereInput = hasUid
-    ? {
-        isDeleted: false,
-        OR: [{ userId: uid }, { userId: null }],
-        id: baseIds.length ? { notIn: baseIds } : undefined,
-      }
-    : { isDeleted: false, userId: null };
+
+  const playerWhere: Prisma.PlayerWhereInput = {
+    isDeleted: false,
+    userId: uid,
+  };
   if (rosterId) {
-    const roster = await prisma.roster.findUnique({
-      where: { id: rosterId },
+    const roster = await prisma.roster.findFirst({
+      where: { id: rosterId, userId: uid },
       include: {
         players: {
           where: { player: playerWhere },
@@ -313,57 +300,21 @@ export async function upsertTournament(
   if (!normalizedName) {
     throw new Error('Tournament name is required');
   }
-  const dbAny = client as any;
-  const nameWhereCandidates = [
-    { userId, name: { equals: normalizedName, mode: 'insensitive' } },
-    { user: { id: userId }, name: { equals: normalizedName, mode: 'insensitive' } },
-    { rosters: { some: { userId } }, name: { equals: normalizedName, mode: 'insensitive' } },
-    { name: { equals: normalizedName, mode: 'insensitive' } },
-  ];
-  for (const where of nameWhereCandidates) {
-    try {
-      const found = await dbAny.tournament.findFirst({ where });
-      if (found) return found;
-    } catch {
-      // Try the next shape for Prisma schema compatibility.
-    }
+  const existingByName = await client.tournament.findFirst({
+    where: {
+      userId,
+      name: { equals: normalizedName, mode: 'insensitive' },
+    },
+  });
+  if (existingByName) {
+    return existingByName;
   }
-
   const slug = normalizeSlug(normalizedName);
-  const slugWhereCandidates = [
-    { userId, slug },
-    { user: { id: userId }, slug },
-    { rosters: { some: { userId } }, slug },
-    { slug },
-  ];
-  for (const where of slugWhereCandidates) {
-    try {
-      const found = await dbAny.tournament.findFirst({ where });
-      if (found) {
-        return dbAny.tournament.update({
-          where: { id: found.id },
-          data: { name: normalizedName },
-        });
-      }
-    } catch {
-      // Try the next shape for Prisma schema compatibility.
-    }
-  }
-
-  const createCandidates = [
-    { name: normalizedName, slug, userId },
-    { name: normalizedName, slug, user: { connect: { id: userId } } },
-    { name: normalizedName, slug },
-  ];
-  let lastError: unknown;
-  for (const data of createCandidates) {
-    try {
-      return await dbAny.tournament.create({ data });
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw lastError ?? new Error('Failed to create tournament');
+  return client.tournament.upsert({
+    where: { userId_slug: { userId, slug } },
+    update: { name: normalizedName },
+    create: { name: normalizedName, slug, userId },
+  });
 }
 
 /** Upsert a tournament using an explicit slug. */
@@ -380,56 +331,20 @@ export async function upsertTournamentBySlug(
   if (!normalizedName) {
     throw new Error('Tournament name is required');
   }
-  const dbAny = client as any;
-  const nameWhereCandidates = [
-    { userId, name: { equals: normalizedName, mode: 'insensitive' } },
-    { user: { id: userId }, name: { equals: normalizedName, mode: 'insensitive' } },
-    { rosters: { some: { userId } }, name: { equals: normalizedName, mode: 'insensitive' } },
-    { name: { equals: normalizedName, mode: 'insensitive' } },
-  ];
-  for (const where of nameWhereCandidates) {
-    try {
-      const found = await dbAny.tournament.findFirst({ where });
-      if (found) return found;
-    } catch {
-      // Try the next shape for Prisma schema compatibility.
-    }
+  const existingByName = await client.tournament.findFirst({
+    where: {
+      userId,
+      name: { equals: normalizedName, mode: 'insensitive' },
+    },
+  });
+  if (existingByName) {
+    return existingByName;
   }
-
-  const slugWhereCandidates = [
-    { userId, slug },
-    { user: { id: userId }, slug },
-    { rosters: { some: { userId } }, slug },
-    { slug },
-  ];
-  for (const where of slugWhereCandidates) {
-    try {
-      const found = await dbAny.tournament.findFirst({ where });
-      if (found) {
-        return dbAny.tournament.update({
-          where: { id: found.id },
-          data: { name: normalizedName },
-        });
-      }
-    } catch {
-      // Try the next shape for Prisma schema compatibility.
-    }
-  }
-
-  const createCandidates = [
-    { name: normalizedName, slug, userId },
-    { name: normalizedName, slug, user: { connect: { id: userId } } },
-    { name: normalizedName, slug },
-  ];
-  let lastError: unknown;
-  for (const data of createCandidates) {
-    try {
-      return await dbAny.tournament.create({ data });
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw lastError ?? new Error('Failed to create tournament');
+  return client.tournament.upsert({
+    where: { userId_slug: { userId, slug } },
+    update: { name: normalizedName },
+    create: { name: normalizedName, slug, userId },
+  });
 }
 
 /** Upsert a roster by (tournamentId, title). */
@@ -606,7 +521,7 @@ export async function getRosters(slug?: string, userId?: number) {
   }
   const where: Prisma.RosterWhereInput = {
     userId: uid,
-    ...(slug ? { tournament: { slug } } : {}),
+    ...(slug ? { tournament: { slug, userId: uid } } : {}),
   };
   return prisma.roster.findMany({
     where,
@@ -629,7 +544,10 @@ export async function getTournaments(userId?: number) {
   if (uid === undefined) {
     return [];
   }
-  const where = { rosters: { some: { userId: uid } } };
+  const where: Prisma.TournamentWhereInput = {
+    userId: uid,
+    rosters: { some: { userId: uid } },
+  };
   return prisma.tournament.findMany({
     where,
     orderBy: { name: 'asc' },
@@ -646,6 +564,7 @@ export async function getTournamentNames(search?: string, userId?: number) {
   }
   return prisma.tournament.findMany({
     where: {
+      userId: uid,
       ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
       rosters: { some: { userId: uid } },
     },

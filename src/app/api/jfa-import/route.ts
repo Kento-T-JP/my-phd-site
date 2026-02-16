@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     const existing = await prisma.player.findMany({
       where: {
-        userId: null,
+        userId: ownerId,
         name: { in: players.map((p) => p.name) },
       },
       select: { id: true, name: true, isDeleted: true },
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
           position: p.position,
           number: p.number,
           image: p.image,
-          userId: null,
+          userId: ownerId,
           isDeleted: false,
         })),
       });
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
     const processedPlayers =
       processedNames.length > 0
         ? await prisma.player.findMany({
-            where: { userId: null, name: { in: processedNames } },
+            where: { userId: ownerId, name: { in: processedNames } },
             select: { id: true, name: true, number: true, position: true },
           })
         : [];

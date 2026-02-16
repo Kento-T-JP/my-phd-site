@@ -67,7 +67,13 @@ export async function POST(req: Request) {
       { status: 401 }
     );
   }
-  const ownerId = Number.isFinite(userId) ? (userId as number) : undefined;
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
+  const ownerId = userId as number;
   try {
     const form = await req.formData();
     const name = form.get('name');
@@ -265,40 +271,14 @@ export async function DELETE(req: Request) {
 
     await prisma.$transaction(async (tx) => {
       for (const player of players) {
-        if (player.userId && player.userId !== userId && !isAdmin) {
+        if (!player.userId || (player.userId !== userId && !isAdmin)) {
           skipped += 1;
           continue;
         }
-        if (!player.userId && !isAdmin) {
-          await tx.player.upsert({
-            where: {
-              userId_name: { userId: userId as number, name: player.name },
-            },
-            update: {
-              isDeleted: true,
-              basePlayerId: player.id,
-              position: player.position,
-              number: player.number,
-              image: player.image,
-              wikiUrl: player.wikiUrl,
-            },
-            create: {
-              name: player.name,
-              position: player.position,
-              number: player.number,
-              image: player.image,
-              wikiUrl: player.wikiUrl,
-              userId: userId as number,
-              basePlayerId: player.id,
-              isDeleted: true,
-            },
-          });
-        } else {
-          await tx.player.update({
-            where: { id: player.id },
-            data: { isDeleted: true },
-          });
-        }
+        await tx.player.update({
+          where: { id: player.id },
+          data: { isDeleted: true },
+        });
         deleted += 1;
         deletedIds.push(player.id);
       }

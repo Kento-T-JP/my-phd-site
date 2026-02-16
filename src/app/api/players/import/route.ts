@@ -101,7 +101,13 @@ export async function PUT(req: Request) {
     if (!Array.isArray(players)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
-    const ownerId = Number.isFinite(userId) ? (userId as number) : null;
+    if (!Number.isFinite(userId)) {
+      return NextResponse.json(
+        { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+        { status: 401 }
+      );
+    }
+    const ownerId = userId as number;
     const normalized = players
       .filter(
         (p): p is { name: string; position: string[]; extra?: Record<string, unknown> } =>
