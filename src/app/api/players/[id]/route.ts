@@ -109,6 +109,14 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
       typeof dateEntry === 'string' && dateEntry.trim() !== ''
         ? new Date(dateEntry)
         : undefined;
+    const removeRosterIds = Array.from(
+      new Set(
+        form
+          .getAll('removeRosterId')
+          .map((v) => Number(typeof v === 'string' ? v : ''))
+          .filter((v) => Number.isFinite(v) && v > 0),
+      ),
+    );
 
     if (rosterTitle && !tournamentName) {
       return NextResponse.json(
@@ -153,6 +161,14 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
         undefined,
         tx,
       );
+      if (removeRosterIds.length > 0) {
+        await tx.rosterPlayer.deleteMany({
+          where: {
+            playerId: player.id,
+            rosterId: { in: removeRosterIds },
+          },
+        });
+      }
       const rosterUserId = overrideUserId ?? player.userId ?? undefined;
       const ownerId = Number.isFinite(rosterUserId) ? (rosterUserId as number) : undefined;
       if (rosterId) {

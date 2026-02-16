@@ -42,7 +42,7 @@ vi.mock('next-auth/next', () => ({
 let prisma: {
   player: { findUnique: any };
   roster: { findUnique: any };
-  rosterPlayer: { findFirst: any; delete: any; create: any };
+  rosterPlayer: { findFirst: any; delete: any; create: any; deleteMany: any };
 };
 let updateSpy: ReturnType<typeof vi.fn>;
 let createSpy: ReturnType<typeof vi.fn>;
@@ -90,6 +90,7 @@ describe('player API routes', () => {
     prisma.rosterPlayer.findFirst = vi.fn();
     prisma.rosterPlayer.delete = vi.fn();
     prisma.rosterPlayer.create = vi.fn();
+    prisma.rosterPlayer.deleteMany = vi.fn();
     updateSpy.mockReset();
     createSpy.mockReset();
     upsertSpy.mockReset();
@@ -275,6 +276,22 @@ describe('player API routes', () => {
     expect(res.status).toBe(200);
     expect(addSpy).not.toHaveBeenCalled();
     expect(syncSpy).not.toHaveBeenCalled();
+  });
+
+  it('PUT removes selected roster links when removeRosterId is provided', async () => {
+    const { PUT } = await import('../src/app/api/players/[id]/route');
+    prisma.player.findUnique.mockResolvedValue({ id: 1, userId: 1 });
+    updateSpy.mockResolvedValue({ id: 1, name: 'E', position: ['MF'], role: 'player', userId: 1 });
+    const form = new FormData();
+    form.append('name', 'E');
+    form.append('position', 'MF');
+    form.append('removeRosterId', '12');
+    const req = new Request('http://test', { method: 'PUT', body: form });
+    const res = await PUT(req, { params: Promise.resolve({ id: '1' }) });
+    expect(res.status).toBe(200);
+    expect(prisma.rosterPlayer.deleteMany).toHaveBeenCalledWith({
+      where: { playerId: 1, rosterId: { in: [12] } },
+    });
   });
 
   it('PUT creates override for global player', async () => {
