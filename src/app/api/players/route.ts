@@ -157,11 +157,16 @@ export async function POST(req: Request) {
       typeof tournamentEntry === 'string' && tournamentEntry.trim() !== ''
         ? tournamentEntry
         : undefined;
-    const rosterEntry = form.get('rosterId');
-    const rosterId =
-      typeof rosterEntry === 'string' && rosterEntry.trim() !== ''
-        ? Number(rosterEntry)
-        : undefined;
+    const rosterIds = Array.from(
+      new Set(
+        form
+          .getAll('rosterId')
+          .map((entry) =>
+            typeof entry === 'string' && entry.trim() !== '' ? Number(entry) : NaN
+          )
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
     const rosterTitleEntry = form.get('roster');
     const rosterTitle =
       typeof rosterTitleEntry === 'string' && rosterTitleEntry.trim() !== ''
@@ -215,20 +220,9 @@ export async function POST(req: Request) {
         undefined,
         tx,
       );
-      if (rosterId) {
-        await addRosterPlayers(
-          rosterId,
-          [
-            {
-              playerId: player.id,
-              number: parsed.data.number,
-              position: parsed.data.position,
-            },
-          ],
-          tx,
-        );
-        rosterInfo = { id: rosterId };
-      } else if (rosterTitle && tournamentName) {
+      const rosterIdsToLink = new Set<number>(rosterIds);
+
+      if (rosterTitle && tournamentName) {
         if (!ownerId) {
           throw new Error('Tournament owner could not be resolved.');
         }
@@ -240,17 +234,7 @@ export async function POST(req: Request) {
           tx,
           tournamentDate,
         );
-        await addRosterPlayers(
-          roster.id,
-          [
-            {
-              playerId: player.id,
-              number: parsed.data.number,
-              position: parsed.data.position,
-            },
-          ],
-          tx,
-        );
+        rosterIdsToLink.add(roster.id);
         rosterInfo = roster;
       } else if (tournamentName) {
         if (!ownerId) {
@@ -262,8 +246,12 @@ export async function POST(req: Request) {
           tx,
           tournamentDate,
         );
+        rosterIdsToLink.add(rosterInfo.id);
+      }
+
+      for (const id of rosterIdsToLink) {
         await addRosterPlayers(
-          rosterInfo.id,
+          id,
           [
             {
               playerId: player.id,
@@ -273,6 +261,10 @@ export async function POST(req: Request) {
           ],
           tx,
         );
+      }
+
+      if (!rosterInfo && rosterIds.length > 0) {
+        rosterInfo = { id: rosterIds[0] };
       }
     });
 
