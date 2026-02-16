@@ -257,6 +257,12 @@ export async function PUT(
   const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const rawId = session.user.id;
   const userId = Number(rawId);
+  if (!isAdmin && !Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   const unwrapped = await unwrapParams(params);
   const num = Number(unwrapped.id);
   if (Number.isNaN(num)) {
@@ -274,10 +280,10 @@ export async function PUT(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   if (!player.userId && !isAdmin) {
-    return handleUpdate(
-      req,
-      num,
-      Number.isFinite(userId) ? userId : undefined,
+      return handleUpdate(
+        req,
+        num,
+        userId,
     );
   }
   return handleUpdate(req, num);
@@ -294,6 +300,12 @@ export async function DELETE(
   const isAdmin = Boolean((session.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const rawId = session.user.id;
   const userId = Number(rawId);
+  if (!isAdmin && !Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   const unwrapped = await unwrapParams(params);
   const id = Number(unwrapped.id);
   if (Number.isNaN(id)) {
@@ -318,7 +330,7 @@ export async function DELETE(
         number: player.number,
         image: player.image,
         wikiUrl: player.wikiUrl,
-        userId: Number.isFinite(userId) ? userId : undefined,
+        userId,
         basePlayerId: id,
         isDeleted: true,
       },

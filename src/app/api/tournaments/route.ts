@@ -27,7 +27,16 @@ export async function POST(req: Request) {
     }
 
     const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
+    if (!Number.isFinite(userId)) {
+      return NextResponse.json(
+        { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+        { status: 401 }
+      );
+    }
     const tournaments = await getTournaments(userId);
     const duplicate = tournaments.some(
       (t) => normalizeTournamentName(t.name).toLowerCase() === normalizedName.toLowerCase()

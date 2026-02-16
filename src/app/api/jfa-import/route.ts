@@ -14,6 +14,12 @@ export async function POST(req: Request) {
   }
   const rawId = session.user?.id;
   const userId = rawId === undefined ? undefined : Number(rawId);
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   try {
     const body = await req.json();
     const url = body?.url;
@@ -78,7 +84,7 @@ export async function POST(req: Request) {
       rosterEntries,
       rosterDate,
       prisma,
-      Number.isFinite(userId) ? userId : undefined,
+      userId,
     );
 
     const importedPlayerIds = rosterEntries.map((entry) => entry.playerId);

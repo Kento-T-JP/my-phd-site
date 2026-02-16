@@ -87,7 +87,13 @@ export async function PUT(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = Number(session.user.id);
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   try {
     const { players } = await req.json();
     if (!Array.isArray(players)) {

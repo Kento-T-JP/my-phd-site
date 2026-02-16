@@ -17,12 +17,18 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const userId = Number(session.user.id);
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json(
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 }
+    );
+  }
   try {
     const { tournament } = await req.json();
     if (!tournament || typeof tournament !== 'string') {
       return NextResponse.json({ error: 'Invalid tournament' }, { status: 400 });
     }
-    const userId = Number(session.user.id);
     const roster = await ensureTournamentRoster(tournament, prisma, undefined, userId);
     const full = await prisma.roster.findUnique({
       where: { id: roster.id },

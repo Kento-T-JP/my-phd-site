@@ -136,7 +136,7 @@ export async function createPlayer(
   const dup = await client.player.findFirst({
     where: { name: data.name, userId: userId ?? null },
   });
-  if (dup) {
+  if (dup && !dup.isDeleted) {
     throw new Error('同じ名前の選手が既に存在します');
   }
   const { role, extra, rosterPlayers, ...rest } = data;
@@ -153,9 +153,17 @@ export async function createPlayer(
     userId,
     extra: extra as Prisma.InputJsonValue | undefined,
   };
-  const player = await client.player.create({
-    data: playerData,
-  });
+  const player = dup
+    ? await client.player.update({
+        where: { id: dup.id },
+        data: {
+          ...playerData,
+          isDeleted: false,
+        },
+      })
+    : await client.player.create({
+        data: playerData,
+      });
   if (rosterId) {
     await addRosterPlayers(rosterId, [{ playerId: player.id }], client);
   }
@@ -196,7 +204,11 @@ export async function upsertPlayer(
   if (existing) {
     player = await client.player.update({
       where: { id: existing.id },
-      data: playerData,
+      data: {
+        ...playerData,
+        // Upsert should revive soft-deleted records by default.
+        isDeleted: playerData.isDeleted ?? false,
+      },
     });
   } else {
     player = await client.player.create({
@@ -315,23 +327,29 @@ export async function upsertRoster(
   if (!normalizedTitle) {
     throw new Error('試合リスト名が空です');
   }
+  const normalizedUserId =
+    typeof userId === 'number' && Number.isFinite(userId) ? userId : undefined;
   const existingByName = await client.roster.findFirst({
     where: {
+      tournamentId,
       title: { equals: normalizedTitle, mode: 'insensitive' },
     },
-    select: { id: true, tournamentId: true },
+    select: { id: true, tournamentId: true, userId: true },
   });
-  if (existingByName && existingByName.tournamentId !== tournamentId) {
-    throw new Error('同じ名前の試合リストは作成できません');
-  }
   if (existingByName && existingByName.tournamentId === tournamentId) {
+    if (normalizedUserId !== undefined && existingByName.userId === null) {
+      return client.roster.update({
+        where: { id: existingByName.id },
+        data: { userId: normalizedUserId },
+      });
+    }
     return client.roster.findUniqueOrThrow({ where: { id: existingByName.id } });
   }
   const where = { tournamentId_title: { tournamentId, title: normalizedTitle } } as const;
   return client.roster.upsert({
     where,
     update: {},
-    create: { tournamentId, title: normalizedTitle, date: date ?? new Date(), userId: userId ?? null },
+    create: { tournamentId, title: normalizedTitle, date: date ?? new Date(), userId: normalizedUserId ?? null },
   });
 }
 
@@ -343,6 +361,8 @@ export async function ensureTournamentRoster(
   userId?: number,
 ) {
   const tournament = await upsertTournament(name, client);
+  const normalizedUserId =
+    typeof userId === 'number' && Number.isFinite(userId) ? userId : undefined;
   let roster: Awaited<ReturnType<typeof client.roster.findFirst>> | null = null;
 
   if (rosterDate) {
@@ -358,6 +378,11 @@ export async function ensureTournamentRoster(
     });
     if (!roster) {
       roster = await upsertRoster(tournament.id, title, client, rosterDate, userId);
+    } else if (normalizedUserId !== undefined && roster.userId === null) {
+      roster = await client.roster.update({
+        where: { id: roster.id },
+        data: { userId: normalizedUserId },
+      });
     }
   } else {
     roster = await client.roster.findFirst({
@@ -371,6 +396,11 @@ export async function ensureTournamentRoster(
       const dd = String(date.getDate()).padStart(2, '0');
       const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
       roster = await upsertRoster(tournament.id, title, client, date, userId);
+    } else if (normalizedUserId !== undefined && roster.userId === null) {
+      roster = await client.roster.update({
+        where: { id: roster.id },
+        data: { userId: normalizedUserId },
+      });
     }
   }
   return roster;
