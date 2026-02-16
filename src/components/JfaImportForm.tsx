@@ -8,18 +8,25 @@ export default function JfaImportForm() {
   const [url, setUrl] = useState("");
   const [skipExisting, setSkipExisting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const router = useRouter();
   const { play } = useClickSound();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isImporting) return;
     setMessage(null);
-    const res = await fetch("/api/jfa-import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, skipExisting }),
-    });
-    const data = await res.json();
+    setImportStatus("JFAページを確認しています...");
+    setIsImporting(true);
+    try {
+      const res = await fetch("/api/jfa-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, skipExisting }),
+      });
+      setImportStatus("選手データを反映しています...");
+      const data = await res.json();
       if (res.ok) {
         const linked =
           typeof data.linked === "number" ? data.linked : data.count;
@@ -34,10 +41,16 @@ export default function JfaImportForm() {
           `${linked}人を反映しました（対象: ${requested} / 処理: ${processed} / 新規: ${created} / 更新: ${updated} / 復元: ${restored} / スキップ: ${skipped}）`
         );
         setTimeout(() => {
-        router.push("/home");
+          router.push("/home");
         }, 1500);
       } else {
-      setMessage(data.error || "エラーが発生しました");
+        setMessage(data.error || "エラーが発生しました");
+      }
+    } catch {
+      setMessage("通信エラーが発生しました");
+    } finally {
+      setIsImporting(false);
+      setImportStatus(null);
     }
   };
 
@@ -66,6 +79,7 @@ export default function JfaImportForm() {
           placeholder="https://www.jfa.jp/samuraiblue/.../member.html"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          disabled={isImporting}
           required
         />
         <label className="flex items-center gap-2 text-sm text-cyan-100/90">
@@ -73,17 +87,22 @@ export default function JfaImportForm() {
             type="checkbox"
             checked={skipExisting}
             onChange={(e) => setSkipExisting(e.target.checked)}
+            disabled={isImporting}
           />
           同じ名前の選手は import しない（既存データを維持）
         </label>
         <button
           type="submit"
-          className="px-4 py-2 bg-yellow-400 text-blue-900 rounded"
+          className="px-4 py-2 bg-yellow-400 text-blue-900 rounded disabled:opacity-60"
           onClick={play}
+          disabled={isImporting}
         >
-          Fetch
+          {isImporting ? "Import中..." : "Fetch"}
         </button>
       </form>
+      {importStatus && (
+        <p className="mt-3 text-sm text-cyan-200 animate-pulse">{importStatus}</p>
+      )}
       {message && <p className="mt-4">{message}</p>}
     </div>
   );

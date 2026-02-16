@@ -56,7 +56,9 @@ export default function EditPlayerPage() {
   }>({});
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [busyAction, setBusyAction] = useState<"tournament" | "roster" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
   const { play } = useClickSound();
   const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionUserId = session?.user?.id ? Number(session.user.id) : NaN;
@@ -154,30 +156,43 @@ export default function EditPlayerPage() {
   };
 
   const handleDelete = async () => {
+    if (isDeleting || isSubmitting) return;
     play();
     if (!confirm("削除してもよろしいですか？")) return;
-    const res = await fetch(`/api/players/${id}`, {
-      method: "DELETE",
-      headers: { "X-CSRF-Token": csrf },
-    });
-    setErrors({});
-    setMessage([]);
-    setSuccessMessage("");
-    if (res.ok) {
-      setSuccessMessage("選手を削除しました");
-      playDeleteSound();
-      setTimeout(() => {
-        router.push("/players");
-      }, 1500);
-    } else {
-      const err = await res.json();
-      setMessage([err.error || "選手の削除に失敗しました"]);
+    setIsDeleting(true);
+    setActionStatus("選手を削除しています...");
+    try {
+      const res = await fetch(`/api/players/${id}`, {
+        method: "DELETE",
+        headers: { "X-CSRF-Token": csrf },
+      });
+      setErrors({});
+      setMessage([]);
+      setSuccessMessage("");
+      if (res.ok) {
+        setSuccessMessage("選手を削除しました");
+        playDeleteSound();
+        setTimeout(() => {
+          router.push("/players");
+        }, 1500);
+      } else {
+        const err = await res.json();
+        setMessage([err.error || "選手の削除に失敗しました"]);
+      }
+    } catch {
+      setMessage(["通信エラーが発生しました"]);
+    } finally {
+      setIsDeleting(false);
+      setActionStatus(null);
     }
   };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || isDeleting) return;
+    setIsSubmitting(true);
+    setActionStatus("選手情報を保存しています...");
     play();
     const allPositions = otherPosition
       ? [...positions, otherPosition.trim()]
@@ -201,115 +216,56 @@ export default function EditPlayerPage() {
       form.append("tournament", tournamentName);
     }
 
-    const res = await fetch(`/api/players/${id}`, {
-      method: "PUT",
-      headers: { "X-CSRF-Token": csrf },
-      body: form,
-    });
+    try {
+      const res = await fetch(`/api/players/${id}`, {
+        method: "PUT",
+        headers: { "X-CSRF-Token": csrf },
+        body: form,
+      });
 
-    setErrors({});
-    setMessage([]);
-    setSuccessMessage("");
+      setErrors({});
+      setMessage([]);
+      setSuccessMessage("");
 
-    if (res.ok) {
-      if (tournamentName.trim() !== "") {
-        window.dispatchEvent(new Event("tournament-saved"));
-      }
-      const msg = isOwner ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
-      setSuccessMessage(msg);
-      setTimeout(() => {
-        router.push("/players");
-      }, 1500);
-    } else {
-      const err = await res.json();
-      if (Array.isArray(err.error)) {
-        const fieldErrors: {
-          name?: string;
-          position?: string;
-          number?: string;
-          image?: string;
-          tournament?: string;
-        } = {};
-        err.error.forEach((e: { path: (string | number)[]; message: string }) => {
-          const field = e.path[0] as keyof typeof fieldErrors;
-          if (field in fieldErrors) {
-            fieldErrors[field] = e.message;
-          }
-        });
-        setErrors(fieldErrors);
+      if (res.ok) {
+        if (tournamentName.trim() !== "") {
+          window.dispatchEvent(new Event("tournament-saved"));
+        }
+        const msg = isOwner ? "選手情報を更新しました！" : "カスタム選手を作成しました！";
+        setSuccessMessage(msg);
+        setTimeout(() => {
+          router.push("/players");
+        }, 1500);
       } else {
-        if (typeof err.error === "string" && err.error.includes("already exists")) {
-          setErrors({ name: err.error });
+        const err = await res.json();
+        if (Array.isArray(err.error)) {
+          const fieldErrors: {
+            name?: string;
+            position?: string;
+            number?: string;
+            image?: string;
+            tournament?: string;
+          } = {};
+          err.error.forEach((e: { path: (string | number)[]; message: string }) => {
+            const field = e.path[0] as keyof typeof fieldErrors;
+            if (field in fieldErrors) {
+              fieldErrors[field] = e.message;
+            }
+          });
+          setErrors(fieldErrors);
         } else {
-          setMessage([err.error || "選手情報の更新に失敗しました"]);
+          if (typeof err.error === "string" && err.error.includes("already exists")) {
+            setErrors({ name: err.error });
+          } else {
+            setMessage([err.error || "選手情報の更新に失敗しました"]);
+          }
         }
       }
-    }
-  };
-
-  const handleDeleteTournament = async () => {
-    const name = tournamentName.trim();
-    if (!name) return;
-    if (!confirm(`トーナメント「${name}」を削除しますか？`)) return;
-    play();
-    setBusyAction("tournament");
-    setMessage([]);
-    setSuccessMessage("");
-    try {
-      const res = await fetch("/api/tournaments", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage([data.error || "トーナメント削除に失敗しました"]);
-        return;
-      }
-      setSuccessMessage(`トーナメント「${name}」を削除しました`);
-      setTournamentName("");
-      setRosterTitle("");
-      window.dispatchEvent(new Event("tournament-saved"));
     } catch {
-      setMessage(["トーナメント削除に失敗しました"]);
+      setMessage(["通信エラーが発生しました"]);
     } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const handleDeleteRoster = async () => {
-    const tournament = tournamentName.trim();
-    const title = rosterTitle.trim();
-    if (!tournament || !title) return;
-    if (!confirm(`ロスター「${title}」を削除しますか？`)) return;
-    play();
-    setBusyAction("roster");
-    setMessage([]);
-    setSuccessMessage("");
-    try {
-      const res = await fetch("/api/rosters", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-        },
-        body: JSON.stringify({ tournament, title }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage([data.error || "ロスター削除に失敗しました"]);
-        return;
-      }
-      setSuccessMessage(`ロスター「${title}」を削除しました`);
-      setRosterTitle("");
-      window.dispatchEvent(new Event("tournament-saved"));
-    } catch {
-      setMessage(["ロスター削除に失敗しました"]);
-    } finally {
-      setBusyAction(null);
+      setIsSubmitting(false);
+      setActionStatus(null);
     }
   };
 
@@ -428,27 +384,7 @@ export default function EditPlayerPage() {
                   value={rosterTitle}
                   onChange={(e) => setRosterTitle(e.target.value)}
                 />
-                {rosterTitle.trim() !== "" && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteRoster}
-                    disabled={busyAction !== null}
-                    className="mt-2 rounded bg-red-600 px-3 py-1 text-sm text-white disabled:opacity-60"
-                  >
-                    このロスターを削除
-                  </button>
-                )}
               </>
-            )}
-            {tournamentName.trim() !== "" && (
-              <button
-                type="button"
-                onClick={handleDeleteTournament}
-                disabled={busyAction !== null}
-                className="mt-2 rounded bg-red-700 px-3 py-1 text-sm text-white disabled:opacity-60"
-              >
-                このトーナメントを削除
-              </button>
             )}
             {errors.tournament && (
               <p className="text-red-600 text-sm mt-1">{errors.tournament}</p>
@@ -478,6 +414,9 @@ export default function EditPlayerPage() {
       {successMessage && (
         <div className="text-green-600">{successMessage}</div>
       )}
+      {actionStatus && (
+        <div className="text-sm text-cyan-200 animate-pulse">{actionStatus}</div>
+      )}
       {message.length > 0 && (
         <div className="text-red-600">
           {message.map((m, idx) => (
@@ -489,16 +428,17 @@ export default function EditPlayerPage() {
         <button
           type="submit"
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-          disabled={loading}
+          disabled={loading || isSubmitting || isDeleting}
         >
-          {isOwner ? "送信" : "カスタム作成"}
+          {isSubmitting ? "保存中..." : isOwner ? "送信" : "カスタム作成"}
         </button>
         <button
           type="button"
           onClick={handleDelete}
-          className="px-4 py-2 bg-red-500 text-white rounded"
+          className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50"
+          disabled={isSubmitting || isDeleting}
         >
-          削除
+          {isDeleting ? "削除中..." : "削除"}
         </button>
       </div>
       <button
@@ -507,7 +447,8 @@ export default function EditPlayerPage() {
           play();
           router.back();
         }}
-        className="px-4 py-2 bg-gray-300 text-black rounded"
+        className="px-4 py-2 bg-gray-300 text-black rounded disabled:opacity-60"
+        disabled={isSubmitting || isDeleting}
       >
         戻る
       </button>

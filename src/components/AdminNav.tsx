@@ -8,6 +8,7 @@ const links = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/formations", label: "Formations" },
+  { href: "/admin/rosters", label: "Rosters" },
   { href: "/admin/stats", label: "Stats" },
 ];
 
@@ -33,4 +34,3 @@ export default function AdminNav() {
     </nav>
   );
 }
-

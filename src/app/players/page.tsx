@@ -31,6 +31,10 @@ export default function PlayersPage() {
   const [positionInput, setPositionInput] = useState("");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleteProgress, setDeleteProgress] = useState<{
+    total: number;
+    done: number;
+  } | null>(null);
   const [csrf, setCsrf] = useState("");
   const previousUserIdRef = useRef<string | undefined>(undefined);
   const deleteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -204,10 +208,12 @@ export default function PlayersPage() {
   };
 
   const handleDeleteSelected = async () => {
+    if (deleteProgress) return;
     if (selectedIds.size === 0) return;
     if (!window.confirm("選択した選手を削除しますか？")) return;
     const ids = Array.from(selectedIds);
     const deleted: number[] = [];
+    setDeleteProgress({ total: ids.length, done: 0 });
     for (const id of ids) {
       try {
         const res = await fetch(`/api/players/${id}`, {
@@ -223,6 +229,10 @@ export default function PlayersPage() {
         console.error(err);
         setError("Failed to delete selected players");
         break;
+      } finally {
+        setDeleteProgress((prev) =>
+          prev ? { ...prev, done: Math.min(prev.total, prev.done + 1) } : prev
+        );
       }
     }
     if (deleted.length > 0) {
@@ -230,6 +240,7 @@ export default function PlayersPage() {
       playDeleteSound();
     }
     setSelectedIds(new Set());
+    setDeleteProgress(null);
   };
 
   if (status === "loading") return <LoadingSpinner />;
@@ -260,11 +271,18 @@ export default function PlayersPage() {
       <div className="mb-2">
         <button
           className="px-2 py-1 bg-red-500 text-white rounded disabled:opacity-50"
-          disabled={selectedIds.size === 0}
+          disabled={selectedIds.size === 0 || deleteProgress !== null}
           onClick={handleDeleteSelected}
         >
-          Delete selected
+          {deleteProgress
+            ? `Deleting... ${deleteProgress.done}/${deleteProgress.total}`
+            : "Delete selected"}
         </button>
+        {deleteProgress && (
+          <p className="mt-2 text-sm text-cyan-200 animate-pulse">
+            選択した選手を削除中です（{deleteProgress.done}/{deleteProgress.total}）
+          </p>
+        )}
       </div>
       <div className="flex gap-2 mb-4">
         <input
@@ -318,6 +336,7 @@ export default function PlayersPage() {
                 type="checkbox"
                 aria-label="Select all"
                 checked={allSelected}
+                disabled={deleteProgress !== null}
                 onChange={toggleSelectAll}
               />
             </th>
@@ -335,6 +354,7 @@ export default function PlayersPage() {
                   type="checkbox"
                   aria-label={`Select player ${p.id}`}
                   checked={selectedIds.has(p.id)}
+                  disabled={deleteProgress !== null}
                   onChange={() => toggleSelect(p.id)}
                 />
               </td>

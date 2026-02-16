@@ -40,8 +40,13 @@ export async function DELETE(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = Number(session.user.id);
   const isAdmin = Boolean(session.user.isAdmin);
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'ロスター削除は管理者画面から実行してください。' },
+      { status: 403 }
+    );
+  }
 
   try {
     const body = await req.json();
@@ -75,13 +80,6 @@ export async function DELETE(req: Request) {
     if (!roster) {
       return NextResponse.json({ error: 'Roster not found' }, { status: 404 });
     }
-    if (!isAdmin && roster.userId !== userId) {
-      return NextResponse.json(
-        { error: 'このロスターを削除する権限がありません。' },
-        { status: 403 }
-      );
-    }
-
     await prisma.$transaction(async (tx) => {
       await tx.rosterPlayer.deleteMany({
         where: { rosterId: roster.id },

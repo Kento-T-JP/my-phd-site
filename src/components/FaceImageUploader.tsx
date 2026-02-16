@@ -23,16 +23,19 @@ export default function FaceImageUploader({
   onCropChange,
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const cropStartRef = useRef<FaceCrop | null>(null);
 
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
+      setPreviewError(null);
       return;
     }
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
+    setPreviewError(null);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
@@ -80,8 +83,14 @@ export default function FaceImageUploader({
         type="file"
         accept="image/*"
         className="w-full p-2 border rounded"
-        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          setPreviewError(null);
+          onFileChange(e.target.files?.[0] ?? null);
+        }}
       />
+      <p className="text-xs text-cyan-100/70">
+        画像を選ぶと、下の丸枠で顔の位置をドラッグ調整できます。
+      </p>
       {previewUrl ? (
         <div className="rounded-md border border-cyan-300/25 bg-slate-900/35 p-3">
           <p className="text-xs text-cyan-100/75 mb-2">
@@ -110,6 +119,11 @@ export default function FaceImageUploader({
                 alt="Face preview"
                 className="h-full w-full object-cover select-none pointer-events-none"
                 draggable={false}
+                onError={() =>
+                  setPreviewError(
+                    "プレビュー表示に失敗しました。JPEG/PNG/WebP の画像をお試しください。"
+                  )
+                }
                 style={{
                   objectPosition: `${50 + crop.offsetX / 2}% ${50 + crop.offsetY / 2}%`,
                   transform: `scale(${crop.zoom})`,
@@ -118,6 +132,9 @@ export default function FaceImageUploader({
               />
             </div>
           </div>
+          {previewError && (
+            <p className="mt-2 text-xs text-red-300">{previewError}</p>
+          )}
           <p className="mt-2 text-[11px] text-cyan-100/65">{cropLabel}</p>
           <div className="mt-2 space-y-2">
             <label className="block text-xs text-cyan-100/80">

@@ -7,6 +7,7 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <AdminCard href="/admin/users" title="Users" icon="👥" />
         <AdminCard href="/admin/formations" title="Formations" icon="📝" />
+        <AdminCard href="/admin/rosters" title="Rosters" icon="🏆" />
         <AdminCard href="/admin/stats" title="Stats" icon="📊" />
       </div>
     </main>
