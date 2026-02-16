@@ -121,7 +121,12 @@ export default function EditPlayerPage() {
                   rosterTitle,
                 } as Affiliation;
               })
-              .filter((rp) => rp.rosterId > 0 && rp.tournamentName && rp.rosterTitle)
+              .filter(
+                (rp: Affiliation) =>
+                  rp.rosterId > 0 &&
+                  rp.tournamentName.length > 0 &&
+                  rp.rosterTitle.length > 0
+              )
           );
           const rp = p.rosterPlayers[0];
           setTournamentName(rp.roster.tournament.name);
