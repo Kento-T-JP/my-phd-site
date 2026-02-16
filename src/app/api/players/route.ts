@@ -254,35 +254,27 @@ export async function DELETE(req: Request) {
 
     const players = await prisma.player.findMany({
       where: { id: { in: ids } },
-      select: {
-        id: true,
-        name: true,
-        position: true,
-        number: true,
-        image: true,
-        wikiUrl: true,
-        userId: true,
-      },
+      select: { id: true, userId: true },
     });
+
+    const deletableIds = players
+      .filter((player) => {
+        if (isAdmin) return true;
+        return player.userId != null && player.userId === userId;
+      })
+      .map((player) => player.id);
 
     let deleted = 0;
-    let skipped = 0;
-    const deletedIds: number[] = [];
+    if (deletableIds.length > 0) {
+      const result = await prisma.player.updateMany({
+        where: { id: { in: deletableIds } },
+        data: { isDeleted: true },
+      });
+      deleted = result.count;
+    }
 
-    await prisma.$transaction(async (tx) => {
-      for (const player of players) {
-        if ((player.userId == null && !isAdmin) || (player.userId != null && player.userId !== userId && !isAdmin)) {
-          skipped += 1;
-          continue;
-        }
-        await tx.player.update({
-          where: { id: player.id },
-          data: { isDeleted: true },
-        });
-        deleted += 1;
-        deletedIds.push(player.id);
-      }
-    });
+    const skipped = ids.length - deletableIds.length;
+    const deletedIds = deletableIds;
 
     return NextResponse.json({ deleted, skipped, requested: ids.length, deletedIds });
   } catch (err) {
