@@ -49,8 +49,8 @@ export const metadata: Metadata = {
     images: ["/emblem.svg"],
   },
   icons: {
-    icon: "/emblem.ico",
-    shortcut: "/emblem.ico",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
   },
   robots: {
     index: true,
