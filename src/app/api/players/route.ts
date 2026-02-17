@@ -16,6 +16,8 @@ import { verifyCsrfToken } from '@/lib/csrf';
 import { PlayerSchema } from '@/lib/schemas/player';
 import { resolveSessionUserId } from '@/lib/sessionUser';
 import type { Prisma } from '@prisma/client';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe } from '@/lib/cacheRuntime';
 
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -287,6 +289,12 @@ export async function POST(req: Request) {
           include: { tournament: true },
         })) ?? undefined;
     }
+    if (rosterIds.length > 0 || rosterTitle || tournamentName) {
+      revalidateTagSafe(cacheTag.rosters(ownerId));
+      revalidateTagSafe(cacheTag.rostersTitles(ownerId));
+      revalidateTagSafe(cacheTag.tournaments(ownerId));
+      revalidateTagSafe(cacheTag.tournamentsNames(ownerId));
+    }
     return NextResponse.json({ player, roster: rosterInfo }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : '選手の登録に失敗しました';
@@ -338,6 +346,11 @@ export async function DELETE(req: Request) {
         data: { isDeleted: true },
       });
       deleted = result.count;
+      if (Number.isFinite(userId)) {
+        const ownerId = userId as number;
+        revalidateTagSafe(cacheTag.rosters(ownerId));
+        revalidateTagSafe(cacheTag.rostersTitles(ownerId));
+      }
     }
 
     const skipped = ids.length - deletableIds.length;

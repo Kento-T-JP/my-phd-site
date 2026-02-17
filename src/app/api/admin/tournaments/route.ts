@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe } from '@/lib/cacheRuntime';
 
 function parseUserId(value: unknown): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
@@ -48,6 +50,10 @@ export async function DELETE(req: Request) {
         await tx.tournament.delete({ where: { id: tournamentId } });
       }
     });
+    revalidateTagSafe(cacheTag.rosters(userId));
+    revalidateTagSafe(cacheTag.rostersTitles(userId));
+    revalidateTagSafe(cacheTag.tournaments(userId));
+    revalidateTagSafe(cacheTag.tournamentsNames(userId));
 
     return NextResponse.json({ ok: true, deletedRosterCount, tournamentId });
   } catch (err) {
