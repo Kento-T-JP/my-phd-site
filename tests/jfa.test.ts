@@ -10,6 +10,11 @@ describe('validateJfaUrl', () => {
     expect(validateJfaUrl('https://www.jfa.jp/samuraiblue/2024/member.html')).toBe(true);
     expect(
       validateJfaUrl(
+        'https://www.jfa.jp/samuraiblue/worldcup_2026/final_q_2026/20250320/member.html'
+      )
+    ).toBe(true);
+    expect(
+      validateJfaUrl(
         'https://www.jfa.jp/national_team/u23_2026/afc_u23_asiancup_2026/member.html'
       )
     ).toBe(true);
@@ -257,6 +262,41 @@ describe('scrapeJfaPlayers', () => {
         position: ['Goalkeepers'],
       },
     ]);
+
+    spy.mockRestore();
+  });
+
+  it('extracts samurai blue tournament slug from deep path URL', async () => {
+    const inlineFixture = `
+      <div class="outer-block pankz">
+        <div class="pankz-list">
+          <span>ホーム</span>
+          <span>SAMURAI BLUE</span>
+          <span>招集メンバー/スタッフ</span>
+        </div>
+      </div>
+      <div class="section-block">
+        <h4>Goalkeepers</h4>
+        <div class="competition-member">
+          <ul>
+            <li>
+              <div class="name">1 John Doe</div>
+              <img src="/gk1.jpg" />
+            </li>
+          </ul>
+        </div>
+      </div>
+    `;
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: inlineFixture });
+
+    const result = await scrapeJfaPlayers(
+      'https://www.jfa.jp/samuraiblue/worldcup_2026/final_q_2026/20250320/member.html'
+    );
+
+    expect(result.tournamentSlug).toBe('final_q_2026');
+    expect(result.tournamentName).toBe('SAMURAI BLUE');
+    expect(result.rosterDate?.toISOString().slice(0, 10)).toBe('2025-03-20');
+    expect(result.rosterTitle).toBe('SAMURAI BLUE - 2025/03/20');
 
     spy.mockRestore();
   });
