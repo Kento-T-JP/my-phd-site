@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 
@@ -16,13 +16,19 @@ declare global {
 
 export default function GoogleAnalytics() {
   const pathname = usePathname();
+  const [isGaReady, setIsGaReady] = useState(false);
 
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID || typeof window.gtag !== 'function') return;
+    if (!GA_MEASUREMENT_ID || !isGaReady || typeof window.gtag !== 'function')
+      return;
     const query = window.location.search || '';
     const pagePath = `${pathname}${query}`;
-    window.gtag('config', GA_MEASUREMENT_ID, { page_path: pagePath });
-  }, [pathname]);
+    window.gtag('event', 'page_view', {
+      page_path: pagePath,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [pathname, isGaReady]);
 
   if (!GA_MEASUREMENT_ID) return null;
 
@@ -30,9 +36,13 @@ export default function GoogleAnalytics() {
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="lazyOnload"
+        strategy="afterInteractive"
       />
-      <Script id="ga4-init" strategy="lazyOnload">
+      <Script
+        id="ga4-init"
+        strategy="afterInteractive"
+        onReady={() => setIsGaReady(true)}
+      >
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
