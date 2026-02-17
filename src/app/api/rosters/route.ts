@@ -3,13 +3,26 @@ import prisma, { getRosters, ensureTournamentRoster } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe, runWithCache } from '@/lib/cacheRuntime';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug') || undefined;
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const { userId } = await resolveSessionUserId(session);
-  const rosters = await getRosters(slug, userId);
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json([]);
+  }
+  const ownerId = userId as number;
+  const rosters = await runWithCache(
+    async () => getRosters(slug, ownerId),
+    ['api-rosters', String(ownerId), slug ?? 'all'],
+    {
+      revalidate: 60,
+      tags: [cacheTag.rosters(ownerId), cacheTag.rostersTitles(ownerId)],
+    },
+  );
   return NextResponse.json(rosters);
 }
 
@@ -46,6 +59,10 @@ export async function POST(req: Request) {
       where: { id: roster.id },
       include: { tournament: true },
     });
+    revalidateTagSafe(cacheTag.rosters(ownerId));
+    revalidateTagSafe(cacheTag.rostersTitles(ownerId));
+    revalidateTagSafe(cacheTag.tournaments(ownerId));
+    revalidateTagSafe(cacheTag.tournamentsNames(ownerId));
     return NextResponse.json(full ?? roster, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create roster';
@@ -106,6 +123,10 @@ export async function DELETE(req: Request) {
         where: { id: roster.id },
       });
     });
+    revalidateTagSafe(cacheTag.rosters(roster.userId));
+    revalidateTagSafe(cacheTag.rostersTitles(roster.userId));
+    revalidateTagSafe(cacheTag.tournaments(roster.userId));
+    revalidateTagSafe(cacheTag.tournamentsNames(roster.userId));
 
     return NextResponse.json({
       ok: true,

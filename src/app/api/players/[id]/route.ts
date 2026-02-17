@@ -14,6 +14,8 @@ import path from 'path';
 import { RosterInfo } from '@/types/roster';
 import { unwrapParams } from '@/lib/unwrap';
 import { resolveSessionUserId } from '@/lib/sessionUser';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe } from '@/lib/cacheRuntime';
 
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -230,6 +232,20 @@ async function handleUpdate(req: Request, id: number, overrideUserId?: number) {
           where: { id: rosterInfo.id },
           include: { tournament: true },
         })) ?? undefined;
+    }
+    const shouldInvalidateMasterData =
+      removeRosterIds.length > 0 ||
+      addRosterIds.length > 0 ||
+      Number.isFinite(rosterId) ||
+      Boolean(rosterTitle) ||
+      Boolean(tournamentName);
+    const ownerId =
+      Number.isFinite(overrideUserId) ? (overrideUserId as number) : undefined;
+    if (shouldInvalidateMasterData && ownerId) {
+      revalidateTagSafe(cacheTag.rosters(ownerId));
+      revalidateTagSafe(cacheTag.rostersTitles(ownerId));
+      revalidateTagSafe(cacheTag.tournaments(ownerId));
+      revalidateTagSafe(cacheTag.tournamentsNames(ownerId));
     }
     return NextResponse.json({ player, roster: rosterInfo });
   } catch (err) {

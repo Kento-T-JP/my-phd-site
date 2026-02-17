@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 import { unwrapParams } from '@/lib/unwrap';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe } from '@/lib/cacheRuntime';
 
 
 const AdminUserUpdateSchema = z.object({
@@ -112,6 +114,10 @@ export async function DELETE(
       },
       { maxWait: 10_000, timeout: 30_000 },
     );
+    revalidateTagSafe(cacheTag.rosters(id));
+    revalidateTagSafe(cacheTag.rostersTitles(id));
+    revalidateTagSafe(cacheTag.tournaments(id));
+    revalidateTagSafe(cacheTag.tournamentsNames(id));
 
     return NextResponse.json({ success: true });
   } catch (err) {

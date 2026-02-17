@@ -3,6 +3,8 @@ import { getTournaments, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
+import { cacheTag } from '@/lib/cacheTags';
+import { revalidateTagSafe, runWithCache } from '@/lib/cacheRuntime';
 
 function normalizeTournamentName(name: string) {
   return name.normalize('NFKC').trim().replace(/\s+/g, ' ');
@@ -11,7 +13,18 @@ function normalizeTournamentName(name: string) {
 export async function GET() {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const { userId } = await resolveSessionUserId(session);
-  const list = await getTournaments(userId);
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json([]);
+  }
+  const ownerId = userId as number;
+  const list = await runWithCache(
+    async () => getTournaments(ownerId),
+    ['api-tournaments', String(ownerId)],
+    {
+      revalidate: 60,
+      tags: [cacheTag.tournaments(ownerId), cacheTag.tournamentsNames(ownerId)],
+    },
+  );
   return NextResponse.json(list);
 }
 
@@ -57,6 +70,10 @@ export async function POST(req: Request) {
     }
 
     const tournament = await upsertTournament(normalizedName, ownerId);
+    revalidateTagSafe(cacheTag.tournaments(ownerId));
+    revalidateTagSafe(cacheTag.tournamentsNames(ownerId));
+    revalidateTagSafe(cacheTag.rosters(ownerId));
+    revalidateTagSafe(cacheTag.rostersTitles(ownerId));
     return NextResponse.json(tournament);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to upsert tournament';
