@@ -1,6 +1,7 @@
 import Formation from "@/components/Formation";
 import JfaImportForm from "@/components/JfaImportForm";
 import type { SavedFormation } from "@/types/formation";
+import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/url";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
@@ -8,6 +9,13 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/db";
 import { fetchPlayers } from "@/lib/fetchPlayers";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function Home({
   searchParams,
