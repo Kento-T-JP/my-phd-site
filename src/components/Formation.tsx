@@ -343,15 +343,16 @@ export default function Formation({
   // update when a different formation is supplied from props
   useEffect(() => {
     if (!initialFormation) return;
+    const savedId = initialFormation.id;
     const base = resolveFormationTemplate(initialFormation, defaultFormation);
     setFormation(base);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
-    if (initialFormation.id != null) {
+    if (savedId != null) {
       setFormationStates((prev) => ({
         ...prev,
-        [toSavedStateKey(initialFormation.id)]: {
+        [toSavedStateKey(savedId)]: {
           lineupOrder: initialFormation.positions.lineupOrder ?? [],
           benchOrder: initialFormation.positions.benchOrder ?? [],
           playerPositions: initialFormation.positions.playerPositions ?? {},
@@ -722,6 +723,7 @@ export default function Formation({
 
   const handleRestoreSaved = () => {
     if (!initialFormation) return;
+    const savedId = initialFormation.id;
     const restored = resolveFormationTemplate(initialFormation, defaultFormation);
     setFormation(restored);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
@@ -736,8 +738,8 @@ export default function Formation({
           playerPositions: initialFormation.positions.playerPositions ?? {},
         },
       };
-      if (initialFormation.id != null) {
-        next[toSavedStateKey(initialFormation.id)] = {
+      if (savedId != null) {
+        next[toSavedStateKey(savedId)] = {
           lineupOrder: initialFormation.positions.lineupOrder ?? [],
           benchOrder: initialFormation.positions.benchOrder ?? [],
           playerPositions: initialFormation.positions.playerPositions ?? {},
