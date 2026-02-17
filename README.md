@@ -24,6 +24,9 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
   - `includeExtra` / `includeImage` で返却項目を制御
 - `Formation` 側は必要データのみ取得（`includeRosterLinks=1&includeExtra=0`）
 - `/home` 初期表示で全選手取得を避け、存在確認ベースの軽量判定へ変更
+- ロスター/大会系API（`/api/rosters`, `/api/tournaments`, `/api/rosters/titles`, `/api/tournaments/names`）に
+  ユーザー単位キャッシュ（`revalidate: 60`）を導入
+- 選手/管理者操作後に関連タグを再検証して、表示更新の整合性を維持
 
 ### 2. 書き込み性能の最適化（新規登録・編集）
 
@@ -46,6 +49,18 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
   - `__Secure-next-auth.csrf-token`
   - `next-auth.csrf-token`
 - Chrome環境で発生していた登録時CSRF不一致を解消
+
+### 5. 本番DBリージョン最適化（Singapore → US East）
+
+- Vercel実行リージョン（`iad1`）に合わせて Neon DB を US East へ移行
+- アプリサーバーとDB間の往復レイテンシが短縮され、TTFB体感が大幅に改善
+- Home / Formations / 各種一覧ページの初回ロード時間を実運用で短縮
+
+### 6. JFA取り込みURL対応の拡張
+
+- `samuraiblue` 配下の多階層 `member.html` URL に対応
+  - 例: `https://www.jfa.jp/samuraiblue/worldcup_2026/final_q_2026/20250320/member.html`
+- 深いURLからの大会slug抽出ロジックを改善し、既存URL形式との互換性も維持
 
 ## ルーティング / アクセス制御
 
@@ -109,6 +124,7 @@ docker compose up --build
 ## 必須環境変数（最小）
 
 - `DATABASE_URL`
+- `DIRECT_URL`（Prisma migrate/restore時に unpooled 接続を使う場合）
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
 - `ADMIN_EMAIL`

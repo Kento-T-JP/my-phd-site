@@ -44,3 +44,7 @@ players.db
 
 # local private notes (never commit)
 .private/
+
+# database dumps
+backup.dump
+*.dump
