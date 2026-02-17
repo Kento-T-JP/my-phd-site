@@ -62,6 +62,20 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
   - 例: `https://www.jfa.jp/samuraiblue/worldcup_2026/final_q_2026/20250320/member.html`
 - 深いURLからの大会slug抽出ロジックを改善し、既存URL形式との互換性も維持
 
+### 7. SEO基盤の整備
+
+- App Router の metadata を拡張
+  - `metadataBase` / canonical / Open Graph / Twitter Card / robots
+- `robots.txt` と `sitemap.xml` を実装
+  - 公開ページをクロール対象にし、認証必須ページは `noindex` を適用
+- Search Console のドメイン認証・サイトマップ送信を前提に運用可能な状態へ更新
+
+### 8. アイコン設定の更新
+
+- ヘッダーのブランド表示に `public/emblem.svg` を利用
+- ブラウザタブのファビコンとして `src/app/favicon.ico` を利用
+  - `layout.tsx` の icon 参照を `/favicon.ico` に統一
+
 ## ルーティング / アクセス制御
 
 - `src/proxy.ts` でアクセス制御とセキュリティヘッダを適用
@@ -149,6 +163,8 @@ docker compose up --build
   - `GATE_ALLOWED_EMAILS`
 - Seed/JFA
   - `JFA_MEMBER_URL`
+- SEO/公開URL
+  - `NEXT_PUBLIC_SITE_URL`（任意: metadataBase の明示用）
 
 ## セキュリティ
 
