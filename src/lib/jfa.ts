@@ -38,7 +38,7 @@ export function validateJfaUrl(url: string) {
     const parsed = new URL(url);
     if (parsed.hostname !== 'www.jfa.jp') return false;
     const path = parsed.pathname;
-    const samuraiPattern = /^\/samuraiblue(?:\/[^/]+)?\/member\.html$/;
+    const samuraiPattern = /^\/samuraiblue(?:\/[^/]+)*\/member\.html$/;
     const nationalTeamPattern = /^\/national_team\/[^/]+\/[^/]+\/member\.html$/;
     return samuraiPattern.test(path) || nationalTeamPattern.test(path);
   } catch {
@@ -54,8 +54,17 @@ function extractTournamentSlugFromPath(url: string): string {
       return segs[2] ?? '';
     }
     if (segs[0] === 'samuraiblue' && segs.length >= 2) {
-      if (segs[1] === 'member.html') return '';
-      return segs[1] ?? '';
+      const tail = segs[segs.length - 1];
+      if (tail !== 'member.html') {
+        return segs[1] ?? '';
+      }
+      const mids = segs.slice(1, -1);
+      if (mids.length === 0) return '';
+      // Prefer non-date segment for deep paths like .../final_q_2026/20250320/member.html
+      for (let i = mids.length - 1; i >= 0; i--) {
+        if (!/^\d{8}$/.test(mids[i])) return mids[i];
+      }
+      return mids[mids.length - 1] ?? '';
     }
     return '';
   } catch {
