@@ -165,6 +165,7 @@ docker compose up --build
   - `JFA_MEMBER_URL`
 - SEO/公開URL
   - `NEXT_PUBLIC_SITE_URL`（任意: metadataBase の明示用）
+  - `NEXT_PUBLIC_GA_MEASUREMENT_ID`（任意: Google Analytics 4。未指定時は既定IDを利用）
 
 ## セキュリティ
 
