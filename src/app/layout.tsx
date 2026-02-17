@@ -8,6 +8,7 @@ import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import HomeNav from "@/components/HomeNav";
 import Footer from "@/components/Footer";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,9 +21,41 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: "SAMURAI BLUE Tactical Site",
-  description: "SAMURAI BLUEの戦術検討と選手管理のためのアプリケーション",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Start XI",
+    template: "%s | Start XI",
+  },
+  description: "サッカーのフォーメーション作成と選手・ロスター管理を行うアプリケーション。",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "Start XI",
+    title: "Start XI",
+    description: "サッカーのフォーメーション作成と選手・ロスター管理を行うアプリケーション。",
+    images: [{ url: "/emblem.svg" }],
+    locale: "ja_JP",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Start XI",
+    description: "サッカーのフォーメーション作成と選手・ロスター管理を行うアプリケーション。",
+    images: ["/emblem.svg"],
+  },
+  icons: {
+    icon: "/emblem.ico",
+    shortcut: "/emblem.ico",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const viewport: Viewport = {
