@@ -288,7 +288,20 @@ export default function Formation({
   const [viewportWidth, setViewportWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
-  const didRunFilterEffectRef = useRef(false);
+  const prevFilterSignatureRef = useRef<string | null>(null);
+
+  const filterSignature = useMemo(
+    () =>
+      JSON.stringify({
+        name: filter.name ?? "",
+        rosterId: filter.rosterId ?? null,
+        rosterIds: [...(filter.rosterIds ?? [])].sort((a, b) => a - b),
+        tournamentId: filter.tournamentId ?? null,
+        position: filter.position ?? "",
+        positions: [...(filter.positions ?? [])].sort(),
+      }),
+    [filter]
+  );
 
   const positionOptions = useMemo(() => {
     const defaultPositions = formations.flatMap((f) =>
@@ -861,13 +874,15 @@ export default function Formation({
   );
 
   useEffect(() => {
-    if (!didRunFilterEffectRef.current) {
-      didRunFilterEffectRef.current = true;
+    const prev = prevFilterSignatureRef.current;
+    prevFilterSignatureRef.current = filterSignature;
+    // Skip initial mount and semantically no-op filter updates.
+    if (prev == null || prev === filterSignature) {
       return;
     }
     handleReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filterSignature]);
 
   /* ───────── render helpers ───────── */
   // track which IDs have already been drawn this frame
