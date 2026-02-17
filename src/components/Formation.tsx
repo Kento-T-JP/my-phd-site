@@ -260,12 +260,17 @@ export default function Formation({
   const [filter, setFilter] = useState<PlayerFilterOptions>({});
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
+  const toTemplateStateKey = (name: string) => `template:${name}`;
+  const toSavedStateKey = (id: number) => `saved:${id}`;
+  const initialSavedStateKey =
+    initialFormation?.id != null ? toSavedStateKey(initialFormation.id) : undefined;
+
   const [, startTransition] = useTransition();
 
   const [formationStates, setFormationStates] = useState<Record<string, FormationState>>(
-    initialFormation
+    initialFormation && initialSavedStateKey
       ? {
-          [initialFormation.name]: {
+          [initialSavedStateKey]: {
             lineupOrder: initialFormation.positions.lineupOrder ?? [],
             benchOrder: initialFormation.positions.benchOrder ?? [],
             playerPositions: initialFormation.positions.playerPositions ?? {},
@@ -343,14 +348,16 @@ export default function Formation({
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
-    setFormationStates((prev) => ({
-      ...prev,
-      [initialFormation.name]: {
-        lineupOrder: initialFormation.positions.lineupOrder ?? [],
-        benchOrder: initialFormation.positions.benchOrder ?? [],
-        playerPositions: initialFormation.positions.playerPositions ?? {},
-      },
-    }));
+    if (initialFormation.id != null) {
+      setFormationStates((prev) => ({
+        ...prev,
+        [toSavedStateKey(initialFormation.id)]: {
+          lineupOrder: initialFormation.positions.lineupOrder ?? [],
+          benchOrder: initialFormation.positions.benchOrder ?? [],
+          playerPositions: initialFormation.positions.playerPositions ?? {},
+        },
+      }));
+    }
     setAlias(initialFormation.name ?? "");
     setCustomMode(false);
     setDefaultsFrozen(false);
@@ -662,13 +669,15 @@ export default function Formation({
 
   const handleFormationChange = (f: Formation) => {
     play();
+    const currentTemplateKey = toTemplateStateKey(formation.name);
+    const nextTemplateKey = toTemplateStateKey(f.name);
     // save current state for existing formation
     setFormationStates((prev) => ({
       ...prev,
-      [formation.name]: { lineupOrder, benchOrder, playerPositions },
+      [currentTemplateKey]: { lineupOrder, benchOrder, playerPositions },
     }));
 
-    const saved = formationStates[f.name];
+    const saved = formationStates[nextTemplateKey];
     if (saved) {
       setLineupOrder(saved.lineupOrder);
       setBenchOrder(saved.benchOrder);
@@ -701,7 +710,10 @@ export default function Formation({
     setBenchOrder(newState.benchOrder);
     setLineupOrder(newState.lineupOrder);
     setPlayerPositions(newState.playerPositions);
-    setFormationStates((prev) => ({ ...prev, [formation.name]: newState }));
+    setFormationStates((prev) => ({
+      ...prev,
+      [toTemplateStateKey(formation.name)]: newState,
+    }));
     setCustomMode(false);
     setDefaultsFrozen(false);
     setSelectedId(null);
@@ -715,19 +727,24 @@ export default function Formation({
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
-    setFormationStates((prev) => ({
-      ...prev,
-      [restored.name]: {
-        lineupOrder: initialFormation.positions.lineupOrder ?? [],
-        benchOrder: initialFormation.positions.benchOrder ?? [],
-        playerPositions: initialFormation.positions.playerPositions ?? {},
-      },
-      [initialFormation.name]: {
-        lineupOrder: initialFormation.positions.lineupOrder ?? [],
-        benchOrder: initialFormation.positions.benchOrder ?? [],
-        playerPositions: initialFormation.positions.playerPositions ?? {},
-      },
-    }));
+    setFormationStates((prev) => {
+      const next: Record<string, FormationState> = {
+        ...prev,
+        [toTemplateStateKey(restored.name)]: {
+          lineupOrder: initialFormation.positions.lineupOrder ?? [],
+          benchOrder: initialFormation.positions.benchOrder ?? [],
+          playerPositions: initialFormation.positions.playerPositions ?? {},
+        },
+      };
+      if (initialFormation.id != null) {
+        next[toSavedStateKey(initialFormation.id)] = {
+          lineupOrder: initialFormation.positions.lineupOrder ?? [],
+          benchOrder: initialFormation.positions.benchOrder ?? [],
+          playerPositions: initialFormation.positions.playerPositions ?? {},
+        };
+      }
+      return next;
+    });
     setCustomMode(false);
     setDefaultsFrozen(false);
     setSelectedId(null);
