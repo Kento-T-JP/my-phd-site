@@ -38,8 +38,8 @@ export default function PositionsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [infoTone, setInfoTone] = useState<"add" | "delete">("add");
 
-  const sorted = useMemo(
-    () => [...positions].sort((a, b) => a.name.localeCompare(b.name, "ja")),
+  const customSorted = useMemo(
+    () => [...positions].sort((a, b) => b.id - a.id),
     [positions],
   );
   const displayPositions = useMemo<DisplayPosition[]>(() => {
@@ -47,7 +47,7 @@ export default function PositionsPage() {
       name,
       source: "default" as const,
     }));
-    const custom = sorted
+    const custom = customSorted
       .filter(
         (item) =>
           !defaults.some(
@@ -57,8 +57,8 @@ export default function PositionsPage() {
       .map(
         (item): DisplayPosition => ({ id: item.id, name: item.name, source: "custom" as const }),
       );
-    return [...defaults, ...custom];
-  }, [sorted]);
+    return [...custom, ...defaults];
+  }, [customSorted]);
 
   const load = useCallback(async () => {
     setLoading(true);
