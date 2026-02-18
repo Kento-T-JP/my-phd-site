@@ -7,7 +7,7 @@ import { FormationShareCreateSchema, FormationSharePayloadSchema } from "@/lib/s
 import type { FormationSharePayload } from "@/types/formationShare";
 import { getSiteUrl } from "@/lib/siteUrl";
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 type SessionUser = {
   user?: { id?: string; email?: string; isAdmin?: boolean; status?: string };
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
   }
 
   const token = randomBytes(20).toString("hex");
-  const expiresAt = new Date(Date.now() + THIRTY_DAYS_MS);
+  const expiresAt = new Date(Date.now() + THREE_DAYS_MS);
   await prisma.formationShare.create({
     data: {
       token,
