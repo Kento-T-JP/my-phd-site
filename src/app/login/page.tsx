@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn, getSession, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -7,7 +7,7 @@ import useClickSound from "@/lib/useClickSound";
 
 const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false });
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
@@ -172,5 +172,21 @@ export default function LoginPage() {
         </button>
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="auth-shell">
+          <div className="auth-card">
+            <p className="text-cyan-100/85">Loading...</p>
+          </div>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
