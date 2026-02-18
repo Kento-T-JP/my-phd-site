@@ -7,6 +7,36 @@ import { useSession } from "next-auth/react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import type { FormationSharePayload } from "@/types/formationShare";
 import type { SavedFormation } from "@/types/formation";
+import { formations } from "@/data/formations";
+
+const DEFAULT_FORMATION_NAME = "4-3-3";
+const OFFSET_STEP = 24;
+const clampPercent = (value: number, min = 6, max = 94) =>
+  Math.min(max, Math.max(min, value));
+
+function buildDefaultPositions(payload: FormationSharePayload): Record<number, { top: number; left: number }> {
+  const defaultFormation =
+    formations.find((f) => f.name === DEFAULT_FORMATION_NAME) ?? formations[0];
+  const templateName = payload.baseFormationName ?? payload.formationName;
+  const template = formations.find((f) => f.name === templateName) ?? defaultFormation;
+
+  const positions: Record<number, { top: number; left: number }> = {};
+  let index = 0;
+  Object.keys(template.positions).forEach((posKey) => {
+    const slot = template.positions[posKey as keyof typeof template.positions];
+    if (!slot) return;
+    for (let i = 0; i < slot.max && index < payload.lineupOrder.length; i += 1) {
+      const playerId = payload.lineupOrder[index];
+      index += 1;
+      const offset = slot.max > 1 ? (i - (slot.max - 1) / 2) * OFFSET_STEP : 0;
+      positions[playerId] = {
+        top: clampPercent(slot.top),
+        left: clampPercent(slot.left + offset),
+      };
+    }
+  });
+  return positions;
+}
 
 type ShareResponse = {
   token: string;
@@ -75,9 +105,10 @@ export default function SharePage() {
 
   const lineupPlayers = useMemo(() => {
     if (!share) return [];
+    const defaultPositions = buildDefaultPositions(share.formation);
     return share.formation.lineupOrder.map((id, idx) => {
       const player = playerMap.get(id);
-      const pos = share.formation.playerPositions[String(id)];
+      const pos = share.formation.playerPositions[String(id)] ?? defaultPositions[id];
       const fallbackTop = 10 + Math.floor(idx / 4) * 22;
       const fallbackLeft = 15 + (idx % 4) * 22;
       return {

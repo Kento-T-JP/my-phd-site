@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cleanup-formation-shares",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-deleted-players",
+      "schedule": "15 3 * * *"
     }
   ]
 }

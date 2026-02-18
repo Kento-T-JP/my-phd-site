@@ -54,7 +54,10 @@ describe('DELETE /api/players/[id]', () => {
       params: Promise.resolve({ id: '1' }),
     } as any);
     expect(res.status).toBe(200);
-    expect(prisma.player.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { isDeleted: true } });
+    expect(prisma.player.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { isDeleted: true, deletedAt: expect.any(Date) },
+    });
   });
 
   it('creates override when deleting global player', async () => {

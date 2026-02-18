@@ -343,7 +343,7 @@ export async function DELETE(req: Request) {
     if (deletableIds.length > 0) {
       const result = await prisma.player.updateMany({
         where: { id: { in: deletableIds } },
-        data: { isDeleted: true },
+        data: { isDeleted: true, deletedAt: new Date() },
       });
       deleted = result.count;
       if (Number.isFinite(userId)) {
