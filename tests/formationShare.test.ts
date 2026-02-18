@@ -15,7 +15,11 @@ vi.mock("crypto", async () => {
 
 vi.mock("@/lib/db", () => ({
   __esModule: true,
+  addRosterPlayers: vi.fn(),
+  upsertTournament: vi.fn(),
+  upsertRoster: vi.fn(),
   default: {
+    $transaction: vi.fn(),
     user: {
       findUnique: vi.fn(),
     },
@@ -31,6 +35,7 @@ vi.mock("@/lib/db", () => ({
     player: {
       findMany: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
     },
     visit: {
       create: vi.fn(),
@@ -40,14 +45,22 @@ vi.mock("@/lib/db", () => ({
 
 let prisma: any;
 let getServerSession: any;
+let addRosterPlayers: any;
+let upsertTournament: any;
+let upsertRoster: any;
 
 beforeEach(async () => {
   vi.resetModules();
   const db = await import("@/lib/db");
   prisma = db.default as any;
+  addRosterPlayers = (db as any).addRosterPlayers;
+  upsertTournament = (db as any).upsertTournament;
+  upsertRoster = (db as any).upsertRoster;
   const nextAuth = await import("next-auth/next");
   getServerSession = (nextAuth as any).getServerSession;
   getServerSession.mockReset();
+  prisma.$transaction.mockReset();
+  prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
   prisma.user.findUnique.mockReset();
   prisma.formation.findUnique.mockReset();
   prisma.formation.findFirst.mockReset();
@@ -56,8 +69,15 @@ beforeEach(async () => {
   prisma.formationShare.findUnique.mockReset();
   prisma.player.findMany.mockReset();
   prisma.player.create.mockReset();
+  prisma.player.upsert.mockReset();
   prisma.visit.create.mockReset();
   prisma.visit.create.mockResolvedValue({ id: 1 });
+  addRosterPlayers.mockReset();
+  addRosterPlayers.mockResolvedValue(1);
+  upsertTournament.mockReset();
+  upsertTournament.mockResolvedValue({ id: 900, name: "Cup" });
+  upsertRoster.mockReset();
+  upsertRoster.mockResolvedValue({ id: 901, title: "Matchday 1" });
 });
 
 describe("formation share API", () => {
@@ -85,6 +105,7 @@ describe("formation share API", () => {
         number: 8,
         image: null,
         wikiUrl: null,
+        rosterPlayers: [],
       },
       {
         id: 2,
@@ -93,6 +114,7 @@ describe("formation share API", () => {
         number: 9,
         image: null,
         wikiUrl: null,
+        rosterPlayers: [],
       },
     ]);
     prisma.formationShare.create.mockResolvedValue({ id: 99 });
@@ -134,6 +156,13 @@ describe("formation share API", () => {
             number: 7,
             image: null,
             wikiUrl: null,
+            affiliations: [
+              {
+                tournamentName: "Cup",
+                rosterTitle: "Matchday 1",
+                rosterDate: "2026-01-01T00:00:00.000Z",
+              },
+            ],
           },
           {
             sourcePlayerId: 101,
@@ -142,6 +171,13 @@ describe("formation share API", () => {
             number: 9,
             image: null,
             wikiUrl: null,
+            affiliations: [
+              {
+                tournamentName: "Cup",
+                rosterTitle: "Matchday 1",
+                rosterDate: "2026-01-01T00:00:00.000Z",
+              },
+            ],
           },
           {
             sourcePlayerId: 102,
@@ -155,7 +191,7 @@ describe("formation share API", () => {
       },
     });
     prisma.player.findMany.mockResolvedValue([{ id: 300, name: "Same Name" }]);
-    prisma.player.create
+    prisma.player.upsert
       .mockResolvedValueOnce({ id: 301, name: "New Name" })
       .mockResolvedValueOnce({ id: 302, name: "Bench Name" });
     prisma.formation.findFirst.mockResolvedValue(null);
@@ -174,8 +210,11 @@ describe("formation share API", () => {
 
     expect(res.status).toBe(201);
     expect(data.formation?.id).toBe(77);
-    expect(prisma.player.create).toHaveBeenCalledTimes(2);
+    expect(prisma.player.upsert).toHaveBeenCalledTimes(2);
     expect(prisma.formation.create).toHaveBeenCalledTimes(1);
+    expect(upsertTournament).toHaveBeenCalledTimes(1);
+    expect(upsertRoster).toHaveBeenCalledTimes(1);
+    expect(addRosterPlayers).toHaveBeenCalledTimes(1);
     const createArg = prisma.formation.create.mock.calls[0][0];
     expect(createArg.data.positions.lineupOrder).toEqual([300, 301]);
     expect(createArg.data.positions.benchOrder).toEqual([302]);

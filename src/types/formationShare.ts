@@ -1,3 +1,9 @@
+export interface SharedRosterAffiliation {
+  tournamentName: string;
+  rosterTitle: string;
+  rosterDate?: string | null;
+}
+
 export interface SharedPlayerSnapshot {
   sourcePlayerId: number;
   name: string;
@@ -5,6 +11,7 @@ export interface SharedPlayerSnapshot {
   number?: number | null;
   image?: string | null;
   wikiUrl?: string | null;
+  affiliations?: SharedRosterAffiliation[];
 }
 
 export interface FormationSharePayload {

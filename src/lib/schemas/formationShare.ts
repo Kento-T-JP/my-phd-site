@@ -7,6 +7,15 @@ const SharePlayerSchema = z.object({
   number: z.number().int().nullable().optional(),
   image: z.string().nullable().optional(),
   wikiUrl: z.string().nullable().optional(),
+  affiliations: z
+    .array(
+      z.object({
+        tournamentName: z.string().min(1),
+        rosterTitle: z.string().min(1),
+        rosterDate: z.string().nullable().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const FormationSharePayloadSchema = z.object({

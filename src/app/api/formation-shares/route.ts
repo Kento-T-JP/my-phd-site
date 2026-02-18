@@ -74,6 +74,19 @@ export async function POST(req: Request) {
       number: true,
       image: true,
       wikiUrl: true,
+      rosterPlayers: {
+        select: {
+          roster: {
+            select: {
+              title: true,
+              date: true,
+              tournament: {
+                select: { name: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
   if (players.length === 0) {
@@ -94,6 +107,21 @@ export async function POST(req: Request) {
       number: p.number,
       image: p.image,
       wikiUrl: p.wikiUrl,
+      affiliations: p.rosterPlayers
+        .map((rp) => {
+          const tournamentName = rp.roster?.tournament?.name?.trim() ?? "";
+          const rosterTitle = rp.roster?.title?.trim() ?? "";
+          if (!tournamentName || !rosterTitle) return null;
+          return {
+            tournamentName,
+            rosterTitle,
+            rosterDate: rp.roster?.date ? rp.roster.date.toISOString() : null,
+          };
+        })
+        .filter(
+          (aff): aff is { tournamentName: string; rosterTitle: string; rosterDate: string | null } =>
+            Boolean(aff)
+        ),
     })),
   };
   const payloadParsed = FormationSharePayloadSchema.safeParse(payload);
