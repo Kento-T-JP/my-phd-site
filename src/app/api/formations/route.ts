@@ -25,7 +25,7 @@ export async function GET() {
   const list = await prisma.formation.findMany({
     where: { userId: user.id },
     orderBy: { id: "asc" },
-    include: { nodes: true },
+    include: { nodes: { orderBy: { id: "asc" } } },
   });
   return NextResponse.json(list, { headers: noStoreHeaders });
 }
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
           }
         : undefined,
     },
-    include: { nodes: true },
+    include: { nodes: { orderBy: { id: "asc" } } },
   });
   return NextResponse.json(saved, { status: 201 });
 }

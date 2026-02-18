@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { normalizeSlug } from './db';
+import { formatDateUtc, parseDateFromParts } from './date';
 
 /** Extract a match date from JFA match detail markup. */
 export interface MatchDateRange {
@@ -20,15 +21,11 @@ export function extractMatchDate(html: string): MatchDateRange {
   let end: Date | undefined;
   if (matches[0]) {
     const [, y, mth, d] = matches[0];
-    const mm = mth.padStart(2, '0');
-    const dd = d.padStart(2, '0');
-    start = new Date(`${y}-${mm}-${dd}`);
+    start = parseDateFromParts(y, mth, d);
   }
   if (matches[1]) {
     const [, y2, mth2, d2] = matches[1];
-    const mm2 = mth2.padStart(2, '0');
-    const dd2 = d2.padStart(2, '0');
-    end = new Date(`${y2}-${mm2}-${dd2}`);
+    end = parseDateFromParts(y2, mth2, d2);
   }
   return { start, end };
 }
@@ -128,8 +125,10 @@ export async function scrapeJfaPlayers(url: string) {
   const urlDateMatch = url.match(/\/(\d{8})\/?/);
   if (urlDateMatch) {
     const raw = urlDateMatch[1];
-    rosterDate = new Date(
-      `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+    rosterDate = parseDateFromParts(
+      raw.slice(0, 4),
+      raw.slice(4, 6),
+      raw.slice(6, 8),
     );
   }
   if (!rosterDate) {
@@ -141,9 +140,7 @@ export async function scrapeJfaPlayers(url: string) {
     const m = data.match(/(\d{4}\/\d{1,2}\/\d{1,2})/);
     if (m) {
       const [yyyy, mth, d] = m[1].split('/');
-      const mm = mth.padStart(2, '0');
-      const dd = d.padStart(2, '0');
-      rosterDate = new Date(`${yyyy}-${mm}-${dd}`);
+      rosterDate = parseDateFromParts(yyyy, mth, d);
     }
   }
   if (!rosterDate) {
@@ -153,18 +150,10 @@ export async function scrapeJfaPlayers(url: string) {
   }
   title = tournament;
   if (rosterDate) {
-    const startStr = [
-      rosterDate.getFullYear(),
-      String(rosterDate.getMonth() + 1).padStart(2, '0'),
-      String(rosterDate.getDate()).padStart(2, '0'),
-    ].join('/');
+    const startStr = formatDateUtc(rosterDate, '/');
     title = `${tournament} - ${startStr}`;
     if (rosterEndDate) {
-      const endStr = [
-        rosterEndDate.getFullYear(),
-        String(rosterEndDate.getMonth() + 1).padStart(2, '0'),
-        String(rosterEndDate.getDate()).padStart(2, '0'),
-      ].join('/');
+      const endStr = formatDateUtc(rosterEndDate, '/');
       title = `${tournament} - ${startStr}-${endStr}`;
     }
   }

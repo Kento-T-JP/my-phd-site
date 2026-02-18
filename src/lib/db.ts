@@ -1,6 +1,7 @@
 // ESM 接続専用
 import { PrismaClient, type Prisma } from '@prisma/client';
 import type { Player } from '@/types/player';
+import { formatDateUtc } from '@/lib/date';
 
 export function normalizeSlug(str: string) {
   return str
@@ -407,10 +408,7 @@ export async function ensureTournamentRoster(
   let roster: Awaited<ReturnType<typeof client.roster.findFirst>> | null = null;
 
   if (rosterDate) {
-    const yyyy = rosterDate.getFullYear();
-    const mm = String(rosterDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(rosterDate.getDate()).padStart(2, '0');
-    const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
+    const title = `${tournament.name} - ${formatDateUtc(rosterDate, '/')}`;
     roster = await client.roster.findFirst({
       where: {
         tournamentId: tournament.id,
@@ -427,10 +425,7 @@ export async function ensureTournamentRoster(
     });
     if (!roster) {
       const date = new Date();
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      const title = `${tournament.name} - ${yyyy}/${mm}/${dd}`;
+      const title = `${tournament.name} - ${formatDateUtc(date, '/')}`;
       roster = await upsertRoster(tournament.id, title, userId, client, date);
     }
   }

@@ -111,6 +111,36 @@ export function filterPlayers<
   });
 }
 
+function getBenchSortPos(p: Player): string {
+  const pos = p.position;
+  if (pos.includes("MF/FW") || pos.includes("MF") || pos.includes("FW")) {
+    return "MF/FW";
+  }
+  return pos[0] ?? "";
+}
+
+function sortBenchIdsForInitialLayout(
+  ids: number[],
+  players: Player[]
+): number[] {
+  const playerById = new Map(players.map((p) => [p.id, p]));
+  return [...ids].sort((a, b) => {
+    const pa = playerById.get(a);
+    const pb = playerById.get(b);
+    if (!pa && !pb) return a - b;
+    if (!pa) return 1;
+    if (!pb) return -1;
+    const posA = getBenchSortPos(pa);
+    const posB = getBenchSortPos(pb);
+    const idxA = BENCH_POSITION_ORDER.indexOf(posA);
+    const idxB = BENCH_POSITION_ORDER.indexOf(posB);
+    if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+}
+
 /* ───────── util: 初期スタメン計算 ───────── */
 function makeInitialFieldIds(fm: Formation, list: Player[]): Set<number> {
   const chosen = new Set<number>();
@@ -520,7 +550,10 @@ export default function Formation({
     }
     const ids = makeInitialFieldIds(formation, filteredPlayers);
     setBenchOrder(
-      filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+      sortBenchIdsForInitialLayout(
+        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+        filteredPlayers
+      )
     );
     setLineupOrder(Array.from(ids));
     setLoading(false);
@@ -738,7 +771,10 @@ export default function Formation({
       const ids = makeInitialFieldIds(f, filteredPlayers);
       setLineupOrder(Array.from(ids));
       setBenchOrder(
-        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id))
+        sortBenchIdsForInitialLayout(
+          filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+          filteredPlayers
+        )
       );
       setPlayerPositions({});
       setCustomMode(false);
@@ -753,7 +789,10 @@ export default function Formation({
     const ids = makeInitialFieldIds(formation, filteredPlayers);
     const newState: FormationState = {
       lineupOrder: Array.from(ids),
-      benchOrder: filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+      benchOrder: sortBenchIdsForInitialLayout(
+        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+        filteredPlayers
+      ),
       playerPositions: {},
     };
     setBenchOrder(newState.benchOrder);
@@ -933,53 +972,23 @@ export default function Formation({
     return <LoadingSpinner />;
   }
 
-  const playerBenchIds: number[] = [];
-  const staffIds: number[] = [];
-  benchOrder.forEach((id) => {
-    const p = players.find((pl) => pl.id === id);
-    const hasFieldPos =
-      p?.position.some((pos) => BENCH_POSITION_ORDER.includes(pos)) ?? false;
-    if (p?.role === "player" && hasFieldPos) {
-      playerBenchIds.push(id);
-    } else {
-      staffIds.push(id);
-    }
-  });
-  const benchIds = playerBenchIds.slice(0, BENCH_LIMIT);
-  const benchOutIds = playerBenchIds.slice(BENCH_LIMIT).concat(staffIds);
-  const getBenchSortPos = (p: Player) => {
-    const pos = p.position;
-    if (pos.includes("MF/FW") || pos.includes("MF") || pos.includes("FW")) {
-      return "MF/FW";
-    }
-    return pos[0] ?? "";
+  const playerById = new Map(players.map((p) => [p.id, p]));
+  const canAppearOnBench = (id: number): boolean => {
+    const p = playerById.get(id);
+    if (!p || p.role !== "player") return false;
+    return p.position.some((pos) => BENCH_POSITION_ORDER.includes(pos));
   };
+  const benchCandidateIds = benchOrder.filter(canAppearOnBench);
+  const benchIds = benchCandidateIds.slice(0, BENCH_LIMIT);
+  const benchIdSet = new Set(benchIds);
+  // Preserve benchOrder-relative order for off-bench instead of regrouping.
+  const benchOutIds = benchOrder.filter((id) => !benchIdSet.has(id));
   const benchPlayers = benchIds
-    .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => Boolean(p))
-    .sort((a, b) => {
-      const posA = getBenchSortPos(a);
-      const posB = getBenchSortPos(b);
-      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
-      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
-      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    .map((id) => playerById.get(id))
+    .filter((p): p is Player => Boolean(p));
   const benchOutPlayers = benchOutIds
-    .map((id) => players.find((p) => p.id === id))
-    .filter((p): p is Player => Boolean(p))
-    .sort((a, b) => {
-      const posA = getBenchSortPos(a);
-      const posB = getBenchSortPos(b);
-      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
-      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
-      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    .map((id) => playerById.get(id))
+    .filter((p): p is Player => Boolean(p));
   const responsiveWidth = viewportWidth > 0 ? viewportWidth : fieldWidth;
   const isCompactLayout = responsiveWidth > 0 ? responsiveWidth < 960 : false;
   const widthScale = responsiveWidth > 0 ? responsiveWidth / 1366 : 1;

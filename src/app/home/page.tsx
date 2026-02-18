@@ -53,7 +53,7 @@ export default async function Home({
       if (!Number.isNaN(num) && ownerId) {
         const formation = await prisma.formation.findUnique({
           where: { id: num },
-          include: { nodes: true },
+          include: { nodes: { orderBy: { id: "asc" } } },
         });
         if (formation && formation.userId === ownerId) {
           initialFormation = formation as SavedFormation;

@@ -218,7 +218,7 @@ export async function POST(
           baseFormationName: payload.baseFormationName,
         },
       },
-      include: { nodes: true },
+      include: { nodes: { orderBy: { id: "asc" } } },
     });
   });
 

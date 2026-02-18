@@ -20,7 +20,7 @@ export async function GET(
   }
   const formation = await prisma.formation.findUnique({
     where: { id: num },
-    include: { nodes: true, user: { select: { email: true } } },
+    include: { nodes: { orderBy: { id: "asc" } }, user: { select: { email: true } } },
   });
   if (!formation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

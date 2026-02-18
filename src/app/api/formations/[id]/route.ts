@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
   const formation = await prisma.formation.findUnique({
     where: { id: num },
-    include: { nodes: true },
+    include: { nodes: { orderBy: { id: "asc" } } },
   });
   if (!formation || formation.userId !== user.id) {
     return NextResponse.json(

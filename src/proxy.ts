@@ -33,12 +33,20 @@ const isGateEnabled = (value?: string): boolean => {
   return !['false', '0', 'off', 'no'].includes(normalized);
 };
 
+const isDebugMiddlewareLogsEnabled = (): boolean =>
+  isGateEnabled(process.env.DEBUG_MIDDLEWARE_TOKEN_LOGS);
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token:
     | (JWT & { isAdmin?: boolean; userStatus?: string; loginStage?: string; gatePassed?: boolean })
     | null = await getToken({ req });
-  if (pathname === '/' || pathname.startsWith('/home') || pathname.startsWith('/api/auth/session')) {
+  if (
+    isDebugMiddlewareLogsEnabled() &&
+    (pathname === '/' ||
+      pathname.startsWith('/home') ||
+      pathname.startsWith('/api/auth/session'))
+  ) {
     const cookieHeader = req.headers.get('cookie') ?? '';
     const cookieNames = cookieHeader
       .split(';')

@@ -137,25 +137,13 @@ export default function SharePage() {
   }, [playerMap, share]);
 
   const { benchPlayers, offBenchPlayers } = useMemo(() => {
-    const getBenchSortPos = (position: string[]) => {
-      if (position.includes("MF/FW") || position.includes("MF") || position.includes("FW")) {
-        return "MF/FW";
-      }
-      return position[0] ?? "";
-    };
-    const sorted = [...benchPlayersRaw].sort((a, b) => {
-      const posA = getBenchSortPos(a.position);
-      const posB = getBenchSortPos(b.position);
-      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
-      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
-      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    const isBenchCandidate = (player: (typeof benchPlayersRaw)[number]) =>
+      player.position.some((pos) => BENCH_POSITION_ORDER.includes(pos));
+    const benchCandidates = benchPlayersRaw.filter(isBenchCandidate);
+    const benchIds = new Set(benchCandidates.slice(0, BENCH_LIMIT).map((p) => p.id));
     return {
-      benchPlayers: sorted.slice(0, BENCH_LIMIT),
-      offBenchPlayers: sorted.slice(BENCH_LIMIT),
+      benchPlayers: benchPlayersRaw.filter((p) => benchIds.has(p.id)),
+      offBenchPlayers: benchPlayersRaw.filter((p) => !benchIds.has(p.id)),
     };
   }, [benchPlayersRaw]);
 
