@@ -69,6 +69,8 @@ export async function proxy(req: NextRequest) {
   if (gateEnabled) {
     const gateAllowedPaths = [
       '/',
+      '/share',
+      '/api/formation-shares',
       '/api/auth',
       '/api/debug-session',
       '/api/auth/callback/credentials',
@@ -112,6 +114,8 @@ export async function proxy(req: NextRequest) {
       '/access-status',
       '/login',
       '/register',
+      '/share',
+      '/api/formation-shares',
       '/contact',
       '/api/auth',
       '/api/register',

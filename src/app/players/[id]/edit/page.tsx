@@ -388,9 +388,10 @@ export default function EditPlayerPage() {
                   <p className="text-xs uppercase text-white/70 mb-1">{group}</p>
                   <div className="flex flex-wrap gap-2">
                     {groupPositions.map((pos) => (
-                      <label key={pos} className="flex items-center gap-1">
+                      <label key={pos} className="flex items-center gap-1 cursor-pointer">
                         <input
                           type="checkbox"
+                          className="cursor-pointer"
                           checked={positions.includes(pos)}
                           onChange={() => togglePosition(pos)}
                         />

@@ -410,23 +410,58 @@ export default function Formation({
     if (loading) return;
     const target = fieldRef.current;
     if (!target) return;
+    let rafId: number | null = null;
+    let debounceId: ReturnType<typeof setTimeout> | null = null;
+    let lastAppliedAt = 0;
+    const RESIZE_THROTTLE_MS = 120;
     const update = () => {
-      setFieldWidth(target.getBoundingClientRect().width);
-      setViewportWidth(window.innerWidth);
-      setViewportHeight(window.innerHeight);
-      setIsBrowserFullscreen(Boolean(document.fullscreenElement));
+      const rectWidth = Math.round(target.getBoundingClientRect().width);
+      const innerWidth = window.innerWidth;
+      const innerHeight = window.innerHeight;
+      const fullscreen = Boolean(document.fullscreenElement);
+      setFieldWidth((prev) => (Math.abs(prev - rectWidth) < 1 ? prev : rectWidth));
+      setViewportWidth((prev) => (prev === innerWidth ? prev : innerWidth));
+      setViewportHeight((prev) => (prev === innerHeight ? prev : innerHeight));
+      setIsBrowserFullscreen((prev) => (prev === fullscreen ? prev : fullscreen));
+    };
+    const scheduleUpdate = (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastAppliedAt < RESIZE_THROTTLE_MS) {
+        if (debounceId !== null) {
+          clearTimeout(debounceId);
+        }
+        debounceId = setTimeout(() => {
+          scheduleUpdate(true);
+        }, RESIZE_THROTTLE_MS);
+        return;
+      }
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        update();
+        lastAppliedAt = Date.now();
+        rafId = null;
+      });
+    };
+    const triggerResizeUpdate = () => {
+      scheduleUpdate();
     };
     update();
-    const observer = new ResizeObserver(() => update());
+    const observer = new ResizeObserver(() => triggerResizeUpdate());
     observer.observe(target);
-    document.addEventListener("fullscreenchange", update);
-    window.addEventListener("orientationchange", update);
-    window.addEventListener("resize", update);
+    document.addEventListener("fullscreenchange", triggerResizeUpdate);
+    window.addEventListener("orientationchange", triggerResizeUpdate);
+    window.addEventListener("resize", triggerResizeUpdate);
     return () => {
       observer.disconnect();
-      document.removeEventListener("fullscreenchange", update);
-      window.removeEventListener("orientationchange", update);
-      window.removeEventListener("resize", update);
+      document.removeEventListener("fullscreenchange", triggerResizeUpdate);
+      window.removeEventListener("orientationchange", triggerResizeUpdate);
+      window.removeEventListener("resize", triggerResizeUpdate);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      if (debounceId !== null) {
+        clearTimeout(debounceId);
+      }
     };
   }, [loading]);
   const filteredPlayers = useMemo(() => {
@@ -945,8 +980,9 @@ export default function Formation({
       if (idxB === -1) return -1;
       return idxA - idxB;
     });
-  const isCompactLayout = fieldWidth > 0 && fieldWidth < 640;
-  const widthScale = fieldWidth > 0 ? fieldWidth / 980 : 1;
+  const responsiveWidth = viewportWidth > 0 ? viewportWidth : fieldWidth;
+  const isCompactLayout = responsiveWidth > 0 ? responsiveWidth < 960 : false;
+  const widthScale = responsiveWidth > 0 ? responsiveWidth / 1366 : 1;
   const heightScale = viewportHeight > 0 ? viewportHeight / 820 : 1;
   const uiScale = screenshotMode
     ? 0.9
@@ -969,7 +1005,7 @@ export default function Formation({
   const nameFontSize = tunedFieldCardSize >= 128 ? 14 : tunedFieldCardSize >= 104 ? 13 : tunedFieldCardSize >= 84 ? 11 : 8;
   const nameLineClamp = tunedFieldCardSize >= 124 ? 3 : 2;
   const metaFontSize = tunedFieldCardSize >= 112 ? 12 : tunedFieldCardSize >= 88 ? 11 : 10;
-  const isWideDesktop = !screenshotMode && fieldWidth >= 1000;
+  const isWideDesktop = !screenshotMode && responsiveWidth >= 1280;
   const adjustBaseLeft = (left: number) => {
     if (!isWideDesktop) return left;
     const delta = left - 50;

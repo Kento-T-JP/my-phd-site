@@ -17,6 +17,9 @@ function FormationsPageContent() {
   const [list, setList] = useState<SavedFormation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | "">("");
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
   const { play } = useClickSound();
   const storageKey = `selectedFormation_${session?.user?.id ?? "anonymous"}`;
 
@@ -63,6 +66,44 @@ function FormationsPageContent() {
     setSelectedId(saved.id);
   };
 
+  const handleCreateShare = async () => {
+    if (!selectedId || isCreatingShare) return;
+    setIsCreatingShare(true);
+    setShareStatus("");
+    setShareUrl("");
+    const res = await fetch("/api/formation-shares", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formationId: selectedId }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      shareUrl?: string;
+      error?: string;
+    };
+    if (!res.ok || !data.shareUrl) {
+      setShareStatus(data.error ?? "共有リンクの作成に失敗しました。");
+      setIsCreatingShare(false);
+      return;
+    }
+    const w = window as Window & { gtag?: (...args: unknown[]) => void };
+    w.gtag?.("event", "formation_share_created", {
+      source: "formations_page",
+    });
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: "/event/formation_share_created" }),
+    }).catch(() => {});
+    setShareUrl(data.shareUrl);
+    try {
+      await navigator.clipboard.writeText(data.shareUrl);
+      setShareStatus("共有リンクをコピーしました。");
+    } catch {
+      setShareStatus("共有リンクを作成しました。");
+    }
+    setIsCreatingShare(false);
+  };
+
   const selectedFormation =
     selectedId === "" ? null : list.find((f) => f.id === selectedId) || null;
 
@@ -73,6 +114,11 @@ function FormationsPageContent() {
     }
     localStorage.setItem(storageKey, String(selectedId));
   }, [selectedId, storageKey]);
+
+  useEffect(() => {
+    setShareStatus("");
+    setShareUrl("");
+  }, [selectedId]);
 
   useEffect(() => {
     const current = selectedId === "" ? null : String(selectedId);
@@ -133,7 +179,27 @@ function FormationsPageContent() {
                 Delete
               </button>
             )}
+            {selectedId && (
+              <button
+                onClick={() => {
+                  play();
+                  void handleCreateShare();
+                }}
+                className="ml-2 text-cyan-200 underline"
+                disabled={isCreatingShare}
+              >
+                {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
+              </button>
+            )}
           </div>
+          {shareStatus && <p className="mb-3 text-sm text-cyan-100/85">{shareStatus}</p>}
+          {shareUrl && (
+            <p className="mb-3 text-sm break-all">
+              <a href={shareUrl} className="underline text-cyan-100">
+                {shareUrl}
+              </a>
+            </p>
+          )}
           {selectedFormation && (
             <Formation
               initialFormation={selectedFormation}
