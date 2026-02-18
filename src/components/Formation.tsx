@@ -442,17 +442,20 @@ export default function Formation({
         rafId = null;
       });
     };
+    const triggerResizeUpdate = () => {
+      scheduleUpdate();
+    };
     update();
-    const observer = new ResizeObserver(() => scheduleUpdate());
+    const observer = new ResizeObserver(() => triggerResizeUpdate());
     observer.observe(target);
-    document.addEventListener("fullscreenchange", scheduleUpdate);
-    window.addEventListener("orientationchange", scheduleUpdate);
-    window.addEventListener("resize", scheduleUpdate);
+    document.addEventListener("fullscreenchange", triggerResizeUpdate);
+    window.addEventListener("orientationchange", triggerResizeUpdate);
+    window.addEventListener("resize", triggerResizeUpdate);
     return () => {
       observer.disconnect();
-      document.removeEventListener("fullscreenchange", scheduleUpdate);
-      window.removeEventListener("orientationchange", scheduleUpdate);
-      window.removeEventListener("resize", scheduleUpdate);
+      document.removeEventListener("fullscreenchange", triggerResizeUpdate);
+      window.removeEventListener("orientationchange", triggerResizeUpdate);
+      window.removeEventListener("resize", triggerResizeUpdate);
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
