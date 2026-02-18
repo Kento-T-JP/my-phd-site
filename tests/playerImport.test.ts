@@ -179,6 +179,7 @@ describe('player import API', () => {
         name: 'A',
         position: ['GK'],
         isDeleted: false,
+        deletedAt: null,
         userId: 1,
         extra: { note: 'x' },
       },

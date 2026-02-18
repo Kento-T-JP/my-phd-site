@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTournaments, upsertTournament } from '@/lib/db';
+import prisma, { getTournaments, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { userId, isAdmin } = await resolveSessionUserId(session);
@@ -82,19 +82,65 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.id) {
+  const session = (await getServerSession(authOptions)) as {
+    user?: { id?: string; email?: string; isAdmin?: boolean; status?: string };
+    loginStage?: string;
+    gatePassed?: boolean;
+  } | null;
+  if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!session.user.isAdmin) {
+
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
-      { error: 'トーナメント削除は管理者のみ実行できます。' },
-      { status: 403 }
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 },
     );
   }
-  return NextResponse.json(
-    { error: 'Use /api/admin/tournaments for user-scoped tournament deletion.' },
-    { status: 400 },
-  );
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json({ error: 'Tournament owner could not be resolved.' }, { status: 400 });
+  }
+  const ownerId = userId as number;
 
+  try {
+    const body = await req.json();
+    const tournamentId = Number(body?.tournamentId);
+    if (!Number.isFinite(tournamentId)) {
+      return NextResponse.json({ error: 'Invalid tournamentId' }, { status: 400 });
+    }
+
+    const targetTournament = await prisma.tournament.findFirst({
+      where: { id: tournamentId, userId: ownerId },
+      select: { id: true },
+    });
+    if (!targetTournament) {
+      return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+    }
+
+    const rosterIds = (
+      await prisma.roster.findMany({
+        where: { tournamentId: targetTournament.id, userId: ownerId },
+        select: { id: true },
+      })
+    ).map((r) => r.id);
+
+    await prisma.$transaction(async (tx) => {
+      if (rosterIds.length > 0) {
+        await tx.rosterPlayer.deleteMany({ where: { rosterId: { in: rosterIds } } });
+        await tx.roster.deleteMany({ where: { id: { in: rosterIds } } });
+      }
+      await tx.tournament.delete({ where: { id: targetTournament.id } });
+    });
+
+    revalidateTagSafe(cacheTag.rosters(ownerId));
+    revalidateTagSafe(cacheTag.rostersTitles(ownerId));
+    revalidateTagSafe(cacheTag.tournaments(ownerId));
+    revalidateTagSafe(cacheTag.tournamentsNames(ownerId));
+
+    return NextResponse.json({ ok: true, tournamentId: targetTournament.id, deletedRosterCount: rosterIds.length });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete tournament';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

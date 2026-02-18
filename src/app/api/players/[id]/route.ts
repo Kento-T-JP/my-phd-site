@@ -319,7 +319,7 @@ export async function DELETE(
   }
   await prisma.player.update({
     where: { id },
-    data: { isDeleted: true },
+    data: { isDeleted: true, deletedAt: new Date() },
   });
   return NextResponse.json({ success: true });
 }

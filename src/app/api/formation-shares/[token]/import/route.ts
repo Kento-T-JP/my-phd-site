@@ -122,6 +122,7 @@ export async function POST(
         },
         update: {
           isDeleted: false,
+          deletedAt: null,
         },
         create: {
           userId: user.id,
@@ -131,6 +132,7 @@ export async function POST(
           image: snapshot.image ?? null,
           wikiUrl: snapshot.wikiUrl ?? null,
           isDeleted: false,
+          deletedAt: null,
         },
         select: { id: true, name: true },
       });

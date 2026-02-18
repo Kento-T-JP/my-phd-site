@@ -38,7 +38,7 @@ describe('roster API authorization', () => {
       }),
     );
     expect(res.status).toBe(201);
-    expect(ensureSpy).toHaveBeenCalledWith('T', 42, expect.anything());
+    expect(ensureSpy).toHaveBeenCalledWith('T', 42, expect.anything(), undefined);
   });
 
   it('rejects unauthenticated users', async () => {

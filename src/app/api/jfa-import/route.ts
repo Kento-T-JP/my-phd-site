@@ -87,6 +87,7 @@ export async function POST(req: Request) {
           image: p.image,
           userId: ownerId,
           isDeleted: false,
+          deletedAt: null,
         })),
       });
     }
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
               number: payload.number,
               image: payload.image,
               isDeleted: false,
+              deletedAt: null,
             },
           })
         )
@@ -141,7 +143,7 @@ export async function POST(req: Request) {
     const importedPlayerIds = rosterEntries.map((entry) => entry.playerId);
     await prisma.player.updateMany({
       where: { id: { in: importedPlayerIds } },
-      data: { isDeleted: false },
+      data: { isDeleted: false, deletedAt: null },
     });
 
     const linked = await prisma.rosterPlayer.count({

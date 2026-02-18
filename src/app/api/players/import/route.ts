@@ -151,12 +151,19 @@ export async function PUT(req: Request) {
       name: string;
       position: string[];
       isDeleted: false;
+      deletedAt: null;
       userId: number | null;
       extra?: Prisma.InputJsonValue;
     }[] = [];
     const toUpdate: {
       id: number;
-      data: { name: string; position: string[]; isDeleted: false; extra?: Prisma.InputJsonValue };
+      data: {
+        name: string;
+        position: string[];
+        isDeleted: false;
+        deletedAt: null;
+        extra?: Prisma.InputJsonValue;
+      };
       restored: boolean;
     }[] = [];
 
@@ -167,6 +174,7 @@ export async function PUT(req: Request) {
           name: payload.name,
           position: payload.position,
           isDeleted: false,
+          deletedAt: null,
           userId: ownerId,
           extra: payload.extra,
         });
@@ -178,6 +186,7 @@ export async function PUT(req: Request) {
           name: payload.name,
           position: payload.position,
           isDeleted: false,
+          deletedAt: null,
           extra: payload.extra,
         },
         restored: before.isDeleted,

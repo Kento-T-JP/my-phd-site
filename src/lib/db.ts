@@ -180,6 +180,7 @@ export async function createPlayer(
     wikiUrl: rest.wikiUrl,
     basePlayerId: rest.basePlayerId,
     isDeleted: rest.isDeleted,
+    deletedAt: rest.isDeleted ? new Date() : null,
     userId,
     extra: extra as Prisma.InputJsonValue | undefined,
   };
@@ -189,6 +190,7 @@ export async function createPlayer(
         data: {
           ...playerData,
           isDeleted: false,
+          deletedAt: null,
         },
       })
     : await client.player.create({
@@ -228,6 +230,7 @@ export async function upsertPlayer(
     wikiUrl: rest.wikiUrl,
     basePlayerId: rest.basePlayerId,
     isDeleted: rest.isDeleted,
+    deletedAt: rest.isDeleted ? new Date() : null,
     userId: uidNum,
     extra: extra as Prisma.InputJsonValue | undefined,
   };
@@ -238,6 +241,7 @@ export async function upsertPlayer(
         ...playerData,
         // Upsert should revive soft-deleted records by default.
         isDeleted: playerData.isDeleted ?? false,
+        deletedAt: playerData.isDeleted ? playerData.deletedAt : null,
       },
     });
   } else {
@@ -563,7 +567,6 @@ export async function getTournaments(userId?: number) {
   }
   const where: Prisma.TournamentWhereInput = {
     userId: uid,
-    rosters: { some: { userId: uid } },
   };
   return prisma.tournament.findMany({
     where,

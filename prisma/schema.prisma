@@ -17,6 +17,7 @@ model Player {
   wikiUrl         String?
   basePlayerId    Int?
   isDeleted       Boolean          @default(false)
+  deletedAt       DateTime?
   userId          Int?
   favoritePlayers FavoritePlayer[]
   formationNodes  FormationNode[]

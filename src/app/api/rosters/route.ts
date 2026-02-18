@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma, { getRosters, ensureTournamentRoster } from '@/lib/db';
+import prisma, { getRosters, ensureTournamentRoster, upsertRoster, upsertTournament } from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.id) {
+  if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { userId, isAdmin } = await resolveSessionUserId(session);
@@ -40,8 +40,15 @@ export async function POST(req: Request) {
   }
   const ownerId = Number.isFinite(userId) ? (userId as number) : undefined;
   try {
-    const { tournament } = await req.json();
-    if (!tournament || typeof tournament !== 'string') {
+    const body = await req.json();
+    const tournamentRaw = typeof body?.tournament === 'string' ? body.tournament : '';
+    const rosterTitleRaw = typeof body?.title === 'string' ? body.title : '';
+    const dateRaw = typeof body?.date === 'string' ? body.date.trim() : '';
+    const tournament = tournamentRaw.trim();
+    const rosterTitle = rosterTitleRaw.trim();
+    const rosterDate =
+      dateRaw && !Number.isNaN(Date.parse(dateRaw)) ? new Date(dateRaw) : undefined;
+    if (!tournament) {
       return NextResponse.json({ error: 'Invalid tournament' }, { status: 400 });
     }
     if (!ownerId) {
@@ -50,11 +57,17 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const roster = await ensureTournamentRoster(
-      tournament,
-      ownerId,
-      prisma,
-    );
+    const roster = rosterTitle
+      ? await prisma.$transaction(async (tx) => {
+          const t = await upsertTournament(tournament, ownerId, tx);
+          return upsertRoster(t.id, rosterTitle, ownerId, tx, rosterDate);
+        })
+      : await ensureTournamentRoster(
+          tournament,
+          ownerId,
+          prisma,
+          rosterDate,
+        );
     const full = await prisma.roster.findUnique({
       where: { id: roster.id },
       include: { tournament: true },
@@ -72,41 +85,29 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.id) {
+  if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const isAdmin = Boolean(session.user.isAdmin);
-  if (!isAdmin) {
+  const { userId, isAdmin } = await resolveSessionUserId(session);
+  if (!isAdmin && !Number.isFinite(userId)) {
     return NextResponse.json(
-      { error: 'ロスター削除は管理者画面から実行してください。' },
-      { status: 403 }
+      { error: 'ユーザー識別子が無効です。再ログイン後にお試しください。' },
+      { status: 401 },
     );
   }
 
   try {
     const body = await req.json();
-    const title = typeof body?.title === 'string' ? body.title.trim() : '';
-    const tournament = typeof body?.tournament === 'string' ? body.tournament.trim() : '';
-    if (!title || !tournament) {
+    const rosterId = Number(body?.rosterId);
+    if (!Number.isFinite(rosterId)) {
       return NextResponse.json(
-        { error: 'Tournament and roster title are required' },
+        { error: 'rosterId is required' },
         { status: 400 }
       );
     }
 
-    const roster = await prisma.roster.findFirst({
-      where: {
-        title: {
-          equals: title,
-          mode: 'insensitive',
-        },
-        tournament: {
-          name: {
-            equals: tournament,
-            mode: 'insensitive',
-          },
-        },
-      },
+    const roster = await prisma.roster.findUnique({
+      where: { id: rosterId },
       include: {
         tournament: { select: { name: true } },
       },
@@ -114,6 +115,9 @@ export async function DELETE(req: Request) {
 
     if (!roster) {
       return NextResponse.json({ error: 'Roster not found' }, { status: 404 });
+    }
+    if (!isAdmin && roster.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     await prisma.$transaction(async (tx) => {
       await tx.rosterPlayer.deleteMany({
@@ -130,6 +134,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({
       ok: true,
+      rosterId: roster.id,
       title: roster.title,
       tournament: roster.tournament.name,
     });

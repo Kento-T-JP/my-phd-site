@@ -7,6 +7,7 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 
 - フォーメーション作成/保存/更新/再表示
 - 選手の新規登録・編集・削除（複数削除含む）
+- 共有リンク（30日有効）でフォーメーション公開・取り込み
 - JFA URL 取り込み / Excel (`.xlsx`) 取り込み
 - 大会/ロスター管理（ユーザースコープ）
 - NextAuth 認証（Google / Credentials）
@@ -76,12 +77,36 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 - ブラウザタブのファビコンとして `src/app/favicon.ico` を利用
   - `layout.tsx` の icon 参照を `/favicon.ico` に統一
 
+### 9. 共有リンク機能（30日有効）
+
+- フォーメーション共有リンクを発行し、未ログインでも閲覧可能
+- ログイン後に取り込み可能（同名選手は既存を再利用）
+- 取り込み時はフォーメーション名の重複を自動調整
+- 共有データには選手配置に加えて大会/ロースター紐付けも含めて復元
+
+### 10. 削除ポリシーの明確化
+
+- 選手削除はハイブリッド方式
+  - 即時: 論理削除（`isDeleted=true`, `deletedAt` 記録）
+  - 後続: Cron で30日経過分を物理削除（関連 `RosterPlayer` / `FavoritePlayer` / `FormationNode` も整理）
+- 大会・ロースター・フォーメーションは物理削除
+- 危険操作（削除）は確認ダイアログを表示
+
+### 11. Quick Actions: 大会・ロースター管理
+
+- `Quick Actions` から `/tournaments` へ遷移
+- 大会追加（必須: 大会名）
+- ロースター追加（必須: 大会名 / 任意: ロースター名・日付）
+- 大会削除・ロースター削除をユーザースコープで実行可能
+
 ## ルーティング / アクセス制御
 
 - `src/proxy.ts` でアクセス制御とセキュリティヘッダを適用
 - `/admin` / `/api/admin` は管理者のみ
 - `userStatus` ベースのアクセス制御
 - 任意の gate 制御（`GATE_ENABLED`）
+- `/share/*` は未ログイン閲覧を許可（取り込みはログイン必須）
+- `/api/cron/*` は `CRON_SECRET` 認証で実行
 
 ## 技術スタック
 
@@ -161,6 +186,8 @@ docker compose up --build
 - gate制御
   - `GATE_ENABLED`
   - `GATE_ALLOWED_EMAILS`
+- Cron（期限切れデータ掃除）
+  - `CRON_SECRET`
 - Seed/JFA
   - `JFA_MEMBER_URL`
 - SEO/公開URL
@@ -187,6 +214,13 @@ npx prisma generate && npx prisma migrate deploy && next build
 ```
 
 4. デプロイ
+
+### Vercel Cron
+
+- `vercel.json` で以下を日次実行
+  - `/api/cron/cleanup-formation-shares`
+  - `/api/cron/cleanup-deleted-players`
+- 両APIは `Authorization: Bearer ${CRON_SECRET}` で保護
 
 ## ライセンス
 
