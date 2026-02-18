@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     default: "Start XI",
     template: "%s | Start XI",
   },
-  description: "サッカーのフォーメーション作成、選手管理、ロースター運用を一つで完結できるアプリ。",
+  description: "サッカーのフォーメーション作成、選手管理、ロースター運用が一つに。",
   alternates: {
     canonical: "/",
   },
@@ -39,14 +39,14 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Start XI",
     title: "Start XI",
-    description: "サッカーのフォーメーション作成、選手管理、ロースター運用を一つで完結できるアプリ。",
+    description: "サッカーのフォーメーション作成、選手管理、ロースター運用が一つに。",
     images: [{ url: "/emblem.svg" }],
     locale: "ja_JP",
   },
   twitter: {
     card: "summary_large_image",
     title: "Start XI",
-    description: "サッカーのフォーメーション作成、選手管理、ロースター運用を一つで完結できるアプリ。",
+    description: "サッカーのフォーメーション作成、選手管理、ロースター運用が一つに。",
     images: ["/emblem.svg"],
   },
   icons: {

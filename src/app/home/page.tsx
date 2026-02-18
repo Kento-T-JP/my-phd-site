@@ -78,14 +78,11 @@ export default async function Home({
 
   if (!hasPlayers) {
     return (
-      <main className="py-2 space-y-4">
-        <section className="glass-panel p-4 sm:p-6 max-w-3xl mx-auto">
-          <p className="inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[11px] tracking-[0.16em] text-cyan-100/80">
-            GET STARTED
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-bold mt-3 mb-2">JFAメンバーを取り込んで開始</h1>
+      <main className="py-2">
+        <section className="glass-panel p-4 sm:p-6 max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-2">JFAメンバーインポート</h1>
           <p className="text-sm text-cyan-100/75 mb-5">
-            最初に選手データを取り込み、すぐにフォーメーション作成へ進めます。
+            まずは選手データを取り込んで、フォーメーション作成を開始してください。
           </p>
           <JfaImportForm />
         </section>
@@ -94,28 +91,14 @@ export default async function Home({
   }
 
   return (
-    <main className="py-2 space-y-4">
-      <section className="glass-panel p-4 sm:p-6">
-        <p className="inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[11px] tracking-[0.16em] text-cyan-100/80">
-          START XI
-        </p>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-3">
-          Tactical Board
+    <main className="py-2">
+      <section className="mb-4 px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Starting Eleven Tactical Preview
         </h1>
         <p className="text-sm text-cyan-100/75 mt-1">
           フォーメーション作成、選手配置、比較検討を1つの画面で行えます。
         </p>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div className="rounded-lg border border-cyan-300/20 bg-slate-900/35 px-3 py-2 text-xs text-cyan-100/80">
-            直感的なドラッグ配置
-          </div>
-          <div className="rounded-lg border border-cyan-300/20 bg-slate-900/35 px-3 py-2 text-xs text-cyan-100/80">
-            Bench / Off Bench 順序保持
-          </div>
-          <div className="rounded-lg border border-cyan-300/20 bg-slate-900/35 px-3 py-2 text-xs text-cyan-100/80">
-            共有リンクで簡単共有
-          </div>
-        </div>
       </section>
       <section className="glass-panel p-3 sm:p-5">
         <Formation initialFormation={initialFormation} />

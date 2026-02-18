@@ -13,9 +13,9 @@ export default function Header() {
   const headerRef = useRef<HTMLElement>(null);
   const isFullyAuthenticated = session?.loginStage === "credentials";
   const navLinks = [
-    { href: "/home", label: "ホーム" },
-    { href: "/formations", label: "フォーメーション" },
-    { href: "/mypage", label: "マイページ" },
+    { href: "/home", label: "Home" },
+    { href: "/formations", label: "Formations" },
+    { href: "/mypage", label: "My Page" },
   ];
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function Header() {
   return (
     <header ref={headerRef} className="fixed top-0 left-0 w-full z-50 border-b border-cyan-200/20 bg-slate-950/55 backdrop-blur-md text-white">
       <div className="app-shell flex items-center p-3 gap-2 flex-wrap sm:flex-nowrap">
-        <Link href="/home" className="flex items-center gap-2 min-w-0">
+        <Link href="/home" className="flex items-center gap-2">
           <Image
             src="/emblem.svg"
             alt="Start XI Emblem"
@@ -98,8 +98,8 @@ export default function Header() {
                     ))}
                     <span className="text-xs sm:text-sm max-w-[260px] truncate px-2 py-1 text-cyan-100/75">
                       {session.user?.email
-                        ? `${session.user.email} でログイン中`
-                        : "ログイン中"}
+                        ? `Logged in as ${session.user.email}`
+                        : "Logged in"}
                     </span>
                     <Button onClick={() => signOut()} className="ghost-btn" type="button">
                       Logout
