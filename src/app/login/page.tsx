@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { signIn, getSession, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import useClickSound from "@/lib/useClickSound";
 
@@ -9,6 +9,7 @@ const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false }
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const sessionUser = session?.user as
     | { status?: string; isAdmin?: boolean }
@@ -21,6 +22,11 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   const { play } = useClickSound();
+  const rawCallbackUrl = searchParams.get("callbackUrl") || "/home";
+  const callbackPath =
+    rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
+      ? rawCallbackUrl
+      : "/home";
 
   useEffect(() => {
     setIsMounted(true);
@@ -37,14 +43,14 @@ export default function LoginPage() {
         return;
       }
       if (session?.loginStage === "credentials") {
-        router.replace("/home");
+        router.replace(callbackPath);
         return;
       }
       if (session?.loginStage !== "google") {
         router.replace("/");
       }
     }
-  }, [router, session?.gatePassed, session?.loginStage, sessionUser?.status, status]);
+  }, [callbackPath, router, session?.gatePassed, session?.loginStage, sessionUser?.status, status]);
 
   if (!siteKey) {
     console.warn("ReCAPTCHA site key is not configured.");
@@ -65,7 +71,7 @@ export default function LoginPage() {
     try {
       const res = await signIn("credentials", {
         redirect: false,
-        callbackUrl: "/home",
+        callbackUrl: callbackPath,
         email,
         password,
         captcha: captchaToken,
@@ -82,7 +88,7 @@ export default function LoginPage() {
         if (currentUser?.isAdmin) {
           router.push("/admin");
         } else {
-          router.push("/home");
+          router.push(callbackPath);
         }
       } else {
         setError("メールアドレスまたはパスワードが正しくありません");

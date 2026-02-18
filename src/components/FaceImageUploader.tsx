@@ -82,7 +82,7 @@ export default function FaceImageUploader({
       <input
         type="file"
         accept="image/*"
-        className="w-full p-2 border rounded"
+        className="w-full p-2 border rounded cursor-pointer"
         onChange={(e) => {
           setPreviewError(null);
           onFileChange(e.target.files?.[0] ?? null);
@@ -149,7 +149,7 @@ export default function FaceImageUploader({
                 onChange={(e) =>
                   onCropChange({ ...crop, zoom: Number(e.target.value) })
                 }
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             </label>
             <label className="block text-xs text-cyan-100/80">
@@ -164,7 +164,7 @@ export default function FaceImageUploader({
                 onChange={(e) =>
                   onCropChange({ ...crop, offsetX: Number(e.target.value) })
                 }
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             </label>
             <label className="block text-xs text-cyan-100/80">
@@ -179,7 +179,7 @@ export default function FaceImageUploader({
                 onChange={(e) =>
                   onCropChange({ ...crop, offsetY: Number(e.target.value) })
                 }
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             </label>
           </div>

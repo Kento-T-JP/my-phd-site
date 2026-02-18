@@ -85,11 +85,26 @@ model User {
   verificationTokens EmailVerificationToken[]
   favoritePlayers    FavoritePlayer[]
   formations         Formation[]
+  formationShares    FormationShare[]
   players            Player[]
   rosters            Roster[]
   tournaments        Tournament[]
   accounts           Account[]
   sessions           Session[]
+}
+
+model FormationShare {
+  id          Int      @id @default(autoincrement())
+  token       String   @unique
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formationId Int
+  payload     Json
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([token, expiresAt])
+  @@index([userId, createdAt])
 }
 
 model Account {
