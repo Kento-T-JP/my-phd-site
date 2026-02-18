@@ -21,10 +21,11 @@ function confirmDanger(message: string): boolean {
 }
 
 type DisplayPosition = {
-  id?: number;
   name: string;
-  source: "default" | "custom";
-};
+} & (
+  | { source: "default" }
+  | { source: "custom"; id: number }
+);
 
 export default function PositionsPage() {
   const { data: session, status } = useSession();
@@ -42,7 +43,7 @@ export default function PositionsPage() {
     [positions],
   );
   const displayPositions = useMemo<DisplayPosition[]>(() => {
-    const defaults = getDefaultPositions().map((name) => ({
+    const defaults = getDefaultPositions().map((name): DisplayPosition => ({
       name,
       source: "default" as const,
     }));
@@ -53,7 +54,9 @@ export default function PositionsPage() {
             (base) => normalizeLabel(base.name).toLowerCase() === normalizeLabel(item.name).toLowerCase(),
           ),
       )
-      .map((item) => ({ id: item.id, name: item.name, source: "custom" as const }));
+      .map(
+        (item): DisplayPosition => ({ id: item.id, name: item.name, source: "custom" as const }),
+      );
     return [...defaults, ...custom];
   }, [sorted]);
 
