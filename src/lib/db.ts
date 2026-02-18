@@ -613,11 +613,19 @@ export async function getRosterTitles(search?: string, userId?: number) {
 /** Get all favorite players for a user. */
 export async function getFavoritePlayers(userId: number) {
   const favs = await prisma.favoritePlayer.findMany({
-    where: { userId },
+    where: {
+      userId,
+      player: {
+        isDeleted: false,
+      },
+    },
     include: { player: true },
     orderBy: { playerId: 'asc' },
   });
-  return favs.map((f) => ({ ...f.player, role: 'player' }));
+  return favs
+    .map((f) => f.player)
+    .filter((player) => !player.isDeleted)
+    .map((player) => ({ ...player, role: 'player' }));
 }
 
 /** Add a player to the user's favorites. */
