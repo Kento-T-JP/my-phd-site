@@ -79,6 +79,7 @@ function FormationsPageContent() {
     });
     const data = (await res.json().catch(() => ({}))) as {
       shareUrl?: string;
+      expiresAt?: string;
       error?: string;
     };
     if (!res.ok || !data.shareUrl) {
@@ -96,11 +97,14 @@ function FormationsPageContent() {
       body: JSON.stringify({ path: "/event/formation_share_created" }),
     }).catch(() => {});
     setShareUrl(data.shareUrl);
+    const expiryNote = data.expiresAt
+      ? `（有効期限: ${new Date(data.expiresAt).toLocaleString("ja-JP")} / 3日間有効）`
+      : "（3日間有効）";
     try {
       await navigator.clipboard.writeText(data.shareUrl);
-      setShareStatus("共有リンクをコピーしました。");
+      setShareStatus(`共有リンクをコピーしました。${expiryNote}`);
     } catch {
-      setShareStatus("共有リンクを作成しました。");
+      setShareStatus(`共有リンクを作成しました。${expiryNote}`);
     }
     setIsCreatingShare(false);
   };

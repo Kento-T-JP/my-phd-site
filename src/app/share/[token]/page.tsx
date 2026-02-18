@@ -11,6 +11,8 @@ import { formations } from "@/data/formations";
 
 const DEFAULT_FORMATION_NAME = "4-3-3";
 const OFFSET_STEP = 24;
+const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
+const BENCH_LIMIT = 12;
 const clampPercent = (value: number, min = 6, max = 94) =>
   Math.min(max, Math.max(min, value));
 
@@ -121,7 +123,7 @@ export default function SharePage() {
     });
   }, [playerMap, share]);
 
-  const benchPlayers = useMemo(() => {
+  const benchPlayersRaw = useMemo(() => {
     if (!share) return [];
     return share.formation.benchOrder.map((id) => {
       const player = playerMap.get(id);
@@ -133,6 +135,29 @@ export default function SharePage() {
       };
     });
   }, [playerMap, share]);
+
+  const { benchPlayers, offBenchPlayers } = useMemo(() => {
+    const getBenchSortPos = (position: string[]) => {
+      if (position.includes("MF/FW") || position.includes("MF") || position.includes("FW")) {
+        return "MF/FW";
+      }
+      return position[0] ?? "";
+    };
+    const sorted = [...benchPlayersRaw].sort((a, b) => {
+      const posA = getBenchSortPos(a.position);
+      const posB = getBenchSortPos(b.position);
+      const idxA = BENCH_POSITION_ORDER.indexOf(posA);
+      const idxB = BENCH_POSITION_ORDER.indexOf(posB);
+      if (idxA === -1 && idxB === -1) return posA.localeCompare(posB);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+    return {
+      benchPlayers: sorted.slice(0, BENCH_LIMIT),
+      offBenchPlayers: sorted.slice(BENCH_LIMIT),
+    };
+  }, [benchPlayersRaw]);
 
   const handleImport = async () => {
     if (importing) return;
@@ -233,13 +258,31 @@ export default function SharePage() {
             </div>
           </div>
         )}
+        {offBenchPlayers.length > 0 && (
+          <div className="mt-4">
+            <h2 className="text-sm font-semibold text-cyan-100/90 mb-2">Off Bench</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {offBenchPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="rounded-lg border border-cyan-300/20 bg-slate-950/50 px-2 py-2 text-xs"
+                >
+                  <div className="font-semibold">{player.name}</div>
+                  <div className="text-cyan-100/80">
+                    #{player.number ?? "-"} {player.position.join(", ")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {visibleRows.length === 0 && (
           <p className="mt-3 text-sm text-cyan-100/80">
             この共有フォーメーションには表示できる選手がいません。
           </p>
         )}
       </section>
-      <section className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <section className="space-y-2">
         <button
           type="button"
           className="primary-btn w-full sm:w-auto"
@@ -250,9 +293,14 @@ export default function SharePage() {
         >
           {session ? (importing ? "取り込み中..." : "このフォーメーションを取り込む") : "ログインして取り込む"}
         </button>
-        <Link href="/home" className="underline text-sm text-cyan-100/85">
-          Homeへ戻る
-        </Link>
+        <div>
+          <Link
+            href="/home"
+            className="inline-flex rounded-md border border-cyan-300/30 px-3 py-1.5 text-sm text-cyan-100/90 hover:bg-cyan-300/10"
+          >
+            Homeへ戻る
+          </Link>
+        </div>
       </section>
       {message && <p className="status-success text-sm">{message}</p>}
     </main>
