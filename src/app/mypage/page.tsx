@@ -42,12 +42,6 @@ export default function MyPage() {
     loadFavorites();
   }, [session]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this formation?")) return;
-    await fetch(`/api/formations/${id}`, { method: "DELETE" });
-    setList((prev) => prev.filter((f) => f.id !== id));
-  };
-
   if (status === "loading") {
     return (
       <main className="p-4 sm:p-8">
@@ -85,15 +79,6 @@ export default function MyPage() {
               >
                 {f.name}
               </Link>
-              <button
-                onClick={() => {
-                  play();
-                  void handleDelete(f.id);
-                }}
-                className="text-red-500 underline"
-              >
-                Delete
-              </button>
             </li>
           ))}
         </ul>

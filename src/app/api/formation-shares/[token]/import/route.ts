@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import prisma from "@/lib/db";
+import prisma, { addRosterPlayers, upsertRoster, upsertTournament } from "@/lib/db";
 import { authOptions } from "@/lib/authOptions";
 import { FormationSharePayloadSchema } from "@/lib/schemas/formationShare";
 import { unwrapParams } from "@/lib/unwrap";
@@ -13,6 +13,10 @@ type SessionUser = {
 
 function normalizeName(value: string): string {
   return value.normalize("NFKC").trim().toLocaleLowerCase("ja-JP");
+}
+
+function normalizeLabel(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ");
 }
 
 async function getUser() {
@@ -82,73 +86,138 @@ export async function POST(
   const sourcePlayerIds = payload.players.map((p) => p.sourcePlayerId);
   const uniqueSourcePlayerIds = Array.from(new Set(sourcePlayerIds));
 
-  const existingPlayers = await prisma.player.findMany({
-    where: {
-      userId: user.id,
-      isDeleted: false,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
-  const byNormalizedName = new Map<string, number>();
-  existingPlayers.forEach((player) => {
-    byNormalizedName.set(normalizeName(player.name), player.id);
-  });
+  const importedName = await buildImportedName(user.id, payload.formationName);
+  const formation = await prisma.$transaction(async (tx) => {
+    const existingPlayers = await tx.player.findMany({
+      where: {
+        userId: user.id,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    const byNormalizedName = new Map<string, number>();
+    existingPlayers.forEach((player) => {
+      byNormalizedName.set(normalizeName(player.name), player.id);
+    });
 
-  const sourceToTargetId = new Map<number, number>();
-  for (const sourceId of uniqueSourcePlayerIds) {
-    const snapshot = payload.players.find((p) => p.sourcePlayerId === sourceId);
-    if (!snapshot) continue;
-    const normalized = normalizeName(snapshot.name);
-    const existingId = byNormalizedName.get(normalized);
-    if (existingId) {
-      sourceToTargetId.set(sourceId, existingId);
-      continue;
+    const sourceToTargetId = new Map<number, number>();
+    for (const sourceId of uniqueSourcePlayerIds) {
+      const snapshot = payload.players.find((p) => p.sourcePlayerId === sourceId);
+      if (!snapshot) continue;
+      const normalized = normalizeName(snapshot.name);
+      const existingId = byNormalizedName.get(normalized);
+      if (existingId) {
+        sourceToTargetId.set(sourceId, existingId);
+        continue;
+      }
+      const resolved = await tx.player.upsert({
+        where: {
+          userId_name: {
+            userId: user.id,
+            name: snapshot.name.trim(),
+          },
+        },
+        update: {
+          isDeleted: false,
+        },
+        create: {
+          userId: user.id,
+          name: snapshot.name.trim(),
+          position: snapshot.position,
+          number: snapshot.number ?? null,
+          image: snapshot.image ?? null,
+          wikiUrl: snapshot.wikiUrl ?? null,
+          isDeleted: false,
+        },
+        select: { id: true, name: true },
+      });
+      sourceToTargetId.set(sourceId, resolved.id);
+      byNormalizedName.set(normalized, resolved.id);
     }
-    const created = await prisma.player.create({
+
+    const rosterKeyToId = new Map<string, number>();
+    const rosterIdToPlayers = new Map<
+      number,
+      Map<number, { playerId: number; number?: number; position?: string[] }>
+    >();
+    for (const snapshot of payload.players) {
+      const targetPlayerId = sourceToTargetId.get(snapshot.sourcePlayerId);
+      if (!targetPlayerId) continue;
+      for (const affiliation of snapshot.affiliations ?? []) {
+        const tournamentName = normalizeLabel(affiliation.tournamentName);
+        const rosterTitle = normalizeLabel(affiliation.rosterTitle);
+        if (!tournamentName || !rosterTitle) continue;
+        const key = `${normalizeName(tournamentName)}::${normalizeName(rosterTitle)}`;
+        let rosterId = rosterKeyToId.get(key);
+        if (!rosterId) {
+          const tournament = await upsertTournament(tournamentName, user.id, tx);
+          const rosterDate =
+            affiliation.rosterDate && !Number.isNaN(Date.parse(affiliation.rosterDate))
+              ? new Date(affiliation.rosterDate)
+              : undefined;
+          const roster = await upsertRoster(
+            tournament.id,
+            rosterTitle,
+            user.id,
+            tx,
+            rosterDate,
+          );
+          rosterId = roster.id;
+          rosterKeyToId.set(key, roster.id);
+        }
+        if (!rosterIdToPlayers.has(rosterId)) {
+          rosterIdToPlayers.set(rosterId, new Map());
+        }
+        const perRosterPlayers = rosterIdToPlayers.get(rosterId);
+        if (!perRosterPlayers) continue;
+        if (!perRosterPlayers.has(targetPlayerId)) {
+          perRosterPlayers.set(targetPlayerId, {
+            playerId: targetPlayerId,
+            number: snapshot.number ?? undefined,
+            position: snapshot.position,
+          });
+        }
+      }
+    }
+
+    for (const [rosterId, playersMap] of rosterIdToPlayers.entries()) {
+      await addRosterPlayers(
+        rosterId,
+        Array.from(playersMap.values()),
+        tx,
+      );
+    }
+
+    const lineupOrder = payload.lineupOrder
+      .map((id) => sourceToTargetId.get(id))
+      .filter((id): id is number => typeof id === "number");
+    const benchOrder = payload.benchOrder
+      .map((id) => sourceToTargetId.get(id))
+      .filter((id): id is number => typeof id === "number");
+    const playerPositions: Record<number, { top: number; left: number }> = {};
+    Object.entries(payload.playerPositions).forEach(([sourceId, pos]) => {
+      const targetId = sourceToTargetId.get(Number(sourceId));
+      if (targetId) {
+        playerPositions[targetId] = { top: pos.top, left: pos.left };
+      }
+    });
+
+    return tx.formation.create({
       data: {
         userId: user.id,
-        name: snapshot.name.trim(),
-        position: snapshot.position,
-        number: snapshot.number ?? null,
-        image: snapshot.image ?? null,
-        wikiUrl: snapshot.wikiUrl ?? null,
+        name: importedName,
+        positions: {
+          lineupOrder,
+          benchOrder,
+          playerPositions,
+          baseFormationName: payload.baseFormationName,
+        },
       },
-      select: { id: true, name: true },
+      include: { nodes: true },
     });
-    sourceToTargetId.set(sourceId, created.id);
-    byNormalizedName.set(normalized, created.id);
-  }
-
-  const lineupOrder = payload.lineupOrder
-    .map((id) => sourceToTargetId.get(id))
-    .filter((id): id is number => typeof id === "number");
-  const benchOrder = payload.benchOrder
-    .map((id) => sourceToTargetId.get(id))
-    .filter((id): id is number => typeof id === "number");
-  const playerPositions: Record<number, { top: number; left: number }> = {};
-  Object.entries(payload.playerPositions).forEach(([sourceId, pos]) => {
-    const targetId = sourceToTargetId.get(Number(sourceId));
-    if (targetId) {
-      playerPositions[targetId] = { top: pos.top, left: pos.left };
-    }
-  });
-
-  const importedName = await buildImportedName(user.id, payload.formationName);
-  const formation = await prisma.formation.create({
-    data: {
-      userId: user.id,
-      name: importedName,
-      positions: {
-        lineupOrder,
-        benchOrder,
-        playerPositions,
-        baseFormationName: payload.baseFormationName,
-      },
-    },
-    include: { nodes: true },
   });
 
   const ip = _req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;

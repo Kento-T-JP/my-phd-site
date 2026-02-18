@@ -56,6 +56,7 @@ function FormationsPageContent() {
   }, [session, loadList]);
 
   const handleDelete = async (id: number) => {
+    if (!window.confirm("このフォーメーションを削除しますか？")) return;
     await fetch(`/api/formations/${id}`, { method: "DELETE" });
     setList((prev) => prev.filter((f) => f.id !== id));
     setSelectedId((prev) => (prev === id ? "" : prev));
@@ -152,7 +153,7 @@ function FormationsPageContent() {
         <p>No formations saved.</p>
       ) : (
         <>
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <select
               className="border p-1"
               value={selectedId}
@@ -169,27 +170,27 @@ function FormationsPageContent() {
               ))}
             </select>
             {selectedId && (
-              <button
-                onClick={() => {
-                  play();
-                  handleDelete(Number(selectedId));
-                }}
-                className="ml-2 text-red-500 underline"
-              >
-                Delete
-              </button>
-            )}
-            {selectedId && (
-              <button
-                onClick={() => {
-                  play();
-                  void handleCreateShare();
-                }}
-                className="ml-2 text-cyan-200 underline"
-                disabled={isCreatingShare}
-              >
-                {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    play();
+                    void handleCreateShare();
+                  }}
+                  className="px-3 py-2 rounded border border-emerald-300/55 bg-emerald-500/25 text-emerald-100 hover:bg-emerald-500/35"
+                  disabled={isCreatingShare}
+                >
+                  {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
+                </button>
+                <button
+                  onClick={() => {
+                    play();
+                    handleDelete(Number(selectedId));
+                  }}
+                  className="px-3 py-2 rounded border border-red-300/55 bg-red-500/25 text-red-100 hover:bg-red-500/35"
+                >
+                  Delete
+                </button>
+              </div>
             )}
           </div>
           {shareStatus && <p className="mb-3 text-sm text-cyan-100/85">{shareStatus}</p>}
