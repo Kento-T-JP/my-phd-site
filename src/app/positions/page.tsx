@@ -213,7 +213,11 @@ export default function PositionsPage() {
           <ul className="space-y-2">
             {displayPositions.map((item) => (
               <li
-                key={`${item.source}-${item.id ?? item.name}`}
+                key={
+                  item.source === "custom"
+                    ? `${item.source}-${item.id}`
+                    : `${item.source}-${item.name}`
+                }
                 className="rounded-lg border border-cyan-300/20 bg-slate-900/45 px-3 py-2 flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-2">
