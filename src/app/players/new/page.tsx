@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
-import { formations } from "@/data/formations";
 import type { PositionKey, Roster } from "@/types/player";
 import { useRouter } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
@@ -11,14 +10,9 @@ import { normalizeUploadImage } from "@/lib/imageUpload";
 import FaceImageUploader, { defaultFaceCrop } from "@/components/FaceImageUploader";
 import { rosterDisplayTitle } from "@/lib/format";
 import MultiToggleGroup from "@/components/MultiToggleGroup";
+import { getDefaultPositions } from "@/lib/defaultPositions";
 
-const positionOptions: PositionKey[] = Array.from(
-  new Set([
-    ...formations.flatMap((f) => Object.keys(f.positions)),
-    "DF",
-    "MF/FW",
-  ])
-) as PositionKey[];
+const defaultPositionOptions: PositionKey[] = getDefaultPositions() as PositionKey[];
 
 export default function NewPlayerPage() {
   const router = useRouter();
@@ -35,6 +29,7 @@ export default function NewPlayerPage() {
   const [tournamentName, setTournamentName] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
   const [rosters, setRosters] = useState<Roster[]>([]);
+  const [managedPositions, setManagedPositions] = useState<string[]>([]);
   const [selectedRosterIds, setSelectedRosterIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
@@ -78,6 +73,32 @@ export default function NewPlayerPage() {
     }
     fetchRosters();
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const loadManagedPositions = async () => {
+      try {
+        const res = await fetch("/api/positions");
+        if (!res.ok) throw new Error("Failed to fetch positions");
+        const data = (await res.json()) as { id: number; name: string }[];
+        setManagedPositions(data.map((item) => item.name));
+      } catch {
+        setManagedPositions([]);
+      }
+    };
+    void loadManagedPositions();
+    const refresh = () => {
+      void loadManagedPositions();
+    };
+    window.addEventListener("position-saved", refresh);
+    return () => {
+      window.removeEventListener("position-saved", refresh);
+    };
+  }, [session?.user?.id]);
+
+  const positionOptions = Array.from(
+    new Set([...defaultPositionOptions, ...managedPositions])
+  ) as PositionKey[];
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
@@ -128,6 +149,10 @@ export default function NewPlayerPage() {
       setSuccessMessage("");
 
       if (res.ok) {
+        if (otherPosition.trim() !== "") {
+          window.dispatchEvent(new Event("position-saved"));
+          window.dispatchEvent(new Event("position-added"));
+        }
         if (tournamentName.trim() !== "") {
           window.dispatchEvent(new Event("tournament-saved"));
         }

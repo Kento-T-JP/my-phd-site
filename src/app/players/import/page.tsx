@@ -201,7 +201,7 @@ export default function ImportPlayersPage() {
           <code>name</code>（または <code>名前</code>） /{" "}
           <code>position</code>・<code>positions</code>（または <code>ポジション</code>）
           <br />
-          ポジションはカンマ or 空白区切りで複数指定できます（例: <code>CB RB</code>）。
+          ポジションはカンマ or 空白区切りで複数指定できます（例: <code>CB RSB</code>）。
         </p>
         <div className="overflow-x-auto">
           <table className="min-w-[560px] w-full text-sm border border-slate-700">

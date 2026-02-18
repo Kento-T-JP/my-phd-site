@@ -1,5 +1,5 @@
 export type PositionKey =
-  | 'GK' | 'LB' | 'CB' | 'RB'
+  | 'GK' | 'LSB' | 'CB' | 'RSB'
   | 'CM' | 'LM' | 'RM'
   | 'LW' | 'ST' | 'RW'
   | (string & {}); // 自由入力も許可

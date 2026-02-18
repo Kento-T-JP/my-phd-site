@@ -98,7 +98,7 @@ describe('player import API', () => {
     const data = await res.json();
     expect(res.status).toBe(200);
     expect(data.players).toEqual([
-      { name: 'A', position: ['GK', 'RB'], extra: { note: 'x' } },
+      { name: 'A', position: ['GK', 'RSB'], extra: { note: 'x' } },
       { name: 'B', position: ['LW', 'ST'], extra: { note: '' } },
     ]);
   });

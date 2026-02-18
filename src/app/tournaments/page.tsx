@@ -349,7 +349,7 @@ export default function TournamentsPage() {
       <section className="glass-panel p-4 sm:p-6 space-y-4">
         <h2 className="text-lg font-semibold">登録済みデータ</h2>
         {manageError && <p className="text-sm text-red-300">{manageError}</p>}
-        {manageInfo && <p className="text-sm text-emerald-300">{manageInfo}</p>}
+        {manageInfo && <p className="text-sm text-red-300">{manageInfo}</p>}
 
         {loading ? (
           <LoadingSpinner />

@@ -87,11 +87,24 @@ model User {
   favoritePlayers    FavoritePlayer[]
   formations         Formation[]
   formationShares    FormationShare[]
+  positions          UserPosition[]
   players            Player[]
   rosters            Roster[]
   tournaments        Tournament[]
   accounts           Account[]
   sessions           Session[]
+}
+
+model UserPosition {
+  id             Int      @id @default(autoincrement())
+  name           String
+  normalizedName String
+  userId         Int
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, normalizedName])
+  @@index([userId, name])
 }
 
 model FormationShare {

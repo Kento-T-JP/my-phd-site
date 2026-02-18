@@ -21,6 +21,7 @@ import { formations } from "@/data/formations";
 import type { Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
 import useClickSound from "@/lib/useClickSound";
+import { getDefaultPositions } from "@/lib/defaultPositions";
 
 export interface InitialFormation {
   id?: number;
@@ -268,6 +269,7 @@ export default function Formation({
   const [players, setPlayers] = useState<
     (Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] })[]
   >([]);
+  const [managedPositions, setManagedPositions] = useState<string[]>([]);
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -334,9 +336,7 @@ export default function Formation({
   );
 
   const positionOptions = useMemo(() => {
-    const defaultPositions = formations.flatMap((f) =>
-      Object.keys(f.positions)
-    );
+    const defaultPositions = getDefaultPositions();
     const playerPositions = players.flatMap((p) => p.position);
     const rosterPositions = rosters.flatMap(
       (r) => r.players?.flatMap((rp) => rp.position ?? []) ?? []
@@ -346,11 +346,12 @@ export default function Formation({
         ...defaultPositions,
         "DF",
         "MF/FW",
+        ...managedPositions,
         ...playerPositions,
         ...rosterPositions,
       ])
     ) as PositionKey[];
-  }, [players, rosters]);
+  }, [managedPositions, players, rosters]);
 
   const toggleFavorite = async (id: number) => {
     play();
@@ -519,6 +520,28 @@ export default function Formation({
     fetchPlayers();
     fetchRosters();
   }, [session?.user?.id, fetchPlayers, fetchRosters]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const loadManagedPositions = async () => {
+      try {
+        const res = await fetch("/api/positions");
+        if (!res.ok) throw new Error("Failed to fetch positions");
+        const data = (await res.json()) as { id: number; name: string }[];
+        setManagedPositions(data.map((item) => item.name));
+      } catch {
+        setManagedPositions([]);
+      }
+    };
+    void loadManagedPositions();
+    const refresh = () => {
+      void loadManagedPositions();
+    };
+    window.addEventListener("position-saved", refresh);
+    return () => {
+      window.removeEventListener("position-saved", refresh);
+    };
+  }, [session?.user?.id]);
 
   const refetchPlayersAndRosters = useCallback(() => {
     fetchPlayers();

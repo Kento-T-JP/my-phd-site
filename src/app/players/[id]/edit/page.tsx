@@ -2,21 +2,15 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
-import { formations } from "@/data/formations";
 import type { PositionKey, Roster } from "@/types/player";
 import { useRouter, useParams } from "next/navigation";
 import TournamentSelect from "@/components/TournamentSelect";
 import useClickSound from "@/lib/useClickSound";
 import { normalizeUploadImage } from "@/lib/imageUpload";
 import FaceImageUploader, { defaultFaceCrop } from "@/components/FaceImageUploader";
+import { getDefaultPositions } from "@/lib/defaultPositions";
 
-const positionOptions: PositionKey[] = Array.from(
-  new Set([
-    ...formations.flatMap((f) => Object.keys(f.positions)),
-    "DF",
-    "MF/FW",
-  ])
-) as PositionKey[];
+const defaultPositionOptions: PositionKey[] = getDefaultPositions() as PositionKey[];
 
 const positionGroupOrder = ["GK", "DF", "MF", "FW", "Other"] as const;
 type PositionGroup = (typeof positionGroupOrder)[number];
@@ -55,6 +49,7 @@ export default function EditPlayerPage() {
   const [rosterTitle, setRosterTitle] = useState("");
   const [currentAffiliations, setCurrentAffiliations] = useState<Affiliation[]>([]);
   const [rosterOptions, setRosterOptions] = useState<Affiliation[]>([]);
+  const [managedPositions, setManagedPositions] = useState<string[]>([]);
   const [selectedRosterIds, setSelectedRosterIds] = useState<Set<number>>(new Set());
   const [initialRosterIds, setInitialRosterIds] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<{
@@ -171,6 +166,9 @@ export default function EditPlayerPage() {
   }, [id]);
 
   const groupedPositions = useMemo(() => {
+    const positionOptions = Array.from(
+      new Set([...defaultPositionOptions, ...managedPositions])
+    ) as PositionKey[];
     const groups: Record<PositionGroup, PositionKey[]> = {
       GK: [],
       DF: [],
@@ -183,7 +181,29 @@ export default function EditPlayerPage() {
       groups[key].push(pos);
     });
     return groups;
-  }, []);
+  }, [managedPositions]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const loadManagedPositions = async () => {
+      try {
+        const res = await fetch("/api/positions");
+        if (!res.ok) throw new Error("Failed to fetch positions");
+        const data = (await res.json()) as { id: number; name: string }[];
+        setManagedPositions(data.map((item) => item.name));
+      } catch {
+        setManagedPositions([]);
+      }
+    };
+    void loadManagedPositions();
+    const refresh = () => {
+      void loadManagedPositions();
+    };
+    window.addEventListener("position-saved", refresh);
+    return () => {
+      window.removeEventListener("position-saved", refresh);
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (prevTournament.current && prevTournament.current !== tournamentName) {
@@ -310,6 +330,10 @@ export default function EditPlayerPage() {
       setSuccessMessage("");
 
       if (res.ok) {
+        if (otherPosition.trim() !== "") {
+          window.dispatchEvent(new Event("position-saved"));
+          window.dispatchEvent(new Event("position-added"));
+        }
         if (tournamentName.trim() !== "") {
           window.dispatchEvent(new Event("tournament-saved"));
         }

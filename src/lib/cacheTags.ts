@@ -3,5 +3,5 @@ export const cacheTag = {
   rostersTitles: (userId: number) => `rosters-titles:user:${userId}`,
   tournaments: (userId: number) => `tournaments:user:${userId}`,
   tournamentsNames: (userId: number) => `tournaments-names:user:${userId}`,
+  positions: (userId: number) => `positions:user:${userId}`,
 };
-

@@ -6,12 +6,12 @@ import { useSession, getCsrfToken } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WikiLink from "@/components/WikiLink";
 import type { Player, PositionKey, Roster } from "@/types/player";
-import { formations } from "@/data/formations";
 import BackButton from "@/components/BackButton";
 import { rosterDisplayTitle } from "@/lib/format";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
 import MultiToggleGroup from "@/components/MultiToggleGroup";
+import { getDefaultPositions } from "@/lib/defaultPositions";
 
 type PlayersPageProps = {
   getCsrfTokenFn?: typeof getCsrfToken;
@@ -48,6 +48,7 @@ export default function PlayersPage({
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosters, setRosters] = useState<Roster[]>([]);
+  const [managedPositions, setManagedPositions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(200);
@@ -131,14 +132,18 @@ export default function PlayersPage({
   }, [session?.user?.id]);
 
   const positionOptions = useMemo(() => {
-    const defaultPositions = formations.flatMap((f) =>
-      Object.keys(f.positions)
-    );
+    const defaultPositions = getDefaultPositions();
     const playerPositions = players.flatMap((p) => p.position);
     return Array.from(
-      new Set([...defaultPositions, "DF", "MF/FW", ...playerPositions])
+      new Set([
+        ...defaultPositions,
+        "DF",
+        "MF/FW",
+        ...managedPositions,
+        ...playerPositions,
+      ])
     ) as PositionKey[];
-  }, [players]);
+  }, [managedPositions, players]);
 
   const toggleFavorite = async (id: number) => {
     play();
@@ -221,6 +226,28 @@ export default function PlayersPage({
       }
     }
     fetchRosters();
+  }, [sessionUserIdKey]);
+
+  useEffect(() => {
+    if (!sessionUserIdKey) return;
+    const loadManagedPositions = async () => {
+      try {
+        const res = await fetch("/api/positions");
+        if (!res.ok) throw new Error("Failed to fetch positions");
+        const data = (await res.json()) as { id: number; name: string }[];
+        setManagedPositions(data.map((item) => item.name));
+      } catch {
+        setManagedPositions([]);
+      }
+    };
+    void loadManagedPositions();
+    const refresh = () => {
+      void loadManagedPositions();
+    };
+    window.addEventListener("position-saved", refresh);
+    return () => {
+      window.removeEventListener("position-saved", refresh);
+    };
   }, [sessionUserIdKey]);
 
   useEffect(() => {

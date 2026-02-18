@@ -42,13 +42,13 @@ export default function Header() {
         <Link href="/home" className="flex items-center gap-2">
           <Image
             src="/emblem.svg"
-            alt="Samurai Blue Emblem"
+            alt="Start XI Emblem"
             width={40}
             height={40}
             unoptimized
             className="mr-1"
           />
-          <span className="text-lg sm:text-xl font-bold tracking-wide">SAMURAI BLUE</span>
+          <span className="text-lg sm:text-xl font-bold tracking-wide">START XI</span>
         </Link>
         {isFullyAuthenticated ? (
           <>
