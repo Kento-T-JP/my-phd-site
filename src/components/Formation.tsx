@@ -1716,21 +1716,20 @@ export default function Formation({
                   onChange={(e) => setBenchSize(Number(e.target.value) || 0)}
                 />
                 <input
-                  type="number"
-                  min={0}
-                  max={benchControlMax}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={benchSizeInput}
-                  onFocus={(e) => e.currentTarget.select()}
                   onChange={(e) => {
-                    const raw = e.target.value.trim();
+                    const raw = e.target.value.replace(/\D+/g, "");
                     setBenchSizeInput(raw);
                     if (raw === "") {
                       setBenchSize(0);
                       return;
                     }
-                    const parsed = Number(raw);
+                    const parsed = Number.parseInt(raw, 10);
                     const next = Number.isFinite(parsed)
-                      ? Math.max(0, Math.min(benchControlMax, Math.trunc(parsed)))
+                      ? Math.max(0, Math.min(benchControlMax, parsed))
                       : 0;
                     setBenchSize(next);
                   }}
@@ -1861,21 +1860,20 @@ export default function Formation({
                       onChange={(e) => setOffBenchLimit(Number(e.target.value) || 0)}
                     />
                     <input
-                      type="number"
-                      min={0}
-                      max={offBenchFilterMax}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={offBenchLimitInput}
-                      onFocus={(e) => e.currentTarget.select()}
                       onChange={(e) => {
-                        const raw = e.target.value.trim();
+                        const raw = e.target.value.replace(/\D+/g, "");
                         setOffBenchLimitInput(raw);
                         if (raw === "") {
                           setOffBenchLimit(0);
                           return;
                         }
-                        const parsed = Number(raw);
+                        const parsed = Number.parseInt(raw, 10);
                         const next = Number.isFinite(parsed)
-                          ? Math.max(0, Math.min(offBenchFilterMax, Math.trunc(parsed)))
+                          ? Math.max(0, Math.min(offBenchFilterMax, parsed))
                           : 0;
                         setOffBenchLimit(next);
                       }}

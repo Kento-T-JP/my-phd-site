@@ -74,4 +74,61 @@ describe('favorites on home page', () => {
       expect.objectContaining({ method: 'POST' })
     );
   });
+
+  it('allows two-digit input for bench and off bench size', async () => {
+    const players = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      name: `Player ${i + 1}`,
+      position: [i === 0 ? 'GK' : i % 3 === 0 ? 'MF' : i % 2 === 0 ? 'DF' : 'FW'],
+      role: 'player',
+    }));
+
+    const fetchMock = vi.fn((url: any, opts?: any) => {
+      const urlStr = url.toString();
+      if (urlStr.includes('/api/players?includeRosterLinks=1&includeExtra=0')) {
+        return Promise.resolve({ ok: true, json: async () => players });
+      }
+      if (urlStr.endsWith('/api/players')) {
+        return Promise.resolve({ ok: true, json: async () => players });
+      }
+      if (urlStr.includes('/api/rosters')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (urlStr.includes('/api/favorites')) {
+        if (!opts || !opts.method) {
+          return Promise.resolve({ ok: true, json: async () => [] });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      if (urlStr.includes('/api/positions')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (urlStr.includes('/api/tournaments')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
+    // @ts-ignore
+    global.fetch = fetchMock;
+
+    const ui = await Home({});
+    render(ui);
+
+    const benchSizeInput = await screen.findByLabelText('Bench size');
+    fireEvent.change(benchSizeInput, { target: { value: '10' } });
+    await waitFor(() => {
+      expect(benchSizeInput).toHaveValue('10');
+    });
+
+    fireEvent.change(benchSizeInput, { target: { value: '0' } });
+    await waitFor(() => {
+      expect(benchSizeInput).toHaveValue('0');
+    });
+
+    const offBenchSizeInput = await screen.findByLabelText('Off bench size');
+    fireEvent.change(offBenchSizeInput, { target: { value: '12' } });
+    await waitFor(() => {
+      expect(offBenchSizeInput).toHaveValue('12');
+    });
+  });
 });

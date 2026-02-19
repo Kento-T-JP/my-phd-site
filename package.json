@@ -14,9 +14,6 @@
     "update:images": "tsx scripts/updatePlayerImages.ts",
     "test": "vitest run"
   },
-  "prisma": {
-    "seed": "npm run seed"
-  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
     "@next-auth/prisma-adapter": "^1.0.7",
