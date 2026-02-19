@@ -144,12 +144,19 @@ export default function SharePage() {
       Number.isFinite(share.formation.benchSize)
         ? Math.max(0, Math.min(15, Math.trunc(share.formation.benchSize)))
         : 12;
+    const offBenchSize =
+      typeof share?.formation.offBenchSize === "number" &&
+      Number.isFinite(share.formation.offBenchSize)
+        ? Math.max(0, Math.min(999, Math.trunc(share.formation.offBenchSize)))
+        : 999;
     const benchIds = new Set(benchCandidates.slice(0, benchSize).map((p) => p.id));
     return {
       benchPlayers: benchPlayersRaw.filter((p) => benchIds.has(p.id)),
-      offBenchPlayers: benchPlayersRaw.filter((p) => !benchIds.has(p.id)),
+      offBenchPlayers: benchPlayersRaw
+        .filter((p) => !benchIds.has(p.id))
+        .slice(0, offBenchSize),
     };
-  }, [benchPlayersRaw, share?.formation.benchSize]);
+  }, [benchPlayersRaw, share?.formation.benchSize, share?.formation.offBenchSize]);
 
   const handleImport = async () => {
     if (importing) return;

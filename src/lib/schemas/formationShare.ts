@@ -25,6 +25,7 @@ export const FormationSharePayloadSchema = z.object({
   lineupOrder: z.array(z.number().int().positive()),
   benchOrder: z.array(z.number().int().positive()),
   benchSize: z.number().int().min(0).max(15).optional(),
+  offBenchSize: z.number().int().min(0).max(999).optional(),
   playerPositions: z.record(
     z.string(),
     z.object({

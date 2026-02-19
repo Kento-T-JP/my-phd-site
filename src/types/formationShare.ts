@@ -21,6 +21,7 @@ export interface FormationSharePayload {
   lineupOrder: number[];
   benchOrder: number[];
   benchSize?: number;
+  offBenchSize?: number;
   playerPositions: Record<string, { top: number; left: number }>;
   players: SharedPlayerSnapshot[];
 }

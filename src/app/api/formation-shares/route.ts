@@ -45,6 +45,7 @@ export async function POST(req: Request) {
     lineupOrder?: number[];
     benchOrder?: number[];
     benchSize?: number;
+    offBenchSize?: number;
     playerPositions?: Record<string, { top: number; left: number }>;
     baseFormationName?: string;
   };
@@ -54,6 +55,11 @@ export async function POST(req: Request) {
     typeof positions.benchSize === "number" && Number.isFinite(positions.benchSize)
       ? Math.max(0, Math.min(15, Math.trunc(positions.benchSize)))
       : 12;
+  const offBenchSize =
+    typeof positions.offBenchSize === "number" &&
+    Number.isFinite(positions.offBenchSize)
+      ? Math.max(0, Math.min(999, Math.trunc(positions.offBenchSize)))
+      : 999;
   const playerPositions = positions.playerPositions ?? {};
   const referencedIds = new Set<number>([
     ...lineupOrder,
@@ -105,6 +111,7 @@ export async function POST(req: Request) {
     lineupOrder,
     benchOrder,
     benchSize,
+    offBenchSize,
     playerPositions,
     players: players.map((p) => ({
       sourcePlayerId: p.id,

@@ -30,6 +30,7 @@ export interface InitialFormation {
     lineupOrder: number[];
     benchOrder: number[];
     benchSize?: number;
+    offBenchSize?: number;
     playerPositions: Record<number, { top: number; left: number }>;
     baseFormationName?: string;
   };
@@ -39,6 +40,7 @@ export interface FormationState {
   lineupOrder: number[];
   benchOrder: number[];
   benchSize?: number;
+  offBenchSize?: number;
   playerPositions: Record<number, { top: number; left: number }>;
 }
 
@@ -66,6 +68,13 @@ function normalizeBenchSize(value: unknown, fallback = DEFAULT_BENCH_LIMIT): num
     return Math.max(0, Math.min(MAX_BENCH_LIMIT, Math.trunc(value)));
   }
   return Math.max(0, Math.min(MAX_BENCH_LIMIT, Math.trunc(fallback)));
+}
+
+function normalizeOffBenchSize(value: unknown, fallback = DEFAULT_OFF_BENCH_LIMIT): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(DEFAULT_OFF_BENCH_LIMIT, Math.trunc(value)));
+  }
+  return Math.max(0, Math.min(DEFAULT_OFF_BENCH_LIMIT, Math.trunc(fallback)));
 }
 
 export interface PlayerFilterOptions {
@@ -305,9 +314,13 @@ export default function Formation({
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [filter, setFilter] = useState<PlayerFilterOptions>({});
+  const [showPlayerFilters, setShowPlayerFilters] = useState(false);
   const [offBenchNameFilter, setOffBenchNameFilter] = useState("");
   const [offBenchPositionFilters, setOffBenchPositionFilters] = useState<string[]>([]);
-  const [offBenchLimit, setOffBenchLimit] = useState(DEFAULT_OFF_BENCH_LIMIT);
+  const [offBenchLimit, setOffBenchLimit] = useState(
+    normalizeOffBenchSize(initialFormation?.positions.offBenchSize, DEFAULT_OFF_BENCH_LIMIT)
+  );
+  const [showOffBenchFilters, setShowOffBenchFilters] = useState(false);
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const toTemplateStateKey = (name: string) => `template:${name}`;
@@ -326,6 +339,10 @@ export default function Formation({
             benchSize: normalizeBenchSize(
               initialFormation.positions.benchSize,
               DEFAULT_BENCH_LIMIT
+            ),
+            offBenchSize: normalizeOffBenchSize(
+              initialFormation.positions.offBenchSize,
+              DEFAULT_OFF_BENCH_LIMIT
             ),
             playerPositions: initialFormation.positions.playerPositions ?? {},
           },
@@ -357,6 +374,11 @@ export default function Formation({
       }),
     [filter]
   );
+  const playerFilterActiveCount =
+    (filter.name?.trim() ? 1 : 0) +
+    ((filter.rosterIds?.length ?? 0) > 0 ? 1 : 0) +
+    ((filter.positions?.length ?? 0) > 0 ? 1 : 0) +
+    (filter.favoriteOnly ? 1 : 0);
 
   const positionOptions = useMemo(() => {
     return Array.from(new Set(players.flatMap((p) => p.position))).sort(
@@ -406,6 +428,12 @@ export default function Formation({
     setBenchSize(
       normalizeBenchSize(initialFormation.positions.benchSize, DEFAULT_BENCH_LIMIT)
     );
+    setOffBenchLimit(
+      normalizeOffBenchSize(
+        initialFormation.positions.offBenchSize,
+        DEFAULT_OFF_BENCH_LIMIT
+      )
+    );
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
     if (savedId != null) {
       setFormationStates((prev) => ({
@@ -416,6 +444,10 @@ export default function Formation({
           benchSize: normalizeBenchSize(
             initialFormation.positions.benchSize,
             DEFAULT_BENCH_LIMIT
+          ),
+          offBenchSize: normalizeOffBenchSize(
+            initialFormation.positions.offBenchSize,
+            DEFAULT_OFF_BENCH_LIMIT
           ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         },
@@ -799,7 +831,13 @@ export default function Formation({
     // save current state for existing formation
     setFormationStates((prev) => ({
       ...prev,
-      [currentTemplateKey]: { lineupOrder, benchOrder, benchSize, playerPositions },
+      [currentTemplateKey]: {
+        lineupOrder,
+        benchOrder,
+        benchSize,
+        offBenchSize: offBenchLimit,
+        playerPositions,
+      },
     }));
 
     const saved = formationStates[nextTemplateKey];
@@ -807,6 +845,9 @@ export default function Formation({
       setLineupOrder(saved.lineupOrder);
       setBenchOrder(saved.benchOrder);
       setBenchSize(normalizeBenchSize(saved.benchSize, benchSize));
+      setOffBenchLimit(
+        normalizeOffBenchSize(saved.offBenchSize, offBenchLimit)
+      );
       setPlayerPositions(saved.playerPositions);
       const hasCustom = Object.keys(saved.playerPositions).length > 0;
       setCustomMode(hasCustom);
@@ -821,6 +862,7 @@ export default function Formation({
         )
       );
       setBenchSize(benchSize);
+      setOffBenchLimit(offBenchLimit);
       setPlayerPositions({});
       setCustomMode(false);
       setDefaultsFrozen(false);
@@ -839,6 +881,7 @@ export default function Formation({
         filteredPlayers
       ),
       benchSize,
+      offBenchSize: offBenchLimit,
       playerPositions: {},
     };
     setBenchOrder(newState.benchOrder);
@@ -864,6 +907,12 @@ export default function Formation({
     setBenchSize(
       normalizeBenchSize(initialFormation.positions.benchSize, DEFAULT_BENCH_LIMIT)
     );
+    setOffBenchLimit(
+      normalizeOffBenchSize(
+        initialFormation.positions.offBenchSize,
+        DEFAULT_OFF_BENCH_LIMIT
+      )
+    );
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
     setFormationStates((prev) => {
       const next: Record<string, FormationState> = {
@@ -875,6 +924,10 @@ export default function Formation({
             initialFormation.positions.benchSize,
             DEFAULT_BENCH_LIMIT
           ),
+          offBenchSize: normalizeOffBenchSize(
+            initialFormation.positions.offBenchSize,
+            DEFAULT_OFF_BENCH_LIMIT
+          ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         },
       };
@@ -885,6 +938,10 @@ export default function Formation({
           benchSize: normalizeBenchSize(
             initialFormation.positions.benchSize,
             DEFAULT_BENCH_LIMIT
+          ),
+          offBenchSize: normalizeOffBenchSize(
+            initialFormation.positions.offBenchSize,
+            DEFAULT_OFF_BENCH_LIMIT
           ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         };
@@ -926,6 +983,10 @@ export default function Formation({
             lineupOrder,
             benchOrder,
             benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+            offBenchSize: normalizeOffBenchSize(
+              offBenchLimit,
+              DEFAULT_OFF_BENCH_LIMIT
+            ),
             playerPositions,
             baseFormationName: formation.name,
           },
@@ -974,6 +1035,10 @@ export default function Formation({
             lineupOrder,
             benchOrder,
             benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+            offBenchSize: normalizeOffBenchSize(
+              offBenchLimit,
+              DEFAULT_OFF_BENCH_LIMIT
+            ),
             playerPositions,
             baseFormationName: formation.name,
           },
@@ -1081,6 +1146,10 @@ export default function Formation({
     Math.max(0, offBenchLimit),
     offBenchFilterMax
   );
+  const offBenchFilterActiveCount =
+    (offBenchNameFilter.trim() ? 1 : 0) +
+    (offBenchPositionFilters.length > 0 ? 1 : 0) +
+    (offBenchLimitValue < offBenchFilterMax ? 1 : 0);
   const offBenchPlayers = offBenchByFilter.slice(0, offBenchLimitValue);
   const responsiveWidth = viewportWidth > 0 ? viewportWidth : fieldWidth;
   const isCompactLayout = responsiveWidth > 0 ? responsiveWidth < 960 : false;
@@ -1244,12 +1313,174 @@ export default function Formation({
         style={{ ...layoutVars, padding: "var(--layout-pad)" }}
       >
       <h2 className="text-xl font-bold mb-4">Formation: {displayFormationName}</h2>
+      <section className="mb-4 rounded-xl border border-cyan-300/20 bg-slate-950/35 p-3 sm:p-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs tracking-[0.14em] text-cyan-100/70">FORMATION CONTROLS</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <p className="mb-1 text-xs font-semibold tracking-wide text-cyan-100">Template</p>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              {formations.map((f) => (
+                <button
+                  key={f.name}
+                  type="button"
+                  className={`w-full px-3 py-1 border rounded text-sm sm:w-auto ${
+                    formation.name === f.name ? "bg-green-300 text-slate-900" : ""
+                  }`}
+                  onClick={() => {
+                    handleFormationChange(f);
+                  }}
+                >
+                  {f.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="tap-action w-full px-3 py-1 border rounded text-sm sm:w-auto"
+                onClick={() => {
+                  play();
+                  handleReset();
+                }}
+              >
+                Reset
+              </button>
+              {initialFormation?.id && (
+                <button
+                  type="button"
+                  className="tap-action w-full px-3 py-1 border rounded bg-cyan-600 text-white text-sm sm:w-auto"
+                  onClick={() => {
+                    play();
+                    handleRestoreSaved();
+                  }}
+                >
+                  保存状態に戻す
+                </button>
+              )}
+            </div>
+          </div>
+          {!screenshotMode && (
+            <div className="lg:col-span-5">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-cyan-100">Save</p>
+              <div className="flex flex-col gap-2">
+                {session ? (
+                  <>
+                    <input
+                      type="text"
+                      className="form-input w-full min-w-0"
+                      placeholder="Formation name"
+                      value={alias}
+                      onChange={(e) => setAlias(e.target.value)}
+                    />
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="tap-action px-4 py-2 bg-blue-500 text-white rounded w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {isSaving ? (
+                          <span className="flex items-center">
+                            <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            保存中…
+                          </span>
+                        ) : (
+                          initialFormation?.id ? "別名で保存" : "保存"
+                        )}
+                      </button>
+                      {initialFormation?.id ? (
+                        <button
+                          type="button"
+                          onClick={handleUpdate}
+                          className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full"
+                        >
+                          更新
+                        </button>
+                      ) : (
+                        <Link
+                          href={screenshotHref}
+                          aria-disabled={!initialFormation?.id}
+                          onClick={(e) => {
+                            play();
+                            if (!initialFormation?.id) {
+                              e.preventDefault();
+                              alert("Save the formation first");
+                            }
+                          }}
+                          className={`tap-action px-4 py-2 bg-purple-500 text-white rounded text-center ${
+                            !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          Screenshot
+                        </Link>
+                      )}
+                    </div>
+                    {initialFormation?.id && (
+                      <Link
+                        href={screenshotHref}
+                        aria-disabled={!initialFormation?.id}
+                        onClick={(e) => {
+                          play();
+                          if (!initialFormation?.id) {
+                            e.preventDefault();
+                            alert("Save the formation first");
+                          }
+                        }}
+                        className={`tap-action px-4 py-2 bg-purple-500 text-white rounded text-center ${
+                          !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        Screenshot
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <Link href="/login" className="underline w-full text-center">
+                    Login to save
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
       {!screenshotMode && (
-        <PlayerFilter
-          rosters={rosters}
-          positionOptions={positionOptions}
-          onApply={setFilter}
-        />
+        <section className="mb-4 rounded-xl border border-cyan-300/20 bg-slate-950/35 p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs tracking-[0.14em] text-cyan-100/70">PLAYER FILTERS</p>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-md border border-cyan-200/30 px-2 py-1 text-[11px] text-cyan-100/80 hover:bg-cyan-300/10"
+              onClick={() => setShowPlayerFilters((prev) => !prev)}
+            >
+              <span>{showPlayerFilters ? "Close" : "Open"}</span>
+              <span
+                className={`transition-transform duration-300 ${
+                  showPlayerFilters ? "rotate-180" : ""
+                }`}
+              >
+                ▾
+              </span>
+            </button>
+          </div>
+          <p className="mt-1 text-[11px] text-cyan-100/70">
+            {playerFilterActiveCount > 0 ? `${playerFilterActiveCount}件の条件を適用中` : ""}
+          </p>
+          <div
+            className="overflow-hidden transition-all duration-300 ease-out"
+            style={{
+              maxHeight: showPlayerFilters ? "560px" : "0px",
+              opacity: showPlayerFilters ? 1 : 0,
+              marginTop: showPlayerFilters ? "0.75rem" : "0rem",
+            }}
+          >
+            <PlayerFilter
+              rosters={rosters}
+              positionOptions={positionOptions}
+              onApply={setFilter}
+            />
+          </div>
+        </section>
       )}
       <div
         id="field-bench"
@@ -1526,88 +1757,115 @@ export default function Formation({
                 <p className="text-xs font-semibold tracking-[0.12em] text-cyan-100/80">
                   OFF BENCH FILTERS
                 </p>
-                <button
-                  type="button"
-                  className="rounded-md border border-cyan-200/30 px-2 py-1 text-[11px] text-cyan-100/80 hover:bg-cyan-300/10"
-                  onClick={() => {
-                    setOffBenchNameFilter("");
-                    setOffBenchPositionFilters([]);
-                    setOffBenchLimit(DEFAULT_OFF_BENCH_LIMIT);
-                  }}
-                >
-                  クリア
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input w-full min-w-0"
-                    placeholder="選手名で絞り込み"
-                    value={offBenchNameFilter}
-                    onChange={(e) => setOffBenchNameFilter(e.target.value)}
-                  />
-                </div>
-                <MultiToggleGroup
-                  className="lg:col-span-2"
-                  legend={`Position (${offBenchPositionFilters.length})`}
-                  options={offBenchPositionOptions.map((pos) => ({
-                    value: pos,
-                    label: pos,
-                  }))}
-                  selectedValues={offBenchPositionFilters}
-                  onChange={setOffBenchPositionFilters}
-                  emptyLabel="ポジションがありません"
-                  wrapSelectedLabel
-                  wrapOptionLabel
-                />
-              </div>
-              <div className="mt-3">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="text-xs font-semibold tracking-wide text-cyan-100">
-                    Off Bench人数
-                  </label>
-                  <span className="text-xs text-cyan-100/75">
-                    {offBenchLimitValue} / {offBenchFilterMax}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="range"
-                    min={0}
-                    max={offBenchFilterMax}
-                    value={offBenchLimitValue}
-                    className="w-full accent-cyan-300"
-                    onChange={(e) => setOffBenchLimit(Number(e.target.value) || 0)}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={offBenchFilterMax}
-                    value={offBenchLimitValue}
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
-                      if (raw === "") {
-                        setOffBenchLimit(0);
-                        e.currentTarget.value = "0";
-                        return;
-                      }
-                      const parsed = Number(raw);
-                      const next = Number.isFinite(parsed)
-                        ? Math.max(0, Math.min(offBenchFilterMax, Math.trunc(parsed)))
-                        : 0;
-                      setOffBenchLimit(next);
-                      const normalized = String(next);
-                      if (e.currentTarget.value !== normalized) {
-                        e.currentTarget.value = normalized;
-                      }
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-md border border-cyan-200/30 px-2 py-1 text-[11px] text-cyan-100/80 hover:bg-cyan-300/10"
+                    onClick={() => setShowOffBenchFilters((prev) => !prev)}
+                  >
+                    <span>{showOffBenchFilters ? "Close" : "Open"}</span>
+                    <span
+                      className={`transition-transform duration-300 ${
+                        showOffBenchFilters ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▾
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-cyan-200/30 px-2 py-1 text-[11px] text-cyan-100/80 hover:bg-cyan-300/10"
+                    onClick={() => {
+                      setOffBenchNameFilter("");
+                      setOffBenchPositionFilters([]);
+                      setOffBenchLimit(DEFAULT_OFF_BENCH_LIMIT);
                     }}
-                    className="form-input h-9 w-20 text-center text-sm"
-                    aria-label="Off bench size"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <p className="mb-2 text-[11px] text-cyan-100/70">
+                {offBenchFilterActiveCount > 0 ? `${offBenchFilterActiveCount}件の条件を適用中` : ""}
+              </p>
+              <div
+                className="overflow-hidden transition-all duration-300 ease-out"
+                style={{
+                  maxHeight: showOffBenchFilters ? "520px" : "0px",
+                  opacity: showOffBenchFilters ? 1 : 0,
+                }}
+              >
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input w-full min-w-0"
+                      placeholder="選手名で絞り込み"
+                      value={offBenchNameFilter}
+                      onChange={(e) => setOffBenchNameFilter(e.target.value)}
+                    />
+                  </div>
+                  <MultiToggleGroup
+                    className="lg:col-span-2"
+                    legend={`Position (${offBenchPositionFilters.length})`}
+                    options={offBenchPositionOptions.map((pos) => ({
+                      value: pos,
+                      label: pos,
+                    }))}
+                    selectedValues={offBenchPositionFilters}
+                    onChange={setOffBenchPositionFilters}
+                    emptyLabel="ポジションがありません"
+                    wrapSelectedLabel
+                    wrapOptionLabel
                   />
+                </div>
+                <div className="mt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-semibold tracking-wide text-cyan-100">
+                      Off Bench人数
+                    </label>
+                    <span className="text-xs text-cyan-100/75">
+                      {offBenchLimitValue} / {offBenchFilterMax}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={offBenchFilterMax}
+                      value={offBenchLimitValue}
+                      className="w-full accent-cyan-300"
+                      onChange={(e) => setOffBenchLimit(Number(e.target.value) || 0)}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={offBenchFilterMax}
+                      value={offBenchLimitValue}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        if (raw === "") {
+                          setOffBenchLimit(0);
+                          e.currentTarget.value = "0";
+                          return;
+                        }
+                        const parsed = Number(raw);
+                        const next = Number.isFinite(parsed)
+                          ? Math.max(0, Math.min(offBenchFilterMax, Math.trunc(parsed)))
+                          : 0;
+                        setOffBenchLimit(next);
+                        const normalized = String(next);
+                        if (e.currentTarget.value !== normalized) {
+                          e.currentTarget.value = normalized;
+                        }
+                      }}
+                      className="form-input h-9 w-20 text-center text-sm"
+                      aria-label="Off bench size"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1619,105 +1877,6 @@ export default function Formation({
         </div>
       )}
 
-      {/* formation selector */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
-        {formations.map((f) => (
-          <button
-            key={f.name}
-            type="button"
-            className={`w-full px-3 py-1 border rounded text-sm sm:w-auto ${
-              formation.name === f.name ? "bg-green-300" : ""
-            }`}
-            onClick={() => {
-              handleFormationChange(f);
-            }}
-          >
-            {f.name}
-          </button>
-        ))}
-        <button
-          type="button"
-          className="tap-action w-full px-3 py-1 border rounded text-sm sm:w-auto"
-          onClick={() => {
-            play();
-            handleReset();
-          }}
-        >
-          Reset
-        </button>
-        {initialFormation?.id && (
-          <button
-            type="button"
-            className="tap-action w-full px-3 py-1 border rounded bg-cyan-600 text-white text-sm sm:w-auto"
-            onClick={() => {
-              play();
-              handleRestoreSaved();
-            }}
-          >
-            保存状態に戻す
-          </button>
-        )}
-      </div>
-
-      {!screenshotMode && (
-        <div className="z-10 bg-[#002D62] text-white p-4 flex flex-col sm:flex-row gap-2 items-center mb-8">
-          {session ? (
-            <>
-              <input
-                type="text"
-                className="border p-2 flex-1 w-full text-white"
-                placeholder="Formation name"
-                value={alias}
-                onChange={(e) => setAlias(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                className="tap-action px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isSaving ? (
-                  <span className="flex items-center">
-                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    保存中…
-                  </span>
-                ) : (
-                  initialFormation?.id ? "別名で保存" : "保存"
-                )}
-              </button>
-              {initialFormation?.id && (
-                <button
-                  type="button"
-                  onClick={handleUpdate}
-                  className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full sm:w-auto"
-                >
-                  更新
-                </button>
-              )}
-            </>
-          ) : (
-            <Link href="/login" className="underline w-full text-center">
-              Login to save
-            </Link>
-          )}
-          <Link
-            href={screenshotHref}
-            aria-disabled={!initialFormation?.id}
-            onClick={(e) => {
-              play();
-              if (!initialFormation?.id) {
-                e.preventDefault();
-                alert("Save the formation first");
-              }
-            }}
-            className={`px-4 py-2 bg-purple-500 text-white rounded w-full sm:w-auto ${
-              !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Screenshot
-          </Link>
-        </div>
-      )}
       </div>
     </Profiler>
   );

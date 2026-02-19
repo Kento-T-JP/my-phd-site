@@ -203,6 +203,11 @@ export async function POST(
       typeof payload.benchSize === "number" && Number.isFinite(payload.benchSize)
         ? Math.max(0, Math.min(15, Math.trunc(payload.benchSize)))
         : 12;
+    const offBenchSize =
+      typeof payload.offBenchSize === "number" &&
+      Number.isFinite(payload.offBenchSize)
+        ? Math.max(0, Math.min(999, Math.trunc(payload.offBenchSize)))
+        : 999;
     const playerPositions: Record<number, { top: number; left: number }> = {};
     Object.entries(payload.playerPositions).forEach(([sourceId, pos]) => {
       const targetId = sourceToTargetId.get(Number(sourceId));
@@ -219,6 +224,7 @@ export async function POST(
           lineupOrder,
           benchOrder,
           benchSize,
+          offBenchSize,
           playerPositions,
           baseFormationName: payload.baseFormationName,
         },
