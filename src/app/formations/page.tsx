@@ -176,21 +176,23 @@ function FormationsPageContent() {
             {selectedId && (
               <div className="flex flex-wrap items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => {
                     play();
                     void handleCreateShare();
                   }}
-                  className="px-3 py-2 rounded border border-emerald-300/55 bg-emerald-500/25 text-emerald-100 hover:bg-emerald-500/35"
+                  className="tap-action px-3 py-2 rounded border border-emerald-300/55 bg-emerald-500/25 text-emerald-100 hover:bg-emerald-500/35"
                   disabled={isCreatingShare}
                 >
                   {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     play();
                     handleDelete(Number(selectedId));
                   }}
-                  className="px-3 py-2 rounded border border-red-300/55 bg-red-500/25 text-red-100 hover:bg-red-500/35"
+                  className="tap-action px-3 py-2 rounded border border-red-300/55 bg-red-500/25 text-red-100 hover:bg-red-500/35"
                 >
                   Delete
                 </button>

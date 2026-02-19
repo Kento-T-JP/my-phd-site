@@ -137,6 +137,8 @@ export default function PlayerFilter({
           selectedValues={rosterInputs}
           onChange={setRosterInputs}
           emptyLabel="ロースターがありません"
+          wrapSelectedLabel
+          wrapOptionLabel
         />
         <MultiToggleGroup
           className="xl:col-span-3"

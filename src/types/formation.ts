@@ -30,6 +30,7 @@ export interface SavedFormation {
   positions: {
     lineupOrder: number[];
     benchOrder: number[];
+    benchSize?: number;
     playerPositions: Record<number, { top: number; left: number }>;
     baseFormationName?: string;
   };

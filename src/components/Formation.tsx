@@ -29,6 +29,7 @@ export interface InitialFormation {
   positions: {
     lineupOrder: number[];
     benchOrder: number[];
+    benchSize?: number;
     playerPositions: Record<number, { top: number; left: number }>;
     baseFormationName?: string;
   };
@@ -37,6 +38,7 @@ export interface InitialFormation {
 export interface FormationState {
   lineupOrder: number[];
   benchOrder: number[];
+  benchSize?: number;
   playerPositions: Record<number, { top: number; left: number }>;
 }
 
@@ -54,8 +56,16 @@ const clampPercent = (value: number, min = 6, max = 94) =>
 
 
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
-const BENCH_LIMIT = 12;
+const DEFAULT_BENCH_LIMIT = 12;
+const MAX_BENCH_LIMIT = 15;
 const DEFAULT_FORMATION_NAME = "4-3-3";
+
+function normalizeBenchSize(value: unknown, fallback = DEFAULT_BENCH_LIMIT): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(MAX_BENCH_LIMIT, Math.trunc(value)));
+  }
+  return Math.max(0, Math.min(MAX_BENCH_LIMIT, Math.trunc(fallback)));
+}
 
 export interface PlayerFilterOptions {
   name?: string;
@@ -264,6 +274,9 @@ export default function Formation({
   const [benchOrder, setBenchOrder] = useState<number[]>(
     initialFormation?.positions.benchOrder ?? []
   );
+  const [benchSize, setBenchSize] = useState<number>(
+    normalizeBenchSize(initialFormation?.positions.benchSize, DEFAULT_BENCH_LIMIT)
+  );
   const [playerPositions, setPlayerPositions] = useState<
     Record<number, { top: number; left: number }>
   >(initialFormation?.positions.playerPositions ?? {});
@@ -306,6 +319,10 @@ export default function Formation({
           [initialSavedStateKey]: {
             lineupOrder: initialFormation.positions.lineupOrder ?? [],
             benchOrder: initialFormation.positions.benchOrder ?? [],
+            benchSize: normalizeBenchSize(
+              initialFormation.positions.benchSize,
+              DEFAULT_BENCH_LIMIT
+            ),
             playerPositions: initialFormation.positions.playerPositions ?? {},
           },
         }
@@ -394,6 +411,9 @@ export default function Formation({
     setFormation(base);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
+    setBenchSize(
+      normalizeBenchSize(initialFormation.positions.benchSize, DEFAULT_BENCH_LIMIT)
+    );
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
     if (savedId != null) {
       setFormationStates((prev) => ({
@@ -401,6 +421,10 @@ export default function Formation({
         [toSavedStateKey(savedId)]: {
           lineupOrder: initialFormation.positions.lineupOrder ?? [],
           benchOrder: initialFormation.positions.benchOrder ?? [],
+          benchSize: normalizeBenchSize(
+            initialFormation.positions.benchSize,
+            DEFAULT_BENCH_LIMIT
+          ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         },
       }));
@@ -783,13 +807,14 @@ export default function Formation({
     // save current state for existing formation
     setFormationStates((prev) => ({
       ...prev,
-      [currentTemplateKey]: { lineupOrder, benchOrder, playerPositions },
+      [currentTemplateKey]: { lineupOrder, benchOrder, benchSize, playerPositions },
     }));
 
     const saved = formationStates[nextTemplateKey];
     if (saved) {
       setLineupOrder(saved.lineupOrder);
       setBenchOrder(saved.benchOrder);
+      setBenchSize(normalizeBenchSize(saved.benchSize, benchSize));
       setPlayerPositions(saved.playerPositions);
       const hasCustom = Object.keys(saved.playerPositions).length > 0;
       setCustomMode(hasCustom);
@@ -803,6 +828,7 @@ export default function Formation({
           filteredPlayers
         )
       );
+      setBenchSize(benchSize);
       setPlayerPositions({});
       setCustomMode(false);
       setDefaultsFrozen(false);
@@ -820,6 +846,7 @@ export default function Formation({
         filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
         filteredPlayers
       ),
+      benchSize,
       playerPositions: {},
     };
     setBenchOrder(newState.benchOrder);
@@ -842,6 +869,9 @@ export default function Formation({
     setFormation(restored);
     setLineupOrder(initialFormation.positions.lineupOrder ?? []);
     setBenchOrder(initialFormation.positions.benchOrder ?? []);
+    setBenchSize(
+      normalizeBenchSize(initialFormation.positions.benchSize, DEFAULT_BENCH_LIMIT)
+    );
     setPlayerPositions(initialFormation.positions.playerPositions ?? {});
     setFormationStates((prev) => {
       const next: Record<string, FormationState> = {
@@ -849,6 +879,10 @@ export default function Formation({
         [toTemplateStateKey(restored.name)]: {
           lineupOrder: initialFormation.positions.lineupOrder ?? [],
           benchOrder: initialFormation.positions.benchOrder ?? [],
+          benchSize: normalizeBenchSize(
+            initialFormation.positions.benchSize,
+            DEFAULT_BENCH_LIMIT
+          ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         },
       };
@@ -856,6 +890,10 @@ export default function Formation({
         next[toSavedStateKey(savedId)] = {
           lineupOrder: initialFormation.positions.lineupOrder ?? [],
           benchOrder: initialFormation.positions.benchOrder ?? [],
+          benchSize: normalizeBenchSize(
+            initialFormation.positions.benchSize,
+            DEFAULT_BENCH_LIMIT
+          ),
           playerPositions: initialFormation.positions.playerPositions ?? {},
         };
       }
@@ -895,6 +933,7 @@ export default function Formation({
           positions: {
             lineupOrder,
             benchOrder,
+            benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
             playerPositions,
             baseFormationName: formation.name,
           },
@@ -942,6 +981,7 @@ export default function Formation({
           positions: {
             lineupOrder,
             benchOrder,
+            benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
             playerPositions,
             baseFormationName: formation.name,
           },
@@ -1006,7 +1046,14 @@ export default function Formation({
     return p.position.some((pos) => BENCH_POSITION_ORDER.includes(pos));
   };
   const benchCandidateIds = benchOrder.filter(canAppearOnBench);
-  const benchIds = benchCandidateIds.slice(0, BENCH_LIMIT);
+  const normalizedBenchSize = normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT);
+  const effectiveBenchSize = Math.min(
+    benchCandidateIds.length,
+    normalizedBenchSize,
+    MAX_BENCH_LIMIT
+  );
+  const benchControlMax = Math.min(MAX_BENCH_LIMIT, benchCandidateIds.length);
+  const benchIds = benchCandidateIds.slice(0, effectiveBenchSize);
   const benchIdSet = new Set(benchIds);
   // Preserve benchOrder-relative order for off-bench instead of regrouping.
   const benchOutIds = benchOrder.filter((id) => !benchIdSet.has(id));
@@ -1378,7 +1425,58 @@ export default function Formation({
 
         {/* bench */}
         <div id="bench" className="w-full sm:w-[calc(var(--bench-card-size,104px)*2+1rem)] shrink-0">
-          <h3 className="text-lg font-bold mb-2">Bench</h3>
+          {!screenshotMode && (
+            <div className="mb-3 rounded-xl border border-cyan-200/25 bg-slate-950/45 p-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold tracking-[0.12em] text-cyan-100/80">
+                  BENCH SIZE
+                </p>
+                <span className="text-xs text-cyan-100/75">
+                  {effectiveBenchSize} / {benchCandidateIds.length}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={benchControlMax}
+                  value={Math.min(normalizedBenchSize, benchControlMax)}
+                  className="w-full accent-cyan-300"
+                  onChange={(e) => setBenchSize(Number(e.target.value) || 0)}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={benchControlMax}
+                  value={Math.min(normalizedBenchSize, benchControlMax)}
+                  onChange={(e) => setBenchSize(Number(e.target.value) || 0)}
+                  className="form-input h-9 w-20 text-center text-sm"
+                  aria-label="Bench size"
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {Array.from(
+                  new Set([7, 9, 12, benchControlMax].map((size) => Math.max(0, Math.min(size, benchControlMax))))
+                ).map((safeSize) => {
+                  return (
+                    <button
+                      key={`bench-size-${safeSize}`}
+                      type="button"
+                      className={`rounded-md border px-2 py-1 text-[11px] ${
+                        safeSize === normalizedBenchSize
+                          ? "border-cyan-200/70 bg-cyan-400/20 text-cyan-50"
+                          : "border-cyan-200/30 text-cyan-100/80 hover:bg-cyan-300/10"
+                      }`}
+                      onClick={() => setBenchSize(safeSize)}
+                    >
+                      {safeSize}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <h3 className="text-lg font-bold mb-2">Bench ({benchPlayers.length})</h3>
           <div className="flex flex-wrap gap-0 sm:grid sm:grid-cols-2">
             {benchPlayers.map(renderBenchCard)}
           </div>
@@ -1395,11 +1493,12 @@ export default function Formation({
       )}
 
       {/* formation selector */}
-      <div className="mt-4 space-x-2 flex flex-wrap">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
         {formations.map((f) => (
           <button
             key={f.name}
-            className={`px-3 py-1 border rounded ${
+            type="button"
+            className={`w-full px-3 py-1 border rounded text-sm sm:w-auto ${
               formation.name === f.name ? "bg-green-300" : ""
             }`}
             onClick={() => {
@@ -1410,7 +1509,8 @@ export default function Formation({
           </button>
         ))}
         <button
-          className="px-3 py-1 border rounded"
+          type="button"
+          className="tap-action w-full px-3 py-1 border rounded text-sm sm:w-auto"
           onClick={() => {
             play();
             handleReset();
@@ -1420,7 +1520,8 @@ export default function Formation({
         </button>
         {initialFormation?.id && (
           <button
-            className="px-3 py-1 border rounded bg-cyan-600 text-white"
+            type="button"
+            className="tap-action w-full px-3 py-1 border rounded bg-cyan-600 text-white text-sm sm:w-auto"
             onClick={() => {
               play();
               handleRestoreSaved();
@@ -1443,9 +1544,10 @@ export default function Formation({
                 onChange={(e) => setAlias(e.target.value)}
               />
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="tap-action px-4 py-2 bg-blue-500 text-white rounded w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isSaving ? (
                   <span className="flex items-center">
@@ -1458,8 +1560,9 @@ export default function Formation({
               </button>
               {initialFormation?.id && (
                 <button
+                  type="button"
                   onClick={handleUpdate}
-                  className="px-4 py-2 bg-green-600 text-white rounded w-full sm:w-auto"
+                  className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full sm:w-auto"
                 >
                   更新
                 </button>

@@ -199,6 +199,10 @@ export async function POST(
     const benchOrder = payload.benchOrder
       .map((id) => sourceToTargetId.get(id))
       .filter((id): id is number => typeof id === "number");
+    const benchSize =
+      typeof payload.benchSize === "number" && Number.isFinite(payload.benchSize)
+        ? Math.max(0, Math.min(15, Math.trunc(payload.benchSize)))
+        : 12;
     const playerPositions: Record<number, { top: number; left: number }> = {};
     Object.entries(payload.playerPositions).forEach(([sourceId, pos]) => {
       const targetId = sourceToTargetId.get(Number(sourceId));
@@ -214,6 +218,7 @@ export async function POST(
         positions: {
           lineupOrder,
           benchOrder,
+          benchSize,
           playerPositions,
           baseFormationName: payload.baseFormationName,
         },

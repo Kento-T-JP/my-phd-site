@@ -97,4 +97,35 @@ describe('Roster filter UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Position (0) filter' }));
     expect(screen.getByRole('checkbox', { name: 'Sweeper' })).toBeTruthy();
   });
+
+  it('applies favorite-only filter on players page', async () => {
+    const players = [
+      { id: 1, name: 'Fav Player', position: ['FW'], role: 'player' },
+      { id: 2, name: 'Normal Player', position: ['DF'], role: 'player' },
+    ];
+    global.fetch = vi.fn((url: string) => {
+      if (url.startsWith('/api/players'))
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ players, total: players.length, page: 1, pageSize: 200 }),
+        });
+      if (url.startsWith('/api/rosters'))
+        return Promise.resolve({ ok: true, json: async () => rosters });
+      if (url.startsWith('/api/favorites'))
+        return Promise.resolve({ ok: true, json: async () => [{ id: 1 }] });
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
+
+    render(<PlayersPage />);
+    await screen.findByText('Fav Player');
+    await screen.findByText('Normal Player');
+
+    fireEvent.click(screen.getByLabelText('お気に入りのみ'));
+    fireEvent.click(screen.getByText('Apply Filters'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Fav Player')).toBeTruthy();
+      expect(screen.queryByText('Normal Player')).toBeNull();
+    });
+  });
 });

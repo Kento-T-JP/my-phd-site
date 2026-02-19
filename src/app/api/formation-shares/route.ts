@@ -44,11 +44,16 @@ export async function POST(req: Request) {
   const positions = (formation.positions ?? {}) as {
     lineupOrder?: number[];
     benchOrder?: number[];
+    benchSize?: number;
     playerPositions?: Record<string, { top: number; left: number }>;
     baseFormationName?: string;
   };
   const lineupOrder = Array.isArray(positions.lineupOrder) ? positions.lineupOrder : [];
   const benchOrder = Array.isArray(positions.benchOrder) ? positions.benchOrder : [];
+  const benchSize =
+    typeof positions.benchSize === "number" && Number.isFinite(positions.benchSize)
+      ? Math.max(0, Math.min(15, Math.trunc(positions.benchSize)))
+      : 12;
   const playerPositions = positions.playerPositions ?? {};
   const referencedIds = new Set<number>([
     ...lineupOrder,
@@ -99,6 +104,7 @@ export async function POST(req: Request) {
     baseFormationName: positions.baseFormationName,
     lineupOrder,
     benchOrder,
+    benchSize,
     playerPositions,
     players: players.map((p) => ({
       sourcePlayerId: p.id,

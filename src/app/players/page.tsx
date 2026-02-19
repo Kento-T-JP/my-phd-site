@@ -61,6 +61,8 @@ export default function PlayersPage({
   const [searchInput, setSearchInput] = useState("");
   const [rosterInputs, setRosterInputs] = useState<string[]>([]);
   const [positionInputs, setPositionInputs] = useState<string[]>([]);
+  const [favoriteOnlyInput, setFavoriteOnlyInput] = useState(false);
+  const [favoriteOnly, setFavoriteOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteProgress, setDeleteProgress] = useState<{
@@ -127,6 +129,8 @@ export default function PlayersPage({
     setSearchInput("");
     setRosterInputs([]);
     setPositionInputs([]);
+    setFavoriteOnlyInput(false);
+    setFavoriteOnly(false);
 
     previousUserIdRef.current = currentId;
   }, [session?.user?.id]);
@@ -278,7 +282,10 @@ export default function PlayersPage({
   }, [players]);
 
   const filteredPlayers = useMemo(() => {
-    return [...players].sort((a, b) => {
+    const source = favoriteOnly
+      ? players.filter((p) => favorites.has(p.id))
+      : players;
+    return [...source].sort((a, b) => {
       const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
       if (rankDiff !== 0) return rankDiff;
       const primaryDiff = getPrimaryPosition(a.position).localeCompare(
@@ -288,7 +295,7 @@ export default function PlayersPage({
       if (primaryDiff !== 0) return primaryDiff;
       return a.name.localeCompare(b.name, "ja");
     });
-  }, [players]);
+  }, [favoriteOnly, favorites, players]);
 
   const allSelected =
     filteredPlayers.length > 0 &&
@@ -405,7 +412,7 @@ export default function PlayersPage({
           </p>
         )}
       </div>
-      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <input
           type="text"
           className="form-input w-full min-w-0"
@@ -422,6 +429,8 @@ export default function PlayersPage({
           selectedValues={rosterInputs}
           onChange={setRosterInputs}
           emptyLabel="ロースターがありません"
+          wrapSelectedLabel
+          wrapOptionLabel
         />
         <MultiToggleGroup
           legend={`Position (${positionInputs.length})`}
@@ -430,13 +439,23 @@ export default function PlayersPage({
           onChange={setPositionInputs}
           emptyLabel="ポジションがありません"
         />
+        <label className="form-input flex min-h-10 items-center gap-2">
+          <input
+            type="checkbox"
+            checked={favoriteOnlyInput}
+            onChange={(e) => setFavoriteOnlyInput(e.target.checked)}
+          />
+          <span className="text-sm">お気に入りのみ</span>
+        </label>
         <button
-          className="primary-btn w-full sm:justify-self-end sm:w-auto"
+          type="button"
+          className="primary-btn tap-action w-full sm:justify-self-end sm:w-auto"
           onClick={() => {
             play();
             setSearch(searchInput);
             setSelectedPositions(positionInputs);
             setSelectedRosterIds(rosterInputs);
+            setFavoriteOnly(favoriteOnlyInput);
             setPage(1);
           }}
         >

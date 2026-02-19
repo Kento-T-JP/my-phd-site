@@ -12,6 +12,8 @@ interface Props {
   onChange: (next: string[]) => void;
   emptyLabel?: string;
   className?: string;
+  wrapSelectedLabel?: boolean;
+  wrapOptionLabel?: boolean;
 }
 
 export default function MultiToggleGroup({
@@ -21,6 +23,8 @@ export default function MultiToggleGroup({
   onChange,
   emptyLabel = "候補がありません",
   className = "",
+  wrapSelectedLabel = false,
+  wrapOptionLabel = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -60,13 +64,24 @@ export default function MultiToggleGroup({
       </label>
       <button
         type="button"
-        className="form-input flex min-h-10 items-center justify-between gap-2 text-left"
+        className={`form-input flex min-h-10 justify-between gap-2 text-left ${
+          wrapSelectedLabel ? "items-start" : "items-center"
+        }`}
         aria-expanded={open}
         aria-label={`${legend} filter`}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="truncate text-sm">{selectedLabel}</span>
-        <span className="text-xs text-cyan-200/90">{selectedValues.length}件</span>
+        <span
+          title={selectedLabel}
+          className={`text-sm ${
+            wrapSelectedLabel
+              ? "whitespace-normal break-words leading-tight"
+              : "truncate"
+          }`}
+        >
+          {selectedLabel}
+        </span>
+        <span className="shrink-0 text-xs text-cyan-200/90">{selectedValues.length}件</span>
       </button>
       {open && (
         <div className="absolute z-30 mt-1.5 w-full rounded-xl border border-sky-200/35 bg-slate-950/95 p-2 shadow-2xl backdrop-blur">
@@ -113,7 +128,15 @@ export default function MultiToggleGroup({
                       checked={selected}
                       onChange={() => toggle(opt.value)}
                     />
-                    <span className="truncate">{opt.label}</span>
+                    <span
+                      className={
+                        wrapOptionLabel
+                          ? "whitespace-normal break-words leading-tight"
+                          : "truncate"
+                      }
+                    >
+                      {opt.label}
+                    </span>
                   </label>
                 );
               })

@@ -194,6 +194,11 @@ input[type="range"]:disabled {
   background: rgba(14, 45, 94, 0.64);
 }
 
+.tap-action {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .status-error {
   color: var(--danger);
 }

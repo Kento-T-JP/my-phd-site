@@ -6,6 +6,7 @@ const PlayerPosSchema = z.object({ top: z.number(), left: z.number() });
 const PositionsSchema = z.object({
   lineupOrder: z.array(z.number()).optional(),
   benchOrder: z.array(z.number()).optional(),
+  benchSize: z.number().int().min(0).max(15).optional(),
   playerPositions: z.record(z.string(), PlayerPosSchema).optional(),
   baseFormationName: z.string().optional(),
 });

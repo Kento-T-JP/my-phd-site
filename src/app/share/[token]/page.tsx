@@ -12,7 +12,6 @@ import { formations } from "@/data/formations";
 const DEFAULT_FORMATION_NAME = "4-3-3";
 const OFFSET_STEP = 24;
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
-const BENCH_LIMIT = 12;
 const clampPercent = (value: number, min = 6, max = 94) =>
   Math.min(max, Math.max(min, value));
 
@@ -140,12 +139,17 @@ export default function SharePage() {
     const isBenchCandidate = (player: (typeof benchPlayersRaw)[number]) =>
       player.position.some((pos) => BENCH_POSITION_ORDER.includes(pos));
     const benchCandidates = benchPlayersRaw.filter(isBenchCandidate);
-    const benchIds = new Set(benchCandidates.slice(0, BENCH_LIMIT).map((p) => p.id));
+    const benchSize =
+      typeof share?.formation.benchSize === "number" &&
+      Number.isFinite(share.formation.benchSize)
+        ? Math.max(0, Math.min(15, Math.trunc(share.formation.benchSize)))
+        : 12;
+    const benchIds = new Set(benchCandidates.slice(0, benchSize).map((p) => p.id));
     return {
       benchPlayers: benchPlayersRaw.filter((p) => benchIds.has(p.id)),
       offBenchPlayers: benchPlayersRaw.filter((p) => !benchIds.has(p.id)),
     };
-  }, [benchPlayersRaw]);
+  }, [benchPlayersRaw, share?.formation.benchSize]);
 
   const handleImport = async () => {
     if (importing) return;
