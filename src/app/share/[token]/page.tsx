@@ -214,6 +214,27 @@ export default function SharePage() {
           有効期限: {new Date(share.expiresAt).toLocaleString("ja-JP")}
         </p>
       </header>
+      <section className="glass-panel p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            className="primary-btn w-full sm:w-auto"
+            disabled={importing}
+            onClick={() => {
+              void handleImport();
+            }}
+          >
+            {session ? (importing ? "取り込み中..." : "このフォーメーションを取り込む") : "ログインして取り込む"}
+          </button>
+          <Link
+            href="/home"
+            className="inline-flex w-full sm:w-auto justify-center rounded-md border border-cyan-300/30 px-3 py-2 text-sm text-cyan-100/90 hover:bg-cyan-300/10"
+          >
+            Homeへ戻る
+          </Link>
+        </div>
+        {message && <p className="status-success mt-2 text-sm">{message}</p>}
+      </section>
       <section className="glass-panel p-3 sm:p-5">
         <div className="relative mx-auto w-full max-w-4xl rounded-2xl border border-cyan-300/30 bg-gradient-to-b from-[#0d7f4f] to-[#0a5a3a] min-h-[520px] overflow-hidden">
           <div className="absolute inset-4 border border-cyan-100/45 rounded-xl" />
@@ -274,27 +295,6 @@ export default function SharePage() {
           </p>
         )}
       </section>
-      <section className="space-y-2">
-        <button
-          type="button"
-          className="primary-btn w-full sm:w-auto"
-          disabled={importing}
-          onClick={() => {
-            void handleImport();
-          }}
-        >
-          {session ? (importing ? "取り込み中..." : "このフォーメーションを取り込む") : "ログインして取り込む"}
-        </button>
-        <div>
-          <Link
-            href="/home"
-            className="inline-flex rounded-md border border-cyan-300/30 px-3 py-1.5 text-sm text-cyan-100/90 hover:bg-cyan-300/10"
-          >
-            Homeへ戻る
-          </Link>
-        </div>
-      </section>
-      {message && <p className="status-success text-sm">{message}</p>}
     </main>
   );
 }

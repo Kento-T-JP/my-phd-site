@@ -100,13 +100,19 @@ function FormationsPageContent() {
     const expiryNote = data.expiresAt
       ? `（有効期限: ${new Date(data.expiresAt).toLocaleString("ja-JP")} / 3日間有効）`
       : "（3日間有効）";
-    try {
-      await navigator.clipboard.writeText(data.shareUrl);
-      setShareStatus(`共有リンクをコピーしました。${expiryNote}`);
-    } catch {
-      setShareStatus(`共有リンクを作成しました。${expiryNote}`);
-    }
+    setShareStatus(`共有リンクを作成しました。${expiryNote}`);
     setIsCreatingShare(false);
+  };
+
+  const handleCopyShareUrl = async () => {
+    if (!shareUrl) return;
+    play();
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("クリップボードにコピーしました。");
+    } catch {
+      setShareStatus("コピーに失敗しました。URLを長押ししてコピーしてください。");
+    }
   };
 
   const selectedFormation =
@@ -199,13 +205,27 @@ function FormationsPageContent() {
               </div>
             )}
           </div>
-          {shareStatus && <p className="mb-3 text-sm text-cyan-100/85">{shareStatus}</p>}
+          {!shareUrl && shareStatus && (
+            <p className="mb-3 text-sm text-cyan-100/85">{shareStatus}</p>
+          )}
           {shareUrl && (
-            <p className="mb-3 text-sm break-all">
-              <a href={shareUrl} className="underline text-cyan-100">
-                {shareUrl}
-              </a>
-            </p>
+            <div className="mb-3 rounded-xl border border-cyan-300/25 bg-slate-900/40 p-2.5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <a href={shareUrl} className="min-w-0 break-all text-sm underline text-cyan-100">
+                  {shareUrl}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyShareUrl()}
+                  className="tap-action w-full sm:w-auto rounded-md border border-cyan-300/45 px-3 py-2 text-sm text-cyan-100 hover:bg-cyan-400/15"
+                >
+                  コピー
+                </button>
+              </div>
+              {shareStatus && (
+                <p className="mt-2 text-xs text-emerald-200/90">{shareStatus}</p>
+              )}
+            </div>
           )}
           {selectedFormation && (
             <Formation
