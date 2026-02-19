@@ -64,6 +64,7 @@ export interface PlayerFilterOptions {
   tournamentId?: number;
   position?: string;
   positions?: string[];
+  favoriteOnly?: boolean;
 }
 
 export function resolveFormationTemplate(
@@ -331,6 +332,7 @@ export default function Formation({
         tournamentId: filter.tournamentId ?? null,
         position: filter.position ?? "",
         positions: [...(filter.positions ?? [])].sort(),
+        favoriteOnly: Boolean(filter.favoriteOnly),
       }),
     [filter]
   );
@@ -496,8 +498,10 @@ export default function Formation({
     };
   }, [loading]);
   const filteredPlayers = useMemo(() => {
-    return filterPlayers(players, filter);
-  }, [players, filter]);
+    const list = filterPlayers(players, filter);
+    if (!filter.favoriteOnly) return list;
+    return list.filter((p) => favorites.has(p.id));
+  }, [favorites, filter, players]);
 
   let orderIndex = 0; // そのまま利用（変更不要）
 

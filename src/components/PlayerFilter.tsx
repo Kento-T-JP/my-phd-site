@@ -21,6 +21,7 @@ export default function PlayerFilter({
   const [searchInput, setSearchInput] = useState("");
   const [rosterInputs, setRosterInputs] = useState<string[]>([]);
   const [positionInputs, setPositionInputs] = useState<string[]>([]);
+  const [favoriteOnlyInput, setFavoriteOnlyInput] = useState(false);
   const previousUserIdRef = useRef<string | undefined>(undefined);
   const { play } = useClickSound();
 
@@ -34,6 +35,7 @@ export default function PlayerFilter({
     setSearchInput("");
     setRosterInputs([]);
     setPositionInputs([]);
+    setFavoriteOnlyInput(false);
     onApply({});
     previousUserIdRef.current = currentId;
   }, [session?.user?.id, onApply]);
@@ -87,44 +89,100 @@ export default function PlayerFilter({
       name: searchInput,
       rosterIds: rosterIds.length > 0 ? rosterIds : undefined,
       positions: positionInputs.length > 0 ? positionInputs : undefined,
+      favoriteOnly: favoriteOnlyInput || undefined,
     });
   };
 
+  const handleClear = () => {
+    setSearchInput("");
+    setRosterInputs([]);
+    setPositionInputs([]);
+    setFavoriteOnlyInput(false);
+    onApply({});
+  };
+
   return (
-    <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-      <input
-        type="text"
-        className="form-input w-full min-w-0"
-        placeholder="Filter players..."
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-      />
-      <MultiToggleGroup
-        legend={`Roster (${rosterInputs.length})`}
-        options={rosters.map((r) => ({
-          value: String(r.id),
-          label: rosterDisplayTitle(r),
-        }))}
-        selectedValues={rosterInputs}
-        onChange={setRosterInputs}
-        emptyLabel="ロースターがありません"
-      />
-      <MultiToggleGroup
-        legend={`Position (${positionInputs.length})`}
-        options={positionOptions.map((pos) => ({ value: pos, label: pos }))}
-        selectedValues={positionInputs}
-        onChange={setPositionInputs}
-        emptyLabel="ポジションがありません"
-      />
-      <button
-        className="primary-btn w-full sm:justify-self-end sm:w-auto"
-        onClick={() => {
-          play();
-          handleApply();
-        }}
-      >
-        Apply Filters
-      </button>
+    <div className="mb-4 rounded-xl border border-cyan-300/20 bg-slate-950/35 p-3 sm:p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs tracking-[0.14em] text-cyan-100/70">
+          PLAYER FILTERS
+        </p>
+        <p className="text-[11px] text-slate-300/70">4条件で絞り込み</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+        <div className="xl:col-span-3">
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
+            Name
+          </label>
+          <input
+            type="text"
+            className="form-input w-full min-w-0"
+            placeholder="選手名で絞り込み"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleApply();
+              }
+            }}
+          />
+        </div>
+        <MultiToggleGroup
+          className="xl:col-span-3"
+          legend={`Roster (${rosterInputs.length})`}
+          options={rosters.map((r) => ({
+            value: String(r.id),
+            label: rosterDisplayTitle(r),
+          }))}
+          selectedValues={rosterInputs}
+          onChange={setRosterInputs}
+          emptyLabel="ロースターがありません"
+        />
+        <MultiToggleGroup
+          className="xl:col-span-3"
+          legend={`Position (${positionInputs.length})`}
+          options={positionOptions.map((pos) => ({ value: pos, label: pos }))}
+          selectedValues={positionInputs}
+          onChange={setPositionInputs}
+          emptyLabel="ポジションがありません"
+        />
+        <div className="xl:col-span-3">
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
+            Favorite
+          </label>
+          <label className="form-input flex min-h-10 items-center gap-2">
+            <input
+              type="checkbox"
+              checked={favoriteOnlyInput}
+              onChange={(e) => setFavoriteOnlyInput(e.target.checked)}
+            />
+            <span className="text-sm">お気に入りのみ表示</span>
+          </label>
+          <p className="mt-1 text-[11px] text-slate-300/70">
+            ONで登録済みのお気に入りだけ表示
+          </p>
+        </div>
+        <div className="md:col-span-2 xl:col-span-12 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-1">
+          <button
+            className="ghost-btn w-full sm:w-auto"
+            onClick={() => {
+              play();
+              handleClear();
+            }}
+          >
+            クリア
+          </button>
+          <button
+            className="primary-btn w-full sm:w-auto"
+            onClick={() => {
+              play();
+              handleApply();
+            }}
+          >
+            フィルターを適用
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
