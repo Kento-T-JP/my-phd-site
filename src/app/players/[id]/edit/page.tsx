@@ -14,12 +14,21 @@ const defaultPositionOptions: PositionKey[] = getDefaultPositions() as PositionK
 
 const positionGroupOrder = ["GK", "DF", "MF", "FW", "Other"] as const;
 type PositionGroup = (typeof positionGroupOrder)[number];
+const groupPositionOrder: Record<PositionGroup, string[]> = {
+  GK: ["GK"],
+  DF: ["DF", "CB", "LSB", "RSB"],
+  MF: ["DMF", "CMF", "LM", "RM", "OMF", "MF"],
+  FW: ["LW", "RW", "CF", "FW"],
+  Other: ["MF/FW"],
+};
 
 const resolvePositionGroup = (pos: string): PositionGroup => {
-  if (pos.includes("GK")) return "GK";
-  if (pos.includes("DF")) return "DF";
-  if (pos.includes("MF")) return "MF";
-  if (pos.includes("FW")) return "FW";
+  const normalized = pos.trim().toUpperCase();
+  if (normalized === "GK") return "GK";
+  if (["CB", "LSB", "RSB", "DF"].includes(normalized)) return "DF";
+  if (["DMF", "CMF", "LM", "RM", "OMF", "MF"].includes(normalized)) return "MF";
+  if (["LW", "RW", "CF", "FW"].includes(normalized)) return "FW";
+  if (normalized === "MF/FW") return "Other";
   return "Other";
 };
 
@@ -179,6 +188,19 @@ export default function EditPlayerPage() {
     positionOptions.forEach((pos) => {
       const key = resolvePositionGroup(pos);
       groups[key].push(pos);
+    });
+    positionGroupOrder.forEach((group) => {
+      const order = groupPositionOrder[group];
+      groups[group].sort((a, b) => {
+        const aKey = a.trim().toUpperCase();
+        const bKey = b.trim().toUpperCase();
+        const aIndex = order.indexOf(aKey);
+        const bIndex = order.indexOf(bKey);
+        if (aIndex !== -1 || bIndex !== -1) {
+          return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
+        }
+        return a.localeCompare(b, "ja");
+      });
     });
     return groups;
   }, [managedPositions]);

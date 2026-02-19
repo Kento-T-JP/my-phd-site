@@ -124,12 +124,74 @@ export async function DELETE(req: Request) {
   if (!Number.isFinite(positionId)) {
     return NextResponse.json({ error: "positionId is required" }, { status: 400 });
   }
-  const deleted = await prisma.userPosition.deleteMany({
+
+  const target = await prisma.userPosition.findFirst({
     where: { id: positionId, userId: ownerId },
+    select: { id: true, name: true },
   });
-  if (deleted.count === 0) {
+  if (!target) {
     return NextResponse.json({ error: "Position not found" }, { status: 404 });
   }
+
+  const removedKey = positionKey(target.name);
+  const normalizePositionList = (list: string[]) =>
+    list.filter((name) => positionKey(name) !== removedKey);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.userPosition.deleteMany({
+      where: { id: target.id, userId: ownerId },
+    });
+
+    const players = await tx.player.findMany({
+      where: { userId: ownerId },
+      select: { id: true, position: true },
+    });
+    const playerUpdates = players
+      .map((item) => ({
+        id: item.id,
+        next: normalizePositionList(item.position),
+        prevLength: item.position.length,
+      }))
+      .filter((item) => item.next.length !== item.prevLength)
+      .map((item) =>
+        tx.player.update({
+          where: { id: item.id },
+          data: { position: item.next },
+        }),
+      );
+
+    const rosterPlayers = await tx.rosterPlayer.findMany({
+      where: { roster: { userId: ownerId } },
+      select: { rosterId: true, playerId: true, position: true },
+    });
+    const rosterPlayerUpdates = rosterPlayers
+      .map((item) => ({
+        rosterId: item.rosterId,
+        playerId: item.playerId,
+        next: normalizePositionList(item.position),
+        prevLength: item.position.length,
+      }))
+      .filter((item) => item.next.length !== item.prevLength)
+      .map((item) =>
+        tx.rosterPlayer.update({
+          where: {
+            rosterId_playerId: {
+              rosterId: item.rosterId,
+              playerId: item.playerId,
+            },
+          },
+          data: { position: item.next },
+        }),
+      );
+
+    if (playerUpdates.length > 0) {
+      await Promise.all(playerUpdates);
+    }
+    if (rosterPlayerUpdates.length > 0) {
+      await Promise.all(rosterPlayerUpdates);
+    }
+  });
+
   revalidateTagSafe(cacheTag.positions(ownerId));
-  return NextResponse.json({ ok: true, positionId });
+  return NextResponse.json({ ok: true, positionId: target.id });
 }

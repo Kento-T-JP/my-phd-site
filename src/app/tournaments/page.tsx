@@ -42,11 +42,6 @@ export default function TournamentsPage() {
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [tournamentName, setTournamentName] = useState("");
-  const [savingTournament, setSavingTournament] = useState(false);
-  const [tournamentError, setTournamentError] = useState<string | null>(null);
-  const [tournamentInfo, setTournamentInfo] = useState<string | null>(null);
-
   const [rosterTournament, setRosterTournament] = useState("");
   const [rosterTitle, setRosterTitle] = useState("");
   const [rosterDate, setRosterDate] = useState("");
@@ -99,46 +94,6 @@ export default function TournamentsPage() {
     if (!session) return;
     void loadData();
   }, [session, loadData]);
-
-  async function addTournament(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalized = normalizeLabel(tournamentName);
-    if (!normalized) {
-      setTournamentError("大会名を入力してください。");
-      return;
-    }
-
-    setSavingTournament(true);
-    setTournamentError(null);
-    setTournamentInfo(null);
-    try {
-      const res = await fetch("/api/tournaments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: normalized }),
-      });
-      const body = (await res.json().catch(() => ({}))) as
-        | ({ error?: string } & Partial<Tournament>)
-        | Tournament;
-      if (!res.ok) {
-        throw new Error(("error" in body && body.error) || "大会の追加に失敗しました。");
-      }
-      const created = body as Tournament;
-      setTournamentName("");
-      setTournamentInfo(`大会「${created.name ?? normalized}」を追加しました。`);
-      if (typeof created.id === "number") {
-        setTournaments((prev) => {
-          const next = prev.filter((item) => item.id !== created.id);
-          return [...next, created];
-        });
-      }
-      window.dispatchEvent(new Event("tournament-saved"));
-    } catch (err) {
-      setTournamentError(err instanceof Error ? err.message : "大会の追加に失敗しました。");
-    } finally {
-      setSavingTournament(false);
-    }
-  }
 
   async function addRoster(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -280,32 +235,8 @@ export default function TournamentsPage() {
       <section className="glass-panel p-4 sm:p-6">
         <h1 className="text-xl sm:text-2xl font-bold">大会・ロースター管理</h1>
         <p className="text-sm text-cyan-100/75 mt-1">
-          クイックアクションから大会とロースターを追加・削除できます。
+          大会名必須・ロースター名任意で登録できます。ロースター名未入力時は日付ベースで自動命名されます。
         </p>
-      </section>
-
-      <section className="glass-panel p-4 sm:p-6 space-y-3">
-        <h2 className="text-lg font-semibold">大会を追加</h2>
-        <form onSubmit={addTournament} className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={tournamentName}
-            onChange={(event) => setTournamentName(event.target.value)}
-            placeholder="例: AFCアジアカップ2027予選"
-            className="w-full rounded-lg border border-cyan-300/25 bg-slate-950/55 px-3 py-2 outline-none focus:border-cyan-300"
-            maxLength={80}
-          />
-          <button
-            type="submit"
-            disabled={savingTournament}
-            className="rounded-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium"
-          >
-            {savingTournament ? "追加中..." : "大会を追加"}
-          </button>
-        </form>
-        <p className="text-xs text-cyan-100/65">必須: 大会名</p>
-        {tournamentError && <p className="text-sm text-red-300">{tournamentError}</p>}
-        {tournamentInfo && <p className="text-sm text-emerald-300">{tournamentInfo}</p>}
       </section>
 
       <section className="glass-panel p-4 sm:p-6 space-y-3">

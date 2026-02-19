@@ -71,7 +71,7 @@ function AccessStatusPageContent() {
               className="block w-full text-center px-4 py-2 border rounded"
               onClick={play}
             >
-              利用資格を登録する
+              初めての方はこちら（新規登録）
             </Link>
           </>
         )}

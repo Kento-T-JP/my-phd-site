@@ -125,4 +125,56 @@ describe('player roster input', () => {
       expect(form.get('roster')).toBe('FreeInputRoster');
     });
   });
+
+  it('retries player submit once when csrf token is rejected', async () => {
+    vi.spyOn(nextAuthReact, 'getCsrfToken')
+      .mockResolvedValueOnce('stale-csrf')
+      .mockResolvedValue('fresh-csrf');
+    const session = { user: { id: 1 }, expires: '' } as any;
+    let postAttempt = 0;
+    const fetchMock = vi.fn((input: RequestInfo | URL, options?: RequestInit) => {
+      const url = typeof input === 'string' ? input : String(input);
+      if (url.includes('/api/rosters')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (url.includes('/api/positions')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (url.includes('/api/players') && options?.method === 'POST') {
+        postAttempt += 1;
+        if (postAttempt === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 403,
+            json: async () => ({ error: 'Invalid CSRF token' }),
+          });
+        }
+        return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+    global.fetch = fetchMock as any;
+
+    render(
+      <SessionProvider session={session}>
+        <NewPlayerPage />
+      </SessionProvider>
+    );
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], {
+      target: { value: 'Retry Player' },
+    });
+    fireEvent.click(screen.getByLabelText('GK'));
+    fireEvent.click(screen.getByRole('button', { name: '送信' }));
+
+    await waitFor(() => {
+      const postCalls = fetchMock.mock.calls.filter(
+        ([url, options]) =>
+          typeof url === 'string' &&
+          url.includes('/api/players') &&
+          (options as RequestInit | undefined)?.method === 'POST',
+      );
+      expect(postCalls.length).toBe(2);
+    });
+  });
 });

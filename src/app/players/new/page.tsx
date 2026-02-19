@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession, getCsrfToken } from "next-auth/react";
 import type { PositionKey, Roster } from "@/types/player";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,25 @@ import MultiToggleGroup from "@/components/MultiToggleGroup";
 import { getDefaultPositions } from "@/lib/defaultPositions";
 
 const defaultPositionOptions: PositionKey[] = getDefaultPositions() as PositionKey[];
+const positionGroupOrder = ["GK", "DF", "MF", "FW", "Other"] as const;
+type PositionGroup = (typeof positionGroupOrder)[number];
+const groupPositionOrder: Record<PositionGroup, string[]> = {
+  GK: ["GK"],
+  DF: ["DF", "CB", "LSB", "RSB"],
+  MF: ["DMF", "CMF", "LM", "RM", "OMF", "MF"],
+  FW: ["LW", "RW", "CF", "FW"],
+  Other: ["MF/FW"],
+};
+
+const resolvePositionGroup = (pos: string): PositionGroup => {
+  const normalized = pos.trim().toUpperCase();
+  if (normalized === "GK") return "GK";
+  if (["CB", "LSB", "RSB", "DF"].includes(normalized)) return "DF";
+  if (["DMF", "CMF", "LM", "RM", "OMF", "MF"].includes(normalized)) return "MF";
+  if (["LW", "RW", "CF", "FW"].includes(normalized)) return "FW";
+  if (normalized === "MF/FW") return "Other";
+  return "Other";
+};
 
 export default function NewPlayerPage() {
   const router = useRouter();
@@ -99,11 +118,55 @@ export default function NewPlayerPage() {
   const positionOptions = Array.from(
     new Set([...defaultPositionOptions, ...managedPositions])
   ) as PositionKey[];
+  const groupedPositions = useMemo(() => {
+    const groups: Record<PositionGroup, PositionKey[]> = {
+      GK: [],
+      DF: [],
+      MF: [],
+      FW: [],
+      Other: [],
+    };
+    positionOptions.forEach((pos) => {
+      const key = resolvePositionGroup(pos);
+      groups[key].push(pos);
+    });
+    positionGroupOrder.forEach((group) => {
+      const order = groupPositionOrder[group];
+      groups[group].sort((a, b) => {
+        const aKey = a.trim().toUpperCase();
+        const bKey = b.trim().toUpperCase();
+        const aIndex = order.indexOf(aKey);
+        const bIndex = order.indexOf(bKey);
+        if (aIndex !== -1 || bIndex !== -1) {
+          return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
+        }
+        return a.localeCompare(b, "ja");
+      });
+    });
+    return groups;
+  }, [positionOptions]);
 
   const togglePosition = (pos: PositionKey) => {
     setPositions((prev) =>
       prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
     );
+  };
+
+  const fetchLatestCsrf = async () => {
+    const token = (await getCsrfToken()) ?? "";
+    if (token) return token;
+    try {
+      const res = await fetch("/api/auth/csrf", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!res.ok) return "";
+      const body = (await res.json()) as { csrfToken?: string };
+      return typeof body.csrfToken === "string" ? body.csrfToken : "";
+    } catch {
+      return "";
+    }
   };
 
 
@@ -138,11 +201,30 @@ export default function NewPlayerPage() {
     }
 
     try {
-      const res = await fetch("/api/players", {
-        method: "POST",
-        headers: { "X-CSRF-Token": csrf },
-        body: form,
-      });
+      const submitPlayer = async (token: string) =>
+        fetch("/api/players", {
+          method: "POST",
+          headers: { "X-CSRF-Token": token },
+          credentials: "same-origin",
+          body: form,
+        });
+
+      // Always refresh CSRF right before submit to avoid stale-token failures.
+      let activeCsrf = (await fetchLatestCsrf()) || csrf;
+      if (!activeCsrf) {
+        setMessage(["セキュリティトークンの取得に失敗しました。ページを再読み込みして再度お試しください。"]);
+        return;
+      }
+      setCsrf(activeCsrf);
+
+      let res = await submitPlayer(activeCsrf);
+      if (res.status === 403) {
+        const refreshedCsrf = await fetchLatestCsrf();
+        if (refreshedCsrf) {
+          setCsrf(refreshedCsrf);
+          res = await submitPlayer(refreshedCsrf);
+        }
+      }
 
       setErrors({});
       setMessage([]);
@@ -161,7 +243,9 @@ export default function NewPlayerPage() {
           router.push("/home");
         }, 1500);
       } else {
-        const err = await res.json();
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: string | { path: (string | number)[]; message: string }[];
+        };
         if (Array.isArray(err.error)) {
           const fieldErrors: {
             name?: string;
@@ -177,11 +261,18 @@ export default function NewPlayerPage() {
             }
           });
           setErrors(fieldErrors);
+          if (Object.keys(fieldErrors).length === 0) {
+            setMessage(["入力内容を確認してください。"]);
+          }
         } else {
           if (typeof err.error === "string" && err.error.includes("already exists")) {
             setErrors({ name: err.error });
           } else {
-            setMessage([err.error || "選手の登録に失敗しました"]);
+            const baseMessage =
+              typeof err.error === "string" && err.error.length > 0
+                ? err.error
+                : "選手の登録に失敗しました";
+            setMessage([`${baseMessage} (status: ${res.status})`]);
           }
         }
       }
@@ -211,17 +302,28 @@ export default function NewPlayerPage() {
         </div>
         <div>
           <label className="block mb-1">ポジション</label>
-          <div className="flex flex-wrap gap-2">
-            {positionOptions.map((pos) => (
-              <label key={pos} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={positions.includes(pos)}
-                  onChange={() => togglePosition(pos)}
-                />
-                {pos}
-              </label>
-            ))}
+          <div className="space-y-3">
+            {positionGroupOrder.map((group) => {
+              const groupItems = groupedPositions[group];
+              if (groupItems.length === 0) return null;
+              return (
+                <div key={group}>
+                  <p className="text-xs uppercase text-white/70 mb-1">{group}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupItems.map((pos) => (
+                      <label key={pos} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={positions.includes(pos)}
+                          onChange={() => togglePosition(pos)}
+                        />
+                        {pos}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <input
             className="w-full p-2 border rounded mt-2"
