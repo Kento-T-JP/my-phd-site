@@ -20,8 +20,8 @@ import type { Player, PositionKey, Roster } from "@/types/player";
 import { formations } from "@/data/formations";
 import type { Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
+import MultiToggleGroup from "@/components/MultiToggleGroup";
 import useClickSound from "@/lib/useClickSound";
-import { getDefaultPositions } from "@/lib/defaultPositions";
 
 export interface InitialFormation {
   id?: number;
@@ -58,6 +58,7 @@ const clampPercent = (value: number, min = 6, max = 94) =>
 const BENCH_POSITION_ORDER = ["GK", "DF", "MF", "MF/FW", "FW"];
 const DEFAULT_BENCH_LIMIT = 12;
 const MAX_BENCH_LIMIT = 15;
+const DEFAULT_OFF_BENCH_LIMIT = 999;
 const DEFAULT_FORMATION_NAME = "4-3-3";
 
 function normalizeBenchSize(value: unknown, fallback = DEFAULT_BENCH_LIMIT): number {
@@ -304,6 +305,9 @@ export default function Formation({
   const [customMode, setCustomMode] = useState(false);  // false = 初期オート, true = ユーザー自由
   const [defaultsFrozen, setDefaultsFrozen] = useState(false);
   const [filter, setFilter] = useState<PlayerFilterOptions>({});
+  const [offBenchNameFilter, setOffBenchNameFilter] = useState("");
+  const [offBenchPositionFilters, setOffBenchPositionFilters] = useState<string[]>([]);
+  const [offBenchLimit, setOffBenchLimit] = useState(DEFAULT_OFF_BENCH_LIMIT);
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const toTemplateStateKey = (name: string) => `template:${name}`;
@@ -355,22 +359,10 @@ export default function Formation({
   );
 
   const positionOptions = useMemo(() => {
-    const defaultPositions = getDefaultPositions();
-    const playerPositions = players.flatMap((p) => p.position);
-    const rosterPositions = rosters.flatMap(
-      (r) => r.players?.flatMap((rp) => rp.position ?? []) ?? []
-    );
-    return Array.from(
-      new Set([
-        ...defaultPositions,
-        "DF",
-        "MF/FW",
-        ...managedPositions,
-        ...playerPositions,
-        ...rosterPositions,
-      ])
+    return Array.from(new Set(players.flatMap((p) => p.position))).sort(
+      (a, b) => a.localeCompare(b, "ja")
     ) as PositionKey[];
-  }, [managedPositions, players, rosters]);
+  }, [players]);
 
   const toggleFavorite = async (id: number) => {
     play();
@@ -1061,9 +1053,35 @@ export default function Formation({
   const benchPlayers = benchIds
     .map((id) => playerById.get(id))
     .filter((p): p is Player => Boolean(p));
-  const benchOutPlayers = benchOutIds
+  const benchOutPlayersAll = benchOutIds
     .map((id) => playerById.get(id))
     .filter((p): p is Player => Boolean(p));
+  const offBenchNameNeedle = offBenchNameFilter.trim().toLowerCase();
+  const offBenchPositionNeedles = offBenchPositionFilters
+    .map((pos) => pos.toLowerCase().trim())
+    .filter(Boolean);
+  const offBenchPositionOptions = Array.from(
+    new Set(benchOutPlayersAll.flatMap((p) => p.position))
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+  const offBenchByFilter = benchOutPlayersAll.filter((p) => {
+    const matchName =
+      !offBenchNameNeedle || p.name.toLowerCase().includes(offBenchNameNeedle);
+    const matchPosition =
+      offBenchPositionNeedles.length === 0 ||
+      p.position.some((pp) => {
+        const normalized = pp.toLowerCase();
+        return offBenchPositionNeedles.some((needle) =>
+          normalized.includes(needle)
+        );
+      });
+    return matchName && matchPosition;
+  });
+  const offBenchFilterMax = offBenchByFilter.length;
+  const offBenchLimitValue = Math.min(
+    Math.max(0, offBenchLimit),
+    offBenchFilterMax
+  );
+  const offBenchPlayers = offBenchByFilter.slice(0, offBenchLimitValue);
   const responsiveWidth = viewportWidth > 0 ? viewportWidth : fieldWidth;
   const isCompactLayout = responsiveWidth > 0 ? responsiveWidth < 960 : false;
   const widthScale = responsiveWidth > 0 ? responsiveWidth / 1366 : 1;
@@ -1500,11 +1518,103 @@ export default function Formation({
         </div>
       </div>
 
-      {benchOutPlayers.length > 0 && (
+      {benchOutPlayersAll.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-bold mb-2">Off Bench</h3>
+          {!screenshotMode && (
+            <div className="mb-3 rounded-xl border border-cyan-200/25 bg-slate-950/45 p-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold tracking-[0.12em] text-cyan-100/80">
+                  OFF BENCH FILTERS
+                </p>
+                <button
+                  type="button"
+                  className="rounded-md border border-cyan-200/30 px-2 py-1 text-[11px] text-cyan-100/80 hover:bg-cyan-300/10"
+                  onClick={() => {
+                    setOffBenchNameFilter("");
+                    setOffBenchPositionFilters([]);
+                    setOffBenchLimit(DEFAULT_OFF_BENCH_LIMIT);
+                  }}
+                >
+                  クリア
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-cyan-100">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input w-full min-w-0"
+                    placeholder="選手名で絞り込み"
+                    value={offBenchNameFilter}
+                    onChange={(e) => setOffBenchNameFilter(e.target.value)}
+                  />
+                </div>
+                <MultiToggleGroup
+                  className="lg:col-span-2"
+                  legend={`Position (${offBenchPositionFilters.length})`}
+                  options={offBenchPositionOptions.map((pos) => ({
+                    value: pos,
+                    label: pos,
+                  }))}
+                  selectedValues={offBenchPositionFilters}
+                  onChange={setOffBenchPositionFilters}
+                  emptyLabel="ポジションがありません"
+                  wrapSelectedLabel
+                  wrapOptionLabel
+                />
+              </div>
+              <div className="mt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-semibold tracking-wide text-cyan-100">
+                    Off Bench人数
+                  </label>
+                  <span className="text-xs text-cyan-100/75">
+                    {offBenchLimitValue} / {offBenchFilterMax}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={offBenchFilterMax}
+                    value={offBenchLimitValue}
+                    className="w-full accent-cyan-300"
+                    onChange={(e) => setOffBenchLimit(Number(e.target.value) || 0)}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={offBenchFilterMax}
+                    value={offBenchLimitValue}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      if (raw === "") {
+                        setOffBenchLimit(0);
+                        e.currentTarget.value = "0";
+                        return;
+                      }
+                      const parsed = Number(raw);
+                      const next = Number.isFinite(parsed)
+                        ? Math.max(0, Math.min(offBenchFilterMax, Math.trunc(parsed)))
+                        : 0;
+                      setOffBenchLimit(next);
+                      const normalized = String(next);
+                      if (e.currentTarget.value !== normalized) {
+                        e.currentTarget.value = normalized;
+                      }
+                    }}
+                    className="form-input h-9 w-20 text-center text-sm"
+                    aria-label="Off bench size"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <h3 className="text-lg font-bold mb-2">Off Bench ({offBenchPlayers.length})</h3>
           <div className="flex flex-wrap gap-0">
-            {benchOutPlayers.map(renderBenchCard)}
+            {offBenchPlayers.map(renderBenchCard)}
           </div>
         </div>
       )}
