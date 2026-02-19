@@ -85,13 +85,39 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 
 ## 技術スタック
 
-- Next.js 16.1.6 / React 19 / TypeScript
+### コア
+
+- Next.js 16.1.6（App Router） / React 19 / TypeScript
 - Tailwind CSS 4
-- Prisma / PostgreSQL (Neon)
-- NextAuth
-- Vitest / Testing Library
-- Docker Compose
-- Vercel
+- Prisma / PostgreSQL（Neon）
+- NextAuth（Google / Credentials）
+
+### 主要ライブラリ
+
+- Zod（入力バリデーション）
+- Framer Motion（アニメーション）
+- Cheerio / Axios（JFAページ解析・取得）
+- React Hook Form（フォーム処理）
+- Nodemailer / Resend（問い合わせ通知）
+- `@vercel/analytics` / `@vercel/speed-insights`（計測）
+
+### インフラ・運用
+
+- Vercel（本番ホスティング）
+- Neon PostgreSQL（本番DB）
+- Vercel Cron
+  - `/api/cron/cleanup-formation-shares`
+  - `/api/cron/cleanup-deleted-players`
+- Docker Compose（ローカル統合開発）
+
+### 開発ツール
+
+- Prisma Migrate / Prisma Client
+  - 開発: `prisma migrate dev`
+  - 本番: `prisma migrate deploy`
+- Vitest / Testing Library（ユニット・UIテスト）
+- ESLint（`next lint`）
+- TSX（seed / スクリプト実行）
 
 ## ローカルセットアップ
 
