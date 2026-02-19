@@ -8,10 +8,12 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 - フォーメーション作成/保存/更新/再表示
 - ベンチ / Off Bench の順序入れ替え（保存・共有画面で順序維持）
 - ベンチ人数設定（保存・共有対応、上限15）
+- Off Bench フィルター（名前/ポジション/人数）と保存反映
 - ポジション管理（デフォルト表示 + ユーザー追加/削除）
 - 選手の新規登録・編集・削除（複数削除含む）
 - 選手一覧/フォーメーションの「お気に入りのみ」フィルター
 - 共有リンク（3日有効）でフォーメーション公開・取り込み
+- 共有リンクのコピー操作（明示ボタンでコピー）
 - JFA URL 取り込み / Excel (`.xlsx`) 取り込み
 - 大会/ロスター管理（ユーザースコープ）
 - NextAuth 認証（Google / Credentials）
@@ -20,125 +22,57 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 - reCAPTCHA 対応
 - Vercel Analytics / Speed Insights
 
-## 最近の主な変更
+## 最近の主な変更（整理版）
 
-### 1. 読み込み性能の最適化
+### フォーメーション体験
 
-- `/api/players` のレスポンスを用途別に最適化
-  - `includeRosterLinks=1` のときのみ `rosterPlayers` を返却
-  - `includeExtra` / `includeImage` で返却項目を制御
-- `Formation` 側は必要データのみ取得（`includeRosterLinks=1&includeExtra=0`）
-- `/home` 初期表示で全選手取得を避け、存在確認ベースの軽量判定へ変更
-- ロスター/大会系API（`/api/rosters`, `/api/tournaments`, `/api/rosters/titles`, `/api/tournaments/names`）に
-  ユーザー単位キャッシュ（`revalidate: 60`）を導入
-- 選手/管理者操作後に関連タグを再検証して、表示更新の整合性を維持
+- Bench / Off Bench の並び順を編集可能にし、保存・共有・取り込みで順序を維持
+- ベンチ人数（上限15）を保存対象にし、共有先にも反映
+- Off Bench フィルター（名前/ポジション/人数）を追加し、`offBenchSize` として保存・復元
+- フォーメーション操作（テンプレ切替・Reset・保存系）を上部に集約し、スクロール負荷を削減
+- PLAYER/OFF BENCH フィルターを折りたたみ化（開閉アニメーション付き）
+- ドロップダウンのクリッピング問題を解消（ロスター/ポジション選択が末尾まで表示）
 
-### 2. 書き込み性能の最適化（新規登録・編集）
+### フィルターUI
 
-- 複数ロスター紐付けを一括INSERT化
-  - `addRosterPlayers` が複数 `rosterId` を受け取り可能
-  - `POST /api/players` と `PUT /api/players/[id]` で、ループ呼び出しを集約
-
-### 3. 管理画面のUI改善 + モバイル対応
-
-- 管理画面レイアウトを共通トーンに統一
-- `AdminNav` を横スクロール対応のナビへ改善
-- `Users/Inquiries/Formations/Rosters` は
-  - `md` 未満: カード表示
-  - `md` 以上: テーブル表示
-
-### 4. CSRF検証の安定化
-
-- `verifyCsrfToken` が `next-auth` の複数Cookie名を許容
-  - `__Host-next-auth.csrf-token`
-  - `__Secure-next-auth.csrf-token`
-  - `next-auth.csrf-token`
-- Chrome環境で発生していた登録時CSRF不一致を解消
-
-### 5. 本番DBリージョン最適化（Singapore → US East）
-
-- Vercel実行リージョン（`iad1`）に合わせて Neon DB を US East へ移行
-- アプリサーバーとDB間の往復レイテンシが短縮され、TTFB体感が大幅に改善
-- Home / Formations / 各種一覧ページの初回ロード時間を実運用で短縮
-
-### 6. JFA取り込みURL対応の拡張
-
-- `samuraiblue` 配下の多階層 `member.html` URL に対応
-  - 例: `https://www.jfa.jp/samuraiblue/worldcup_2026/final_q_2026/20250320/member.html`
-- 深いURLからの大会slug抽出ロジックを改善し、既存URL形式との互換性も維持
-
-### 7. SEO基盤の整備
-
-- App Router の metadata を拡張
-  - `metadataBase` / canonical / Open Graph / Twitter Card / robots
-- `robots.txt` と `sitemap.xml` を実装
-  - 公開ページをクロール対象にし、認証必須ページは `noindex` を適用
-- Search Console のドメイン認証・サイトマップ送信を前提に運用可能な状態へ更新
-
-### 8. アイコン設定の更新
-
-- ヘッダーのブランド表示に `public/emblem.svg` を利用
-- ブラウザ/検索向けアイコンは `public/emblem.png` を優先し、`favicon.ico` をフォールバックで併用
-- サイト名は `START XI` 表示に統一
-
-### 9. 共有リンク機能（3日有効）
-
-- フォーメーション共有リンクを発行し、未ログインでも閲覧可能
-- ログイン後に取り込み可能（同名選手は既存を再利用）
-- 取り込み時はフォーメーション名の重複を自動調整
-- 共有データには選手配置に加えて大会/ロースター紐付けも含めて復元
-
-### 10. 削除ポリシーの明確化
-
-- 選手削除はハイブリッド方式
-  - 即時: 論理削除（`isDeleted=true`, `deletedAt` 記録）
-  - 後続: Cron で30日経過分を物理削除（関連 `RosterPlayer` / `FavoritePlayer` / `FormationNode` も整理）
-- 大会・ロースター・フォーメーションは物理削除
-- 危険操作（削除）は確認ダイアログを表示
-
-### 11. Quick Actions: 大会・ロースター管理
-
-- `Quick Actions` から `/tournaments` へ遷移
-- 大会追加（必須: 大会名）
-- ロースター追加（必須: 大会名 / 任意: ロースター名・日付）
-- 大会削除・ロースター削除をユーザースコープで実行可能
-
-### 12. フォーメーション表示順序の仕様整理（Bench / Off Bench）
-
-- Bench 内の順序はユーザー操作（選手同士の入れ替え）で変更可能
-- Off Bench も同様に `benchOrder` 準拠で表示順を維持
-- 初期配置・Reset 時は従来どおりポジション基準の初期順へ復帰
-- 共有ページ（`/share/[token]`）も同じ順序ルールに統一
-
-### 13. 安定性・再現性の改善（2026-02 追加）
-
-- 日付処理を UTC ベースの共通ユーティリティへ統一
-  - JFA 日付抽出・ロースタータイトル生成でタイムゾーン差異を抑制
-- フォーメーション `nodes` の取得順を `id asc` で明示
-  - API/画面間での再現性（同一データ時の同一表示）を向上
-- ミドルウェアのトークン詳細ログをデフォルト無効化
-  - 必要時のみ環境変数で有効化して運用ノイズを削減
-
-### 14. ポジション管理の強化（2026-02 追加）
-
-- `/positions` でユーザー単位のポジション追加/削除を実装（`/api/positions`）
-- デフォルトポジションは管理画面に表示し、削除不可
-- デフォルト候補は `src/lib/defaultPositions.ts` へ集約し、新規/編集/一覧/Formation で共通利用
-- デフォルトと重複するカスタムポジション追加はAPIで拒否
-
-### 15. ポジション表記の整理（LB/RB → LSB/RSB）
-
-- フォーメーション定義キーを `LB/RB` から `LSB/RSB` へ変更
-- 既存入力互換のため、正規化では `LB`/`RB` 入力も `LSB`/`RSB` に変換
-
-### 16. フィルター/ベンチ設定UIの改善（2026-02 追加）
-
-- フォーメーション画面のフィルターを4条件（Name / Roster / Position / Favorite）へ整理
+- フォーメーション画面のメインフィルターを4条件（Name / Roster / Position / Favorite）で整理
 - 選手一覧にも「お気に入りのみ」フィルターを追加
-- ロスターフィルターの長い大会名・ロースター名を省略せず折り返し表示
-- ベンチ人数を可変化し、保存・更新・共有リンク・取り込みで `benchSize` を保持
-- ベンチ人数の上限を `15` に統一（Home / Formations / Share）
-- スマホ縦画面での `Saved Formations` セレクタや操作ボタンの横はみ出しを解消
+- ロスター名・大会名の長文表示を省略せず折り返し表示
+- ポジション候補は文脈別に動的表示
+  - メインフィルター: 現在選手が持つポジション
+  - Off Benchフィルター: Off Bench選手が持つポジション
+
+### 共有リンク
+
+- 共有リンクは3日有効、未ログイン閲覧可、ログイン後取り込み可
+- 共有リンク作成後に URL 表示カードと「コピー」ボタンを追加
+  - クリック/タップ時のみコピー（自動コピーなし）
+  - コピー成功メッセージをカード内に表示
+- 共有ページの「このフォーメーションを取り込む」を上部へ再配置（モバイル最適化）
+
+### データ整合性・安定性
+
+- 日付処理を UTC ベース共通ユーティリティへ統一
+- フォーメーション `nodes` の取得順を `id asc` で固定
+- CSRF検証で `next-auth` の複数Cookie名を許容
+- 削除ポリシーを明確化（選手は論理削除 + Cron物理削除、大会/ロースター/フォーメーションは物理削除）
+
+### パフォーマンス
+
+- `/api/players` の返却項目を用途別最適化（`includeRosterLinks` / `includeExtra` / `includeImage`）
+- Formations/Home の初期表示で不要データ取得を削減
+- ロスター/大会系APIにユーザー単位キャッシュ（`revalidate: 60`）を導入
+- 複数ロスター紐付けを一括INSERT化して書き込みを高速化
+
+### 管理・運用
+
+- 管理画面UIを統一し、モバイルはカード表示・PCはテーブル表示
+- Quick Actions から大会/ロスター管理へ遷移可能
+- ポジション管理（`/positions`）をユーザー単位で実装
+  - デフォルト表示・削除不可
+  - カスタム追加/削除可
+- ポジション表記を `LB/RB` から `LSB/RSB` に整理（旧入力は互換変換）
+- SEO基盤（metadata/OG/Twitter/robots/sitemap）を整備
 
 ## ルーティング / アクセス制御
 
