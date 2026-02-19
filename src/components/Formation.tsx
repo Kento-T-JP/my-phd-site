@@ -321,6 +321,17 @@ export default function Formation({
     normalizeOffBenchSize(initialFormation?.positions.offBenchSize, DEFAULT_OFF_BENCH_LIMIT)
   );
   const [showOffBenchFilters, setShowOffBenchFilters] = useState(false);
+  const [benchSizeInput, setBenchSizeInput] = useState(
+    String(normalizeBenchSize(initialFormation?.positions.benchSize, DEFAULT_BENCH_LIMIT))
+  );
+  const [offBenchLimitInput, setOffBenchLimitInput] = useState(
+    String(
+      normalizeOffBenchSize(
+        initialFormation?.positions.offBenchSize,
+        DEFAULT_OFF_BENCH_LIMIT
+      )
+    )
+  );
   const [alias, setAlias] = useState(initialFormation?.name ?? "");
 
   const toTemplateStateKey = (name: string) => `template:${name}`;
@@ -1088,14 +1099,6 @@ export default function Formation({
 
   const sortedKeys = Object.keys(formation.positions);
 
-  if (error) {
-    return <div className="p-4 text-red-500">{error}</div>;
-  }
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
   const playerById = new Map(players.map((p) => [p.id, p]));
   const canAppearOnBench = (id: number): boolean => {
     const p = playerById.get(id);
@@ -1151,6 +1154,15 @@ export default function Formation({
     (offBenchPositionFilters.length > 0 ? 1 : 0) +
     (offBenchLimitValue < offBenchFilterMax ? 1 : 0);
   const offBenchPlayers = offBenchByFilter.slice(0, offBenchLimitValue);
+
+  useEffect(() => {
+    setBenchSizeInput(String(benchControlValue));
+  }, [benchControlValue]);
+
+  useEffect(() => {
+    setOffBenchLimitInput(String(offBenchLimitValue));
+  }, [offBenchLimitValue]);
+
   const responsiveWidth = viewportWidth > 0 ? viewportWidth : fieldWidth;
   const isCompactLayout = responsiveWidth > 0 ? responsiveWidth < 960 : false;
   const widthScale = responsiveWidth > 0 ? responsiveWidth / 1366 : 1;
@@ -1218,6 +1230,14 @@ export default function Formation({
     "--field-height": `${fieldHeight}px`,
     "--field-min-height": `${fieldMinHeight}px`,
   } as CSSProperties;
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   const renderBenchCard = (p: Player) => (
     <div
@@ -1699,12 +1719,13 @@ export default function Formation({
                   type="number"
                   min={0}
                   max={benchControlMax}
-                  value={benchControlValue}
+                  value={benchSizeInput}
+                  onFocus={(e) => e.currentTarget.select()}
                   onChange={(e) => {
                     const raw = e.target.value.trim();
+                    setBenchSizeInput(raw);
                     if (raw === "") {
                       setBenchSize(0);
-                      e.currentTarget.value = "0";
                       return;
                     }
                     const parsed = Number(raw);
@@ -1712,11 +1733,8 @@ export default function Formation({
                       ? Math.max(0, Math.min(benchControlMax, Math.trunc(parsed)))
                       : 0;
                     setBenchSize(next);
-                    const normalized = String(next);
-                    if (e.currentTarget.value !== normalized) {
-                      e.currentTarget.value = normalized;
-                    }
                   }}
+                  onBlur={() => setBenchSizeInput(String(benchControlValue))}
                   className="form-input h-9 w-20 text-center text-sm"
                   aria-label="Bench size"
                 />
@@ -1846,12 +1864,13 @@ export default function Formation({
                       type="number"
                       min={0}
                       max={offBenchFilterMax}
-                      value={offBenchLimitValue}
+                      value={offBenchLimitInput}
+                      onFocus={(e) => e.currentTarget.select()}
                       onChange={(e) => {
                         const raw = e.target.value.trim();
+                        setOffBenchLimitInput(raw);
                         if (raw === "") {
                           setOffBenchLimit(0);
-                          e.currentTarget.value = "0";
                           return;
                         }
                         const parsed = Number(raw);
@@ -1859,11 +1878,8 @@ export default function Formation({
                           ? Math.max(0, Math.min(offBenchFilterMax, Math.trunc(parsed)))
                           : 0;
                         setOffBenchLimit(next);
-                        const normalized = String(next);
-                        if (e.currentTarget.value !== normalized) {
-                          e.currentTarget.value = normalized;
-                        }
                       }}
+                      onBlur={() => setOffBenchLimitInput(String(offBenchLimitValue))}
                       className="form-input h-9 w-20 text-center text-sm"
                       aria-label="Off bench size"
                     />
