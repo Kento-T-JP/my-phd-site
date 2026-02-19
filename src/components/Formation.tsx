@@ -1053,6 +1053,7 @@ export default function Formation({
     MAX_BENCH_LIMIT
   );
   const benchControlMax = Math.min(MAX_BENCH_LIMIT, benchCandidateIds.length);
+  const benchControlValue = Math.min(normalizedBenchSize, benchControlMax);
   const benchIds = benchCandidateIds.slice(0, effectiveBenchSize);
   const benchIdSet = new Set(benchIds);
   // Preserve benchOrder-relative order for off-bench instead of regrouping.
@@ -1432,7 +1433,7 @@ export default function Formation({
                   BENCH SIZE
                 </p>
                 <span className="text-xs text-cyan-100/75">
-                  {effectiveBenchSize} / {benchCandidateIds.length}
+                  {effectiveBenchSize} / {MAX_BENCH_LIMIT}
                 </span>
               </div>
               <div className="mt-2 flex items-center gap-2">
@@ -1440,7 +1441,7 @@ export default function Formation({
                   type="range"
                   min={0}
                   max={benchControlMax}
-                  value={Math.min(normalizedBenchSize, benchControlMax)}
+                  value={benchControlValue}
                   className="w-full accent-cyan-300"
                   onChange={(e) => setBenchSize(Number(e.target.value) || 0)}
                 />
@@ -1448,8 +1449,24 @@ export default function Formation({
                   type="number"
                   min={0}
                   max={benchControlMax}
-                  value={Math.min(normalizedBenchSize, benchControlMax)}
-                  onChange={(e) => setBenchSize(Number(e.target.value) || 0)}
+                  value={benchControlValue}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (raw === "") {
+                      setBenchSize(0);
+                      e.currentTarget.value = "0";
+                      return;
+                    }
+                    const parsed = Number(raw);
+                    const next = Number.isFinite(parsed)
+                      ? Math.max(0, Math.min(benchControlMax, Math.trunc(parsed)))
+                      : 0;
+                    setBenchSize(next);
+                    const normalized = String(next);
+                    if (e.currentTarget.value !== normalized) {
+                      e.currentTarget.value = normalized;
+                    }
+                  }}
                   className="form-input h-9 w-20 text-center text-sm"
                   aria-label="Bench size"
                 />
