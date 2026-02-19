@@ -1467,11 +1467,12 @@ export default function Formation({
             {playerFilterActiveCount > 0 ? `${playerFilterActiveCount}件の条件を適用中` : ""}
           </p>
           <div
-            className="overflow-hidden transition-all duration-300 ease-out"
+            className="transition-all duration-300 ease-out"
             style={{
               maxHeight: showPlayerFilters ? "560px" : "0px",
               opacity: showPlayerFilters ? 1 : 0,
               marginTop: showPlayerFilters ? "0.75rem" : "0rem",
+              overflow: showPlayerFilters ? "visible" : "hidden",
             }}
           >
             <PlayerFilter
@@ -1789,10 +1790,11 @@ export default function Formation({
                 {offBenchFilterActiveCount > 0 ? `${offBenchFilterActiveCount}件の条件を適用中` : ""}
               </p>
               <div
-                className="overflow-hidden transition-all duration-300 ease-out"
+                className="transition-all duration-300 ease-out"
                 style={{
                   maxHeight: showOffBenchFilters ? "520px" : "0px",
                   opacity: showOffBenchFilters ? 1 : 0,
+                  overflow: showOffBenchFilters ? "visible" : "hidden",
                 }}
               >
                 <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
