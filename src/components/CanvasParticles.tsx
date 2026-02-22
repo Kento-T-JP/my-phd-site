@@ -21,7 +21,8 @@ export default function CanvasParticles() {
       !/(Chrome|CriOS|Chromium|Edg|OPR|OPiOS|FxiOS|Firefox)/i.test(ua);
 
     const isCompact = window.innerWidth < 768;
-    const lowPowerMode = prefersReducedMotion || isSafari;
+    const shouldAnimate = !prefersReducedMotion && !isSafari;
+    const lowPowerMode = !shouldAnimate;
     let width = el.offsetWidth;
     let height = el.offsetHeight;
     const baseDpr = window.devicePixelRatio || 1;
@@ -49,8 +50,8 @@ export default function CanvasParticles() {
       });
     }
 
-    const shouldDrawConnections = !isSafari;
-    const maxDist = isCompact ? 64 : 100;
+    const shouldDrawConnections = !prefersReducedMotion;
+    const maxDist = isSafari ? 56 : isCompact ? 64 : 100;
     let frame: number | null = null;
     let running = true;
     let lastTs = 0;
@@ -62,13 +63,13 @@ export default function CanvasParticles() {
 
     function step(ts: number) {
       if (!running) return;
-      if (ts - lastTs < minFrameGap) {
+      if (shouldAnimate && ts - lastTs < minFrameGap) {
         frame = requestAnimationFrame(step);
         return;
       }
       lastTs = ts;
       ctx.clearRect(0, 0, width, height);
-      if (!lowPowerMode) {
+      if (shouldAnimate) {
         for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
@@ -99,13 +100,17 @@ export default function CanvasParticles() {
           }
         }
       }
-      frame = prefersReducedMotion ? null : requestAnimationFrame(step);
+      frame = shouldAnimate ? requestAnimationFrame(step) : null;
     }
 
     function onVisibility() {
       running = document.visibilityState === "visible";
       if (running && frame === null) {
-        frame = requestAnimationFrame(step);
+        if (shouldAnimate) {
+          frame = requestAnimationFrame(step);
+        } else {
+          step(performance.now());
+        }
       } else if (!running && frame !== null) {
         cancelAnimationFrame(frame);
         frame = null;
@@ -116,14 +121,17 @@ export default function CanvasParticles() {
       width = el.offsetWidth;
       height = el.offsetHeight;
       applyCanvasSize();
+      if (!shouldAnimate) {
+        step(performance.now());
+      }
     }
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("resize", onResize);
-    if (prefersReducedMotion) {
-      step(0);
-    } else {
+    if (shouldAnimate) {
       frame = requestAnimationFrame(step);
+    } else {
+      step(performance.now());
     }
 
     return () => {
