@@ -6,6 +6,7 @@ import BackButton from "@/components/BackButton";
 import Spinner from "@/components/Spinner";
 import MessageCell from "@/components/MessageCell";
 import useClickSound from "@/lib/useClickSound";
+import { getContactCategoryLabel } from "@/lib/contactCategories";
 
 interface Inquiry {
   id: string;
@@ -116,7 +117,9 @@ export default function AdminInquiriesPage() {
                 <p className="text-xs text-cyan-100/60">{q.id}</p>
                 <p className="mt-1 text-sm font-semibold text-cyan-50">{q.name}</p>
                 <p className="text-xs text-cyan-100/70">{q.email}</p>
-                <p className="mt-1 text-xs text-cyan-100/70">Category: {q.category ?? "-"}</p>
+                <p className="mt-1 text-xs text-cyan-100/70">
+                  Category: {q.category ? getContactCategoryLabel(q.category) : "-"}
+                </p>
                 <p className="mt-1 text-xs text-cyan-100/70">Status: {q.status === "handled" ? "Handled" : "Unhandled"}</p>
                 <p className="mt-1 text-xs text-cyan-100/70">{new Date(q.createdAt).toLocaleString()}</p>
                 <div className="mt-2 rounded-md border border-cyan-300/20 bg-slate-950/30 p-2">
@@ -165,7 +168,9 @@ export default function AdminInquiriesPage() {
                     <td className="px-3 py-2">{q.id}</td>
                     <td className="px-3 py-2">{q.name}</td>
                     <td className="px-3 py-2">{q.email}</td>
-                    <td className="px-3 py-2">{q.category ?? "-"}</td>
+                    <td className="px-3 py-2">
+                      {q.category ? getContactCategoryLabel(q.category) : "-"}
+                    </td>
                     <td className="px-3 py-2">
                       <MessageCell message={q.message} className="max-w-xs" />
                     </td>

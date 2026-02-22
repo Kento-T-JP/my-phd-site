@@ -7,6 +7,11 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import escapeHtml from 'escape-html';
 import { verifyCsrfToken } from '@/lib/csrf';
+import {
+  getContactCategoryEnglishLabel,
+  getContactCategoryLabel,
+  normalizeContactCategory,
+} from '@/lib/contactCategories';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS = 5;
@@ -126,12 +131,17 @@ export async function POST(req: Request) {
 
   const id = `C-${randomInt(1000, 10000)}`;
   const userAgent = req.headers.get('user-agent');
+  const categoryCode = normalizeContactCategory(payload.category);
+  const categoryLabel = getContactCategoryLabel(categoryCode);
+  const categoryEnglishLabel = getContactCategoryEnglishLabel(categoryCode);
 
   const details = {
     id,
     name: payload.name,
     email: payload.email,
-    category: payload.category ?? 'N/A',
+    categoryCode,
+    categoryLabel,
+    categoryEnglishLabel,
     message: payload.message,
     ip,
     userAgent: userAgent ?? 'unknown',
@@ -141,26 +151,48 @@ export async function POST(req: Request) {
     id: escapeHtml(details.id),
     name: escapeHtml(details.name),
     email: escapeHtml(details.email),
-    category: escapeHtml(details.category),
+    categoryCode: escapeHtml(details.categoryCode),
+    categoryLabel: escapeHtml(details.categoryLabel),
+    categoryEnglishLabel: escapeHtml(details.categoryEnglishLabel),
     message: escapeHtml(details.message),
     ip: escapeHtml(details.ip),
     userAgent: escapeHtml(details.userAgent),
   };
+  const escapedMessageHtml = escaped.message.replace(/\n/g, '<br>');
 
-  const text = `New contact submission\n\n` +
-    `ID: ${details.id}\n` +
+  const text = `[Start XI] 新しいお問い合わせ\n\n` +
+    `受付ID: ${details.id}\n` +
+    `お名前: ${details.name}\n` +
+    `メールアドレス: ${details.email}\n` +
+    `カテゴリ: ${details.categoryLabel}\n\n` +
+    `お問い合わせ内容:\n${details.message}\n\n` +
+    `IP: ${details.ip}\n` +
+    `User Agent: ${details.userAgent}\n\n` +
+    `--- English ---\n\n` +
+    `[Start XI] New Inquiry Received\n\n` +
+    `Reference ID: ${details.id}\n` +
     `Name: ${details.name}\n` +
     `Email: ${details.email}\n` +
-    `Category: ${details.category}\n` +
-    `Message: ${details.message}\n` +
+    `Category: ${details.categoryEnglishLabel}\n\n` +
+    `Message:\n${details.message}\n\n` +
     `IP: ${details.ip}\n` +
     `User Agent: ${details.userAgent}`;
   const html = `<!DOCTYPE html><html><body>
-    <p><strong>ID:</strong> ${escaped.id}</p>
+    <h2 style="margin:0 0 12px;">Start XI 新規お問い合わせ通知</h2>
+    <p><strong>受付ID:</strong> ${escaped.id}</p>
+    <p><strong>お名前:</strong> ${escaped.name}</p>
+    <p><strong>メールアドレス:</strong> ${escaped.email}</p>
+    <p><strong>カテゴリ:</strong> ${escaped.categoryLabel}</p>
+    <p><strong>お問い合わせ内容:</strong><br>${escapedMessageHtml}</p>
+    <p><strong>IP:</strong> ${escaped.ip}</p>
+    <p><strong>User Agent:</strong> ${escaped.userAgent}</p>
+    <hr style="margin:20px 0;border:none;border-top:1px solid #cbd5e1;">
+    <h2 style="margin:0 0 12px;">[English] New Inquiry Notification</h2>
+    <p><strong>Reference ID:</strong> ${escaped.id}</p>
     <p><strong>Name:</strong> ${escaped.name}</p>
     <p><strong>Email:</strong> ${escaped.email}</p>
-    <p><strong>Category:</strong> ${escaped.category}</p>
-    <p><strong>Message:</strong> ${escaped.message}</p>
+    <p><strong>Category:</strong> ${escaped.categoryEnglishLabel}</p>
+    <p><strong>Message:</strong><br>${escapedMessageHtml}</p>
     <p><strong>IP:</strong> ${escaped.ip}</p>
     <p><strong>User Agent:</strong> ${escaped.userAgent}</p>
   </body></html>`;
@@ -170,15 +202,33 @@ export async function POST(req: Request) {
     process.env.GMAIL_USER ||
     process.env.CONTACT_RECIPIENT;
   const confirmText =
-    `Thank you for your inquiry. We received your message.\n\n` +
-    `Category: ${details.category}\n` +
-    `Message: ${details.message}\n\n` +
-    `Reference ID: ${details.id}`;
+    `Start XI へのお問い合わせありがとうございます。\n` +
+    `以下の内容で受け付けました。\n\n` +
+    `受付ID: ${details.id}\n` +
+    `カテゴリ: ${details.categoryLabel}\n` +
+    `お問い合わせ内容:\n${details.message}\n\n` +
+    `通常は数営業日以内を目安に返信します。\n\n` +
+    `--- English ---\n\n` +
+    `Thank you for contacting Start XI.\n` +
+    `Your inquiry has been received with the details below.\n\n` +
+    `Reference ID: ${details.id}\n` +
+    `Category: ${details.categoryEnglishLabel}\n` +
+    `Message:\n${details.message}\n\n` +
+    `We typically respond within a few business days.`;
   const confirmHtml = `<!DOCTYPE html><html><body>
-    <p>We received your message.</p>
-    <p><strong>Category:</strong> ${escaped.category}</p>
-    <p><strong>Message:</strong> ${escaped.message}</p>
+    <h2 style="margin:0 0 12px;">お問い合わせを受け付けました</h2>
+    <p>Start XI へのお問い合わせありがとうございます。以下の内容で受け付けました。</p>
+    <p><strong>受付ID:</strong> ${escaped.id}</p>
+    <p><strong>カテゴリ:</strong> ${escaped.categoryLabel}</p>
+    <p><strong>お問い合わせ内容:</strong><br>${escapedMessageHtml}</p>
+    <p>通常は数営業日以内を目安に返信します。</p>
+    <hr style="margin:20px 0;border:none;border-top:1px solid #cbd5e1;">
+    <h2 style="margin:0 0 12px;">[English] Inquiry Received</h2>
+    <p>Thank you for contacting Start XI. We have received your message.</p>
     <p><strong>Reference ID:</strong> ${escaped.id}</p>
+    <p><strong>Category:</strong> ${escaped.categoryEnglishLabel}</p>
+    <p><strong>Message:</strong><br>${escapedMessageHtml}</p>
+    <p>We typically respond within a few business days.</p>
   </body></html>`;
 
   const savePromise = (async () => {
@@ -188,7 +238,7 @@ export async function POST(req: Request) {
           id: details.id,
           name: details.name,
           email: details.email,
-          category: details.category,
+          category: details.categoryCode,
           message: details.message,
           ip,
           userAgent,
@@ -205,7 +255,7 @@ export async function POST(req: Request) {
       await transporter.sendMail({
         from: `${payload.name} <${payload.email}>`,
         to: process.env.CONTACT_RECIPIENT,
-        subject: `SAMURAI BLUE New Contact Submission From ${payload.name}`,
+        subject: `【Start XI】新しいお問い合わせ: ${payload.name} 様`,
         text,
         html,
         replyTo: payload.email,
@@ -221,7 +271,7 @@ export async function POST(req: Request) {
       await resend.emails.send({
         to: payload.email,
         from: confirmFrom ?? '',
-        subject: 'Start-XI: We received your message',
+        subject: '【Start XI】お問い合わせ受付のお知らせ',
         text: confirmText,
         html: confirmHtml,
       });

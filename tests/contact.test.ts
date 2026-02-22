@@ -99,11 +99,11 @@ describe('contact API route', () => {
       text: expect.any(String),
       html: expect.any(String),
     });
-    expect(ownerPayload.text).toContain(`ID: ${data.id}`);
-    expect(ownerPayload.text).toContain('Name: Bob');
-    expect(ownerPayload.text).toContain('Email: bob@example.com');
-    expect(ownerPayload.text).toContain('Category: General');
-    expect(ownerPayload.text).toContain('Message: Hello');
+    expect(ownerPayload.text).toContain(`受付ID: ${data.id}`);
+    expect(ownerPayload.text).toContain('お名前: Bob');
+    expect(ownerPayload.text).toContain('メールアドレス: bob@example.com');
+    expect(ownerPayload.text).toContain('カテゴリ: その他');
+    expect(ownerPayload.text).toContain('お問い合わせ内容:\nHello');
     expect(ownerPayload.text).toContain('IP: 1.1.1.1');
     expect(ownerPayload.text).toContain('User Agent: test-agent');
 
@@ -113,13 +113,13 @@ describe('contact API route', () => {
     expect(userPayload).toMatchObject({
       to: 'bob@example.com',
       from: process.env.CONFIRM_FROM_ADDRESS,
-      subject: expect.stringContaining('We received your message'),
+      subject: expect.stringContaining('お問い合わせ受付のお知らせ'),
       text: expect.any(String),
       html: expect.any(String),
     });
-    expect(userPayload.text).toContain(`Category: General`);
-    expect(userPayload.text).toContain(`Message: Hello`);
-    expect(userPayload.text).toContain(`Reference ID: ${data.id}`);
+    expect(userPayload.text).toContain(`カテゴリ: その他`);
+    expect(userPayload.text).toContain(`お問い合わせ内容:\nHello`);
+    expect(userPayload.text).toContain(`受付ID: ${data.id}`);
   });
 
   it('returns 400 for missing required fields', async () => {
@@ -206,4 +206,3 @@ describe('contact API route', () => {
     expect(sendGridSendMock).not.toHaveBeenCalled();
   });
 });
-

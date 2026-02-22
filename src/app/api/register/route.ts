@@ -3,14 +3,27 @@ import prisma from "@/lib/db";
 import { hash } from "bcrypt";
 import { randomBytes } from "crypto";
 import { Resend } from "resend";
+import escapeHtml from "escape-html";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 export async function POST(req: Request) {
-  const { email, password, isAdmin = false, recaptchaToken } = await req.json();
+  const {
+    email,
+    password,
+    isAdmin = false,
+    recaptchaToken,
+    agreedToTerms,
+    agreedToPrivacy,
+    legalVersion,
+  } = await req.json();
   if (
     typeof email !== "string" ||
     typeof password !== "string" ||
     typeof isAdmin !== "boolean" ||
-    typeof recaptchaToken !== "string"
+    typeof recaptchaToken !== "string" ||
+    agreedToTerms !== true ||
+    agreedToPrivacy !== true ||
+    legalVersion !== LEGAL_VERSION
   ) {
     return NextResponse.json({ error: "無効な入力です" }, { status: 400 });
   }
@@ -58,13 +71,38 @@ export async function POST(req: Request) {
   const verifyUrl = `${baseUrl}/api/verify-email?token=${token}`;
   const from =
     process.env.CONFIRM_FROM_ADDRESS || process.env.GMAIL_USER || "";
+  const escapedVerifyUrl = escapeHtml(verifyUrl);
   try {
     await resend.emails.send({
       to: email,
       from,
-      subject: "Verify your email",
-      html: `<p>Please verify your email by clicking <a href="${verifyUrl}">this link</a>.</p>`,
-      text: `Please verify your email: ${verifyUrl}`,
+      subject: "【Start XI】メールアドレス確認のお願い",
+      text:
+        "Start XI への新規登録ありがとうございます。\n\n" +
+        "以下のURLを24時間以内に開き、メールアドレス確認を完了してください。\n" +
+        `${verifyUrl}\n\n` +
+        "このメールに心当たりがない場合は、このまま破棄してください。\n\n" +
+        "--- English ---\n\n" +
+        "Thank you for creating your Start XI account.\n\n" +
+        "Please verify your email address within 24 hours using the link below:\n" +
+        `${verifyUrl}\n\n` +
+        "If you did not request this email, you can safely ignore it.",
+      html:
+        "<!DOCTYPE html><html><body style=\"font-family:sans-serif;line-height:1.7;color:#0f172a;\">" +
+        "<h2 style=\"margin:0 0 12px;\">Start XI メールアドレス確認</h2>" +
+        "<p>Start XI への新規登録ありがとうございます。</p>" +
+        "<p>以下のボタンから<strong>24時間以内</strong>に確認を完了してください。</p>" +
+        `<p><a href="${escapedVerifyUrl}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:600;">メールアドレスを確認する</a></p>` +
+        `<p style="word-break:break-all;">ボタンが使えない場合: <a href="${escapedVerifyUrl}">${escapedVerifyUrl}</a></p>` +
+        "<p style=\"margin-top:16px;color:#475569;font-size:13px;\">このメールに心当たりがない場合は、このまま破棄してください。</p>" +
+        "<hr style=\"margin:20px 0;border:none;border-top:1px solid #cbd5e1;\">" +
+        "<h2 style=\"margin:0 0 12px;\">[English] Verify Your Email Address</h2>" +
+        "<p>Thank you for creating your Start XI account.</p>" +
+        "<p>Please complete email verification within <strong>24 hours</strong> using the button below.</p>" +
+        `<p><a href="${escapedVerifyUrl}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:600;">Verify Email Address</a></p>` +
+        `<p style="word-break:break-all;">If the button does not work: <a href="${escapedVerifyUrl}">${escapedVerifyUrl}</a></p>` +
+        "<p style=\"margin-top:16px;color:#475569;font-size:13px;\">If you did not request this email, you can safely ignore it.</p>" +
+        "</body></html>",
     });
   } catch (err) {
     console.error("Failed to send verification email", err);

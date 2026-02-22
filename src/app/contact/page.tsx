@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ContactSchema, type ContactFormInput } from '@/lib/validation/contact';
+import { CONTACT_CATEGORY_OPTIONS } from '@/lib/contactCategories';
 import { getCsrfToken } from 'next-auth/react';
 import useClickSound from '@/lib/useClickSound';
 
@@ -107,9 +108,11 @@ export default function ContactPage() {
               種別
             </label>
             <select id="category" {...register('category')} className="form-input">
-              <option value="Bug">不具合報告</option>
-              <option value="Feature">機能要望</option>
-              <option value="General">その他</option>
+              {CONTACT_CATEGORY_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="md:col-span-2 flex flex-col">

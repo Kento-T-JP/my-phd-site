@@ -66,6 +66,9 @@ describe('register API', () => {
         email: 'test@example.com',
         password: 'pass',
         recaptchaToken: 'token',
+        agreedToTerms: true,
+        agreedToPrivacy: true,
+        legalVersion: '2026-02-22',
       }),
     });
     const res = await POST(req);
@@ -94,11 +97,34 @@ describe('register API', () => {
         email: 'test@example.com',
         password: 'pass',
         recaptchaToken: 'bad',
+        agreedToTerms: true,
+        agreedToPrivacy: true,
+        legalVersion: '2026-02-22',
       }),
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(prisma.pendingRegistration.upsert).not.toHaveBeenCalled();
     expect(resendSendMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 if legal consent is missing', async () => {
+    const { POST } = await import('../src/app/api/register/route');
+    const req = new Request('http://test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'test@example.com',
+        password: 'pass',
+        recaptchaToken: 'token',
+        agreedToTerms: false,
+        agreedToPrivacy: true,
+        legalVersion: '2026-02-22',
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prisma.pendingRegistration.upsert).not.toHaveBeenCalled();
   });
 });

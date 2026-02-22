@@ -19,6 +19,14 @@ export default function Footer() {
           </Link>
           よりご連絡ください。
         </p>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-cyan-100/75">
+          <Link href="/terms" className="underline decoration-cyan-300/70 underline-offset-2">
+            利用規約
+          </Link>
+          <Link href="/privacy" className="underline decoration-cyan-300/70 underline-offset-2">
+            プライバシーポリシー
+          </Link>
+        </p>
         <p className="pt-2 text-cyan-100/60">
           © {year} Start XI. All rights reserved.
         </p>

@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
 import useClickSound from "@/lib/useClickSound";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,20 +14,39 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
   const { play } = useClickSound();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!agreedToTerms || !agreedToPrivacy) {
+      setError("利用規約とプライバシーポリシーへの同意が必要です。");
+      return;
+    }
+
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, recaptchaToken: captchaToken }),
+      body: JSON.stringify({
+        email,
+        password,
+        recaptchaToken: captchaToken,
+        agreedToTerms,
+        agreedToPrivacy,
+        legalVersion: LEGAL_VERSION,
+      }),
     });
     if (res.ok) {
       setSuccess("確認メールを送信しました。メールボックスを確認してください。");
       setEmail("");
       setPassword("");
+      setAgreedToTerms(false);
+      setAgreedToPrivacy(false);
     } else {
       const data = await res.json();
       setError(data.error || "登録に失敗しました");
@@ -75,6 +96,37 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
+          <div className="space-y-2 rounded-lg border border-cyan-300/20 bg-slate-900/30 p-3 text-sm text-cyan-100/85">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+              />
+              <span>
+                <Link href="/terms" className="underline underline-offset-2">
+                  利用規約
+                </Link>
+                に同意します
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={agreedToPrivacy}
+                onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+              />
+              <span>
+                <Link href="/privacy" className="underline underline-offset-2">
+                  プライバシーポリシー
+                </Link>
+                に同意します
+              </span>
+            </label>
+            <p className="text-xs text-cyan-100/65">適用版: {LEGAL_VERSION}</p>
+          </div>
           {error && <p className="status-error text-sm">{error}</p>}
           {success && <p className="status-success text-sm">{success}</p>}
           <ReCAPTCHA
@@ -84,7 +136,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             className="primary-btn w-full disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={!captchaToken}
+            disabled={!captchaToken || !agreedToTerms || !agreedToPrivacy}
             onClick={play}
           >
             Sign Up
