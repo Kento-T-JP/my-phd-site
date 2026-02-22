@@ -15,6 +15,18 @@ let sharedAudioInitialized = false;
 let lastPlayAt = 0;
 const MIN_PLAY_INTERVAL_MS = 90;
 
+function playBufferSource(context: AudioContext, buffer: AudioBuffer): boolean {
+  try {
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    source.start(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   if (sharedAudioContext) return sharedAudioContext;
@@ -144,15 +156,19 @@ export default function useClickSound() {
 
     const context = getAudioContext();
     const buffer = sharedAudioBuffer;
-    if (context && buffer && context.state === 'running') {
-      try {
-        const source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(context.destination);
-        source.start(0);
+    if (context && buffer) {
+      if (context.state === 'running') {
+        if (playBufferSource(context, buffer)) return;
+      } else {
+        void context
+          .resume()
+          .then(() => {
+            if (context.state === 'running') {
+              playBufferSource(context, buffer);
+            }
+          })
+          .catch(() => {});
         return;
-      } catch {
-        // fall through to HTMLAudio fallback
       }
     }
 
