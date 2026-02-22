@@ -33,6 +33,9 @@ export default async function Home({
     profileSteps.push({ step, ms: Number((performance.now() - startedAt).toFixed(2)) });
   };
 
+  const resolvedSearchParamsPromise =
+    searchParams ?? Promise.resolve<{ formationId?: string } | undefined>(undefined);
+
   let marker = performance.now();
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   profileStep("getServerSession", marker);
@@ -52,71 +55,86 @@ export default async function Home({
     }
   }
   profileStep("resolveOwnerId", marker);
-  marker = performance.now();
-  const hasPlayers = ownerId
-    ? Boolean(
-        await prisma.player.findFirst({
-          where: {
-            userId: ownerId,
-            isDeleted: false,
-            NOT: { name: { equals: "unknown", mode: "insensitive" } },
-          },
-          select: { id: true },
-        }),
-      )
-    : process.env.NODE_ENV === "test"
-      ? (await fetchPlayers()).some(
-          (player) => player.name.toLowerCase() !== "unknown",
-        )
-      : false;
-  profileStep(
-    ownerId
-      ? "hasPlayers:prisma.findFirst"
-      : process.env.NODE_ENV === "test"
-        ? "hasPlayers:fetchPlayers(testOnly)"
-        : "hasPlayers:skippedNoOwner",
-    marker
-  );
 
-  marker = performance.now();
-  const resolvedSearchParams = await searchParams;
-  profileStep("resolveSearchParams", marker);
-  const formationId = resolvedSearchParams?.formationId;
-  let initialFormation: SavedFormation | undefined;
-  if (formationId) {
-    try {
-      const num = Number(formationId);
-      if (!Number.isNaN(num) && ownerId) {
-        marker = performance.now();
-        const formation = await prisma.formation.findUnique({
-          where: { id: num },
-          include: { nodes: { orderBy: { id: "asc" } } },
-        });
-        profileStep("initialFormation:prisma.findUnique", marker);
-        if (formation && formation.userId === ownerId) {
-          initialFormation = formation as SavedFormation;
+  const hasPlayersPromise = (async () => {
+    const hasPlayersMarker = performance.now();
+    const value = ownerId
+      ? Boolean(
+          await prisma.player.findFirst({
+            where: {
+              userId: ownerId,
+              isDeleted: false,
+              NOT: { name: { equals: "unknown", mode: "insensitive" } },
+            },
+            select: { id: true },
+          }),
+        )
+      : process.env.NODE_ENV === "test"
+        ? (await fetchPlayers()).some(
+            (player) => player.name.toLowerCase() !== "unknown",
+          )
+        : false;
+    profileStep(
+      ownerId
+        ? "hasPlayers:prisma.findFirst"
+        : process.env.NODE_ENV === "test"
+          ? "hasPlayers:fetchPlayers(testOnly)"
+          : "hasPlayers:skippedNoOwner",
+      hasPlayersMarker
+    );
+    return value;
+  })();
+
+  const initialFormationPromise = (async (): Promise<{
+    formationId?: string;
+    initialFormation?: SavedFormation;
+  }> => {
+    const searchParamsMarker = performance.now();
+    const resolvedSearchParams = await resolvedSearchParamsPromise;
+    profileStep("resolveSearchParams", searchParamsMarker);
+    const formationId = resolvedSearchParams?.formationId;
+    let initialFormation: SavedFormation | undefined;
+    if (formationId) {
+      try {
+        const num = Number(formationId);
+        if (!Number.isNaN(num) && ownerId) {
+          const loadMarker = performance.now();
+          const formation = await prisma.formation.findUnique({
+            where: { id: num },
+            include: { nodes: { orderBy: { id: "asc" } } },
+          });
+          profileStep("initialFormation:prisma.findUnique", loadMarker);
+          if (formation && formation.userId === ownerId) {
+            initialFormation = formation as SavedFormation;
+          }
+        } else {
+          const loadMarker = performance.now();
+          const cookieStore = await cookies();
+          const cookieHeader = cookieStore.toString();
+          const baseUrl = await getBaseUrl();
+          const res = await fetch(`${baseUrl}/api/formations/${formationId}`, {
+            cache: "no-store",
+            headers: { cookie: cookieHeader },
+          });
+          profileStep("initialFormation:fetchApi", loadMarker);
+          if (res.ok) {
+            const parseMarker = performance.now();
+            initialFormation = (await res.json()) as SavedFormation;
+            profileStep("initialFormation:parseJson", parseMarker);
+          }
         }
-      } else {
-        marker = performance.now();
-        const cookieStore = await cookies();
-        const cookieHeader = cookieStore.toString();
-        const baseUrl = await getBaseUrl();
-        const res = await fetch(`${baseUrl}/api/formations/${formationId}`, {
-          cache: "no-store",
-          headers: { cookie: cookieHeader },
-        });
-        profileStep("initialFormation:fetchApi", marker);
-        if (res.ok) {
-          marker = performance.now();
-          initialFormation = (await res.json()) as SavedFormation;
-          profileStep("initialFormation:parseJson", marker);
-        }
+      } catch (error) {
+        console.error(`Failed to fetch formation ${formationId}:`, error);
       }
-    } catch (error) {
-      console.error(`Failed to fetch formation ${formationId}:`, error);
-      // ignore errors and fall back to default
     }
-  }
+    return { formationId, initialFormation };
+  })();
+
+  const [hasPlayers, formationState] = await Promise.all([
+    hasPlayersPromise,
+    initialFormationPromise,
+  ]);
+  const { formationId, initialFormation } = formationState;
 
   if (shouldProfileHome) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
