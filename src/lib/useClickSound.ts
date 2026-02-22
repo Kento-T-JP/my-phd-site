@@ -8,9 +8,48 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 
 let sharedAudio: HTMLAudioElement | null = null;
+let sharedAudioContext: AudioContext | null = null;
+let sharedAudioBuffer: AudioBuffer | null = null;
+let sharedAudioBufferPromise: Promise<AudioBuffer | null> | null = null;
 let sharedAudioInitialized = false;
 let lastPlayAt = 0;
 const MIN_PLAY_INTERVAL_MS = 90;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (sharedAudioContext) return sharedAudioContext;
+  const AudioContextCtor =
+    window.AudioContext ??
+    (window as Window & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+  if (!AudioContextCtor) return null;
+  sharedAudioContext = new AudioContextCtor();
+  return sharedAudioContext;
+}
+
+async function ensureAudioBuffer(): Promise<AudioBuffer | null> {
+  if (typeof window === 'undefined') return null;
+  const context = getAudioContext();
+  if (!context) return null;
+  if (sharedAudioBuffer) return sharedAudioBuffer;
+  if (sharedAudioBufferPromise) return sharedAudioBufferPromise;
+
+  sharedAudioBufferPromise = (async () => {
+    try {
+      const response = await fetch('/sounds/gacha.mp3', { cache: 'force-cache' });
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = await context.decodeAudioData(arrayBuffer);
+      sharedAudioBuffer = buffer;
+      return buffer;
+    } catch {
+      return null;
+    } finally {
+      sharedAudioBufferPromise = null;
+    }
+  })();
+
+  return sharedAudioBufferPromise;
+}
 
 function getSharedAudio(): HTMLAudioElement | null {
   if (typeof window === 'undefined') return null;
@@ -61,20 +100,26 @@ export default function useClickSound() {
     sharedAudioInitialized = true;
 
     const warmup = () => {
+      const context = getAudioContext();
+      if (context) {
+        void context.resume();
+        void ensureAudioBuffer();
+      }
       const audio = getSharedAudio();
-      if (!audio) return;
-      try {
-        const result = audio.play();
-        if (result && typeof result.then === 'function') {
-          void result
-            .then(() => {
-              audio.pause();
-              audio.currentTime = 0;
-            })
-            .catch(() => {});
+      if (audio) {
+        try {
+          const result = audio.play();
+          if (result && typeof result.then === 'function') {
+            void result
+              .then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+              })
+              .catch(() => {});
+          }
+        } catch {
+          // ignore warmup failures
         }
-      } catch {
-        // ignore warmup failures
       }
       window.removeEventListener('pointerdown', warmup, true);
       window.removeEventListener('touchstart', warmup, true);
@@ -92,14 +137,27 @@ export default function useClickSound() {
   }, []);
 
   const play = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
     if (readMuted()) return;
     const now = performance.now();
     if (now - lastPlayAt < MIN_PLAY_INTERVAL_MS) return;
     lastPlayAt = now;
 
+    const context = getAudioContext();
+    const buffer = sharedAudioBuffer;
+    if (context && buffer && context.state === 'running') {
+      try {
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.start(0);
+        return;
+      } catch {
+        // fall through to HTMLAudio fallback
+      }
+    }
+
+    const audio = audioRef.current;
+    if (!audio) return;
     try {
       if (typeof audio.play !== 'function') return;
       audio.currentTime = 0;
