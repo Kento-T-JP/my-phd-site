@@ -1,23 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
 import useClickSound from "@/lib/useClickSound";
 import { LEGAL_VERSION } from "@/lib/legal";
 
+type RegisterDraft = {
+  email: string;
+  password: string;
+  agreedToTerms: boolean;
+  agreedToPrivacy: boolean;
+};
+
+let registerDraft: RegisterDraft | null = null;
+
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(registerDraft?.email ?? "");
+  const [password, setPassword] = useState(registerDraft?.password ?? "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(
+    registerDraft?.agreedToTerms ?? false
+  );
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(
+    registerDraft?.agreedToPrivacy ?? false
+  );
 
   const { play } = useClickSound();
+
+  useEffect(() => {
+    registerDraft = { email, password, agreedToTerms, agreedToPrivacy };
+  }, [email, password, agreedToTerms, agreedToPrivacy]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +64,7 @@ export default function RegisterPage() {
       setPassword("");
       setAgreedToTerms(false);
       setAgreedToPrivacy(false);
+      registerDraft = null;
     } else {
       const data = await res.json();
       setError(data.error || "登録に失敗しました");
