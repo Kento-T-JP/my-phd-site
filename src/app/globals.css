@@ -207,6 +207,27 @@ input[type="range"]:disabled {
   color: var(--success);
 }
 
+/* Safari-specific performance mode */
+html[data-browser="safari"] [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-browser="safari"] .glass-panel {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+  box-shadow: 0 8px 22px rgba(0, 8, 28, 0.26);
+}
+
+html[data-browser="safari"] .player-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-browser="safari"] .field-sweep {
+  display: none;
+}
+
 /* ───── Blue Lock inspired field styling ───── */
 .formation-field {
   /* green field with cyan grid */

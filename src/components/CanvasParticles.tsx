@@ -15,12 +15,17 @@ export default function CanvasParticles() {
 
     const prefersReducedMotion =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ua = navigator.userAgent;
+    const isSafari =
+      /Safari/i.test(ua) &&
+      !/(Chrome|CriOS|Chromium|Edg|OPR|OPiOS|FxiOS|Firefox)/i.test(ua);
 
     const isCompact = window.innerWidth < 768;
+    const lowPowerMode = prefersReducedMotion || isSafari;
     let width = el.offsetWidth;
     let height = el.offsetHeight;
     const baseDpr = window.devicePixelRatio || 1;
-    const dpr = Math.min(baseDpr, isCompact ? 1.25 : 2);
+    const dpr = Math.min(baseDpr, lowPowerMode ? 1 : isCompact ? 1.25 : 2);
 
     const applyCanvasSize = () => {
       el.width = Math.max(1, Math.floor(width * dpr));
@@ -29,24 +34,31 @@ export default function CanvasParticles() {
     };
     applyCanvasSize();
 
-    const particleCount = Math.floor(
-      Math.min(width, height) / (isCompact ? 12 : 7)
+    const particleDivider = isSafari ? 18 : isCompact ? 12 : 7;
+    const particleCount = Math.max(
+      isSafari ? 20 : 30,
+      Math.floor(Math.min(width, height) / particleDivider)
     );
     const particles: { x: number; y: number; vx: number; vy: number }[] = [];
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: prefersReducedMotion ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
-        vy: prefersReducedMotion ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
+        vx: lowPowerMode ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
+        vy: lowPowerMode ? 0 : (Math.random() - 0.5) * (isCompact ? 0.22 : 0.3),
       });
     }
 
+    const shouldDrawConnections = !isSafari;
     const maxDist = isCompact ? 64 : 100;
     let frame: number | null = null;
     let running = true;
     let lastTs = 0;
-    const minFrameGap = isCompact ? 1000 / 24 : 1000 / 60;
+    const minFrameGap = lowPowerMode
+      ? 1000 / 20
+      : isCompact
+        ? 1000 / 24
+        : 1000 / 60;
 
     function step(ts: number) {
       if (!running) return;
@@ -56,7 +68,7 @@ export default function CanvasParticles() {
       }
       lastTs = ts;
       ctx.clearRect(0, 0, width, height);
-      if (!prefersReducedMotion) {
+      if (!lowPowerMode) {
         for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
@@ -71,17 +83,19 @@ export default function CanvasParticles() {
         ctx.beginPath();
         ctx.arc(p1.x, p1.y, isCompact ? 1.5 : 2, 0, Math.PI * 2);
         ctx.fill();
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < maxDist) {
-            ctx.strokeStyle = `rgba(140,218,243,${(1 - dist / maxDist) * (isCompact ? 0.35 : 0.6)})`;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
+        if (shouldDrawConnections) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const p2 = particles[j];
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < maxDist) {
+              ctx.strokeStyle = `rgba(140,218,243,${(1 - dist / maxDist) * (isCompact ? 0.35 : 0.6)})`;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
           }
         }
       }

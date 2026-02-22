@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import AuthProvider from "@/components/AuthProvider";
 import CanvasParticles from "@/components/CanvasParticles";
+import BrowserPerfMode from "@/components/BrowserPerfMode";
 import Analytics from "@/components/Analytics";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
@@ -79,6 +80,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <BrowserPerfMode />
         <CanvasParticles />
         <div className="relative z-10">
           <AuthProvider>
