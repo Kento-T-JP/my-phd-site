@@ -1586,7 +1586,6 @@ export default function Formation({
                 }}
                 onPointerDown={(e) => {
                   if (e.pointerType === "mouse" && e.button !== 0) return;
-                  play();
                   e.preventDefault();
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setDragging({

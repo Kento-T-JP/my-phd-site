@@ -6,6 +6,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * Sound is muted when the user prefers reduced motion or when a
  * `mute` flag is present in localStorage.
  */
+
+let sharedAudio: HTMLAudioElement | null = null;
+let sharedAudioInitialized = false;
+let lastPlayAt = 0;
+const MIN_PLAY_INTERVAL_MS = 90;
+
+function getSharedAudio(): HTMLAudioElement | null {
+  if (typeof window === 'undefined') return null;
+  if (sharedAudio) return sharedAudio;
+  const audio = new Audio('/sounds/gacha.mp3');
+  audio.preload = 'auto';
+  audio.volume = 1;
+  sharedAudio = audio;
+  return sharedAudio;
+}
+
 export default function useClickSound() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
@@ -24,10 +40,8 @@ export default function useClickSound() {
     }
   }, []);
 
-  if (typeof window !== 'undefined' && !audioRef.current) {
-    const audio = new Audio('/sounds/gacha.mp3');
-    audio.preload = 'auto';
-    audioRef.current = audio;
+  if (!audioRef.current) {
+    audioRef.current = getSharedAudio();
   }
 
   useEffect(() => {
@@ -41,11 +55,50 @@ export default function useClickSound() {
     return () => window.removeEventListener('storage', onStorage);
   }, [readMuted]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sharedAudioInitialized) return;
+    sharedAudioInitialized = true;
+
+    const warmup = () => {
+      const audio = getSharedAudio();
+      if (!audio) return;
+      try {
+        const result = audio.play();
+        if (result && typeof result.then === 'function') {
+          void result
+            .then(() => {
+              audio.pause();
+              audio.currentTime = 0;
+            })
+            .catch(() => {});
+        }
+      } catch {
+        // ignore warmup failures
+      }
+      window.removeEventListener('pointerdown', warmup, true);
+      window.removeEventListener('touchstart', warmup, true);
+      window.removeEventListener('keydown', warmup, true);
+    };
+
+    window.addEventListener('pointerdown', warmup, true);
+    window.addEventListener('touchstart', warmup, true);
+    window.addEventListener('keydown', warmup, true);
+    return () => {
+      window.removeEventListener('pointerdown', warmup, true);
+      window.removeEventListener('touchstart', warmup, true);
+      window.removeEventListener('keydown', warmup, true);
+    };
+  }, []);
+
   const play = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (readMuted()) return;
+    const now = performance.now();
+    if (now - lastPlayAt < MIN_PLAY_INTERVAL_MS) return;
+    lastPlayAt = now;
 
     try {
       if (typeof audio.play !== 'function') return;
