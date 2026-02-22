@@ -8,6 +8,11 @@ import prisma from '@/lib/prisma';
 
 const isAuthDebug =
   process.env.NODE_ENV !== 'production' || process.env.NEXTAUTH_DEBUG === 'true';
+const parsedUserStatusRevalidateMs = Number(process.env.USER_STATUS_REVALIDATE_MS);
+const USER_STATUS_REVALIDATE_MS =
+  Number.isFinite(parsedUserStatusRevalidateMs) && parsedUserStatusRevalidateMs >= 0
+    ? parsedUserStatusRevalidateMs
+    : 5 * 60 * 1000;
 
 const authLog = (...args: unknown[]) => {
   if (isAuthDebug) {
@@ -31,6 +36,34 @@ const isGateEnabled = (value?: string): boolean => {
 
 const isValidIntId = (value: number): boolean =>
   Number.isSafeInteger(value) && value > 0 && value <= 2147483647;
+
+const resolveOrCreateAdminUser = async (email: string) => {
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, isAdmin: true, status: true },
+  });
+  if (existing) {
+    if (!existing.isAdmin || existing.status !== 'active') {
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: { isAdmin: true, status: 'active', emailVerified: new Date() },
+        select: { id: true, isAdmin: true, status: true },
+      });
+      return updated;
+    }
+    return existing;
+  }
+  return prisma.user.create({
+    data: {
+      email,
+      hashedPassword: '!admin-env-login!',
+      isAdmin: true,
+      status: 'active',
+      emailVerified: new Date(),
+    },
+    select: { id: true, isAdmin: true, status: true },
+  });
+};
 
 const resolveUserStatus = async (user: User): Promise<string> => {
   if (user.id === 'gate') {
@@ -137,9 +170,16 @@ export const authOptions: NextAuthOptions = {
           adminPasswordMatch,
         });
         if (adminEmailMatch && adminPasswordMatch) {
+          let adminId = 'admin';
+          try {
+            const adminRecord = await resolveOrCreateAdminUser(normalizedEmail);
+            adminId = String(adminRecord.id);
+          } catch (error) {
+            authLog('CRED_ADMIN_USER_RESOLVE_FAILED', { error });
+          }
           authLog('CRED_AUTH_SUCCESS', { kind: 'admin' });
           const adminUser: User = {
-            id: 'admin',
+            id: adminId,
             email: normalizedEmail,
             isAdmin: true,
             status: 'active',
@@ -225,6 +265,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id?.toString();
         token.isAdmin = user.isAdmin;
         token.userStatus = await resolveUserStatus(user);
+        token.userStatusCheckedAt = Date.now();
         authLog('JWT_USER', {
           id: token.id,
           email: user.email,
@@ -251,7 +292,15 @@ export const authOptions: NextAuthOptions = {
       }
       token.gatePassed = token.gatePassed ?? false;
       if (token.id && !user) {
-        token.userStatus = await resolveUserStatusById(token.id);
+        const now = Date.now();
+        const lastCheckedAt =
+          typeof token.userStatusCheckedAt === 'number' ? token.userStatusCheckedAt : 0;
+        const shouldRefreshStatus =
+          !token.userStatus || now - lastCheckedAt >= USER_STATUS_REVALIDATE_MS;
+        if (shouldRefreshStatus) {
+          token.userStatus = await resolveUserStatusById(token.id);
+          token.userStatusCheckedAt = now;
+        }
       }
       return token;
     },

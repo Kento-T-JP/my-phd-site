@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/db";
 import { fetchPlayers } from "@/lib/fetchPlayers";
+import { resolveSessionUserId } from "@/lib/sessionUser";
 
 export const metadata: Metadata = {
   robots: {
@@ -22,13 +23,36 @@ export default async function Home({
 }: {
   searchParams?: Promise<{ formationId?: string }>;
 }) {
+  const shouldProfileHome = /^(1|true|on|yes)$/i.test(
+    String(process.env.DEBUG_HOME_PERF ?? "")
+  );
+  const profileStart = performance.now();
+  const profileSteps: Array<{ step: string; ms: number }> = [];
+  const profileStep = (step: string, startedAt: number) => {
+    if (!shouldProfileHome) return;
+    profileSteps.push({ step, ms: Number((performance.now() - startedAt).toFixed(2)) });
+  };
+
+  let marker = performance.now();
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  profileStep("getServerSession", marker);
   if (!session) {
     redirect("/");
   }
 
+  marker = performance.now();
   const sessionId = Number(session.user?.id);
-  const ownerId = Number.isFinite(sessionId) ? sessionId : undefined;
+  let ownerId = Number.isFinite(sessionId) ? sessionId : undefined;
+  if (!ownerId && process.env.NODE_ENV !== "test") {
+    try {
+      const { userId } = await resolveSessionUserId(session);
+      ownerId = Number.isFinite(userId) ? Number(userId) : undefined;
+    } catch {
+      ownerId = undefined;
+    }
+  }
+  profileStep("resolveOwnerId", marker);
+  marker = performance.now();
   const hasPlayers = ownerId
     ? Boolean(
         await prisma.player.findFirst({
@@ -40,25 +64,40 @@ export default async function Home({
           select: { id: true },
         }),
       )
-    : (await fetchPlayers()).some(
-        (player) => player.name.toLowerCase() !== "unknown",
-      );
+    : process.env.NODE_ENV === "test"
+      ? (await fetchPlayers()).some(
+          (player) => player.name.toLowerCase() !== "unknown",
+        )
+      : false;
+  profileStep(
+    ownerId
+      ? "hasPlayers:prisma.findFirst"
+      : process.env.NODE_ENV === "test"
+        ? "hasPlayers:fetchPlayers(testOnly)"
+        : "hasPlayers:skippedNoOwner",
+    marker
+  );
 
+  marker = performance.now();
   const resolvedSearchParams = await searchParams;
+  profileStep("resolveSearchParams", marker);
   const formationId = resolvedSearchParams?.formationId;
   let initialFormation: SavedFormation | undefined;
   if (formationId) {
     try {
       const num = Number(formationId);
       if (!Number.isNaN(num) && ownerId) {
+        marker = performance.now();
         const formation = await prisma.formation.findUnique({
           where: { id: num },
           include: { nodes: { orderBy: { id: "asc" } } },
         });
+        profileStep("initialFormation:prisma.findUnique", marker);
         if (formation && formation.userId === ownerId) {
           initialFormation = formation as SavedFormation;
         }
       } else {
+        marker = performance.now();
         const cookieStore = await cookies();
         const cookieHeader = cookieStore.toString();
         const baseUrl = await getBaseUrl();
@@ -66,14 +105,28 @@ export default async function Home({
           cache: "no-store",
           headers: { cookie: cookieHeader },
         });
+        profileStep("initialFormation:fetchApi", marker);
         if (res.ok) {
+          marker = performance.now();
           initialFormation = (await res.json()) as SavedFormation;
+          profileStep("initialFormation:parseJson", marker);
         }
       }
     } catch (error) {
       console.error(`Failed to fetch formation ${formationId}:`, error);
       // ignore errors and fall back to default
     }
+  }
+
+  if (shouldProfileHome) {
+    const totalMs = Number((performance.now() - profileStart).toFixed(2));
+    console.log("[HOME_PERF]", {
+      ownerId: ownerId ?? null,
+      hasPlayers,
+      formationId: formationId ?? null,
+      totalMs,
+      steps: profileSteps,
+    });
   }
 
   if (!hasPlayers) {

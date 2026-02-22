@@ -19,6 +19,21 @@ import type { Prisma } from '@prisma/client';
 import { cacheTag } from '@/lib/cacheTags';
 import { revalidateTagSafe } from '@/lib/cacheRuntime';
 
+const shouldProfileApi = () =>
+  /^(1|true|on|yes)$/i.test(String(process.env.DEBUG_API_PERF ?? ''));
+
+function buildPerfHeaders(
+  wantsPerf: boolean,
+  totalMs: number,
+  steps: Array<{ step: string; ms: number }>
+) {
+  if (!wantsPerf) return undefined;
+  const headers = new Headers();
+  headers.set('x-api-perf-total-ms', String(totalMs));
+  headers.set('x-api-perf-steps', JSON.stringify(steps));
+  return headers;
+}
+
 async function savePlayerImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
@@ -41,6 +56,17 @@ async function savePlayerImage(file: File): Promise<string> {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+  const wantsPerf = searchParams.get('_perf') === '1';
+  const profileEnabled = shouldProfileApi() || wantsPerf;
+  const profileStart = performance.now();
+  const profileSteps: Array<{ step: string; ms: number }> = [];
+  const profileStep = (step: string, startedAt: number) => {
+    if (!profileEnabled) return;
+    profileSteps.push({ step, ms: Number((performance.now() - startedAt).toFixed(2)) });
+  };
+
+  let marker = performance.now();
+  profileStep('parseSearchParams', marker);
   const lite = searchParams.get('lite') === '1';
   const paged = searchParams.get('paged') === '1';
   const includeRosterLinks = searchParams.get('includeRosterLinks') === '1';
@@ -62,11 +88,26 @@ export async function GET(req: Request) {
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
   const pageSizeRaw = Number(searchParams.get('pageSize') ?? '200') || 200;
   const pageSize = Math.min(500, Math.max(20, pageSizeRaw));
+  marker = performance.now();
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
+  profileStep('getServerSession', marker);
+  marker = performance.now();
   const { userId } = await resolveSessionUserId(session);
+  profileStep('resolveSessionUserId', marker);
   const uid = Number.isFinite(userId) ? Number(userId) : undefined;
   if (!uid) {
-    return NextResponse.json(paged ? { players: [], total: 0, page, pageSize } : []);
+    const totalMs = Number((performance.now() - profileStart).toFixed(2));
+    if (profileEnabled) {
+      console.log('[API_PERF] /api/players GET', {
+        mode: paged ? 'paged' : 'full',
+        totalMs,
+        steps: profileSteps,
+      });
+    }
+    return NextResponse.json(
+      paged ? { players: [], total: 0, page, pageSize } : [],
+      { headers: buildPerfHeaders(wantsPerf, totalMs, profileSteps) }
+    );
   }
 
   const where: Prisma.PlayerWhereInput = {
@@ -83,6 +124,7 @@ export async function GET(req: Request) {
   };
 
   if (paged) {
+    marker = performance.now();
     const [players, total] = await Promise.all([
       prisma.player.findMany({
         where,
@@ -113,20 +155,55 @@ export async function GET(req: Request) {
       }),
       prisma.player.count({ where }),
     ]);
+    profileStep('prisma.findMany+count', marker);
+    const totalMs = Number((performance.now() - profileStart).toFixed(2));
+    if (profileEnabled) {
+      console.log('[API_PERF] /api/players GET', {
+        mode: 'paged',
+        uid,
+        resultCount: players.length,
+        total,
+        page,
+        pageSize,
+        includeRosterLinks,
+        includeImage,
+        includeExtra,
+        totalMs,
+        steps: profileSteps,
+      });
+    }
     return NextResponse.json({
       players: players.map((p) => ({ ...p, role: 'player' })),
       total,
       page,
       pageSize,
-    });
+    }, { headers: buildPerfHeaders(wantsPerf, totalMs, profileSteps) });
   }
 
+  marker = performance.now();
   const players = await getPlayers(undefined, uid, {
     includeImage,
     includeExtra,
     includeRosterLinks,
   });
-  return NextResponse.json(players.filter((p) => p.name.toLowerCase() !== 'unknown'));
+  profileStep('getPlayers', marker);
+  const totalMs = Number((performance.now() - profileStart).toFixed(2));
+  if (profileEnabled) {
+    console.log('[API_PERF] /api/players GET', {
+      mode: 'full',
+      uid,
+      resultCount: players.length,
+      includeRosterLinks,
+      includeImage,
+      includeExtra,
+      totalMs,
+      steps: profileSteps,
+    });
+  }
+  return NextResponse.json(
+    players.filter((p) => p.name.toLowerCase() !== 'unknown'),
+    { headers: buildPerfHeaders(wantsPerf, totalMs, profileSteps) }
+  );
 }
 
 export async function POST(req: Request) {

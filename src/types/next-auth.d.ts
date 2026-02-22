@@ -24,6 +24,7 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     loginStage?: string;
     userStatus?: string;
+    userStatusCheckedAt?: number;
     gatePassed?: boolean;
   }
 }

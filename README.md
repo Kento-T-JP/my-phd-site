@@ -70,6 +70,9 @@ Start XI は、サッカーのフォーメーション作成・選手管理・�
 - Formations/Home の初期表示で不要データ取得を削減
 - ロスター/大会系APIにユーザー単位キャッシュ（`revalidate: 60`）を導入
 - 複数ロスター紐付けを一括INSERT化して書き込みを高速化
+- セッション `user.id` を数値IDで安定化し、`/home` の `ownerId` 解決失敗時フォールバックを削減
+- JWT の `userStatus` 再検証を毎リクエストから間引き（`USER_STATUS_REVALIDATE_MS`、既定5分）
+- API/Home の性能ログは環境変数でのみ有効化（既定OFF）
 
 ### 管理・運用
 
@@ -212,8 +215,13 @@ docker compose up --build
 - gate制御
   - `GATE_ENABLED`
   - `GATE_ALLOWED_EMAILS`
+- 認証ステータス再検証間隔（ms）
+  - `USER_STATUS_REVALIDATE_MS`（任意、既定 `300000`）
 - ミドルウェアデバッグログ（任意）
   - `DEBUG_MIDDLEWARE_TOKEN_LOGS`（`true/1/on/yes` で有効）
+- 性能デバッグログ（任意）
+  - `DEBUG_HOME_PERF`（`true/1/on/yes` で有効）
+  - `DEBUG_API_PERF`（`true/1/on/yes` で有効）
 - Cron（期限切れデータ掃除）
   - `CRON_SECRET`
 - Seed/JFA
