@@ -15,7 +15,13 @@ export async function GET(req: Request) {
   if (existing) {
     await prisma.user.update({
       where: { email: record.email },
-      data: { emailVerified: new Date(), status: "active" },
+      data: {
+        emailVerified: new Date(),
+        status: "active",
+        termsAcceptedAt: record.termsAcceptedAt,
+        privacyAcceptedAt: record.privacyAcceptedAt,
+        legalVersionAccepted: record.legalVersionAccepted,
+      },
     });
   } else {
     await prisma.user.create({
@@ -24,6 +30,9 @@ export async function GET(req: Request) {
         hashedPassword: record.hashedPassword,
         status: "active",
         emailVerified: new Date(),
+        termsAcceptedAt: record.termsAcceptedAt,
+        privacyAcceptedAt: record.privacyAcceptedAt,
+        legalVersionAccepted: record.legalVersionAccepted,
       },
     });
   }

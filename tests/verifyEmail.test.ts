@@ -37,6 +37,9 @@ describe('verify email API', () => {
       email: 'test@example.com',
       hashedPassword: 'hashed',
       expires: new Date(Date.now() + 1000),
+      termsAcceptedAt: new Date('2026-02-22T00:00:00.000Z'),
+      privacyAcceptedAt: new Date('2026-02-22T00:00:00.000Z'),
+      legalVersionAccepted: '2026-02-22',
     });
     prisma.user.findUnique.mockResolvedValue({
       id: 1,
@@ -47,7 +50,13 @@ describe('verify email API', () => {
     expect(res.status).toBeLessThan(400);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { email: 'test@example.com' },
-      data: { emailVerified: expect.any(Date), status: 'active' },
+      data: {
+        emailVerified: expect.any(Date),
+        status: 'active',
+        termsAcceptedAt: new Date('2026-02-22T00:00:00.000Z'),
+        privacyAcceptedAt: new Date('2026-02-22T00:00:00.000Z'),
+        legalVersionAccepted: '2026-02-22',
+      },
     });
     expect(prisma.pendingRegistration.delete).toHaveBeenCalledWith({
       where: { token: 'tok' },

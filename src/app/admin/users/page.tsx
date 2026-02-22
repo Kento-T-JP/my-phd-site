@@ -11,6 +11,9 @@ type User = {
   email: string;
   emailVerified: string | null;
   isAdmin: boolean;
+  termsAcceptedAt: string | null;
+  privacyAcceptedAt: string | null;
+  legalVersionAccepted: string | null;
 };
 
 export default function UsersPage() {
@@ -115,6 +118,15 @@ export default function UsersPage() {
                 <p className="mt-1 text-xs text-cyan-100/70">
                   Verified: {u.emailVerified ? new Date(u.emailVerified).toLocaleDateString() : "-"}
                 </p>
+                <p className="mt-1 text-xs text-cyan-100/70">
+                  Terms: {u.termsAcceptedAt ? new Date(u.termsAcceptedAt).toLocaleDateString() : "-"}
+                </p>
+                <p className="mt-1 text-xs text-cyan-100/70">
+                  Privacy: {u.privacyAcceptedAt ? new Date(u.privacyAcceptedAt).toLocaleDateString() : "-"}
+                </p>
+                <p className="mt-1 text-xs text-cyan-100/70">
+                  Legal Ver: {u.legalVersionAccepted ?? "-"}
+                </p>
                 <p className="mt-1 text-xs text-cyan-100/70">Admin: {u.isAdmin ? "Yes" : "No"}</p>
                 <div className="mt-3 flex gap-2">
                   <button
@@ -145,6 +157,9 @@ export default function UsersPage() {
                 <tr>
                   <th className="px-3 py-2 text-left">Email</th>
                   <th className="px-3 py-2 text-left">Verified</th>
+                  <th className="px-3 py-2 text-left">Terms</th>
+                  <th className="px-3 py-2 text-left">Privacy</th>
+                  <th className="px-3 py-2 text-left">Legal Ver</th>
                   <th className="px-3 py-2 text-left">Admin</th>
                   <th className="px-3 py-2 text-left">Actions</th>
                 </tr>
@@ -156,6 +171,13 @@ export default function UsersPage() {
                     <td className="px-3 py-2">
                       {u.emailVerified ? new Date(u.emailVerified).toLocaleDateString() : "-"}
                     </td>
+                    <td className="px-3 py-2">
+                      {u.termsAcceptedAt ? new Date(u.termsAcceptedAt).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="px-3 py-2">
+                      {u.privacyAcceptedAt ? new Date(u.privacyAcceptedAt).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="px-3 py-2">{u.legalVersionAccepted ?? "-"}</td>
                     <td className="px-3 py-2">{u.isAdmin ? "Yes" : "No"}</td>
                     <td className="px-3 py-2">
                       <div className="flex gap-2">

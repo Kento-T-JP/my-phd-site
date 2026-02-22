@@ -76,8 +76,23 @@ describe('register API', () => {
     const tokenHex = Buffer.from('mocktoken').toString('hex');
     expect(prisma.pendingRegistration.upsert).toHaveBeenCalledWith({
       where: { email: 'test@example.com' },
-      update: { hashedPassword: 'hashed', token: tokenHex, expires: expect.any(Date) },
-      create: { email: 'test@example.com', hashedPassword: 'hashed', token: tokenHex, expires: expect.any(Date) },
+      update: {
+        hashedPassword: 'hashed',
+        token: tokenHex,
+        expires: expect.any(Date),
+        termsAcceptedAt: expect.any(Date),
+        privacyAcceptedAt: expect.any(Date),
+        legalVersionAccepted: '2026-02-22',
+      },
+      create: {
+        email: 'test@example.com',
+        hashedPassword: 'hashed',
+        token: tokenHex,
+        expires: expect.any(Date),
+        termsAcceptedAt: expect.any(Date),
+        privacyAcceptedAt: expect.any(Date),
+        legalVersionAccepted: '2026-02-22',
+      },
     });
     expect(resendSendMock).toHaveBeenCalledTimes(1);
     const payload = resendSendMock.mock.calls[0][0];

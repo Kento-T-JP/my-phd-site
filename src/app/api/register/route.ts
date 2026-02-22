@@ -60,10 +60,26 @@ export async function POST(req: Request) {
   const hashed = await hash(password, 10);
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const consentAcceptedAt = new Date();
   await prisma.pendingRegistration.upsert({
     where: { email },
-    update: { hashedPassword: hashed, token, expires },
-    create: { email, hashedPassword: hashed, token, expires },
+    update: {
+      hashedPassword: hashed,
+      token,
+      expires,
+      termsAcceptedAt: consentAcceptedAt,
+      privacyAcceptedAt: consentAcceptedAt,
+      legalVersionAccepted: legalVersion,
+    },
+    create: {
+      email,
+      hashedPassword: hashed,
+      token,
+      expires,
+      termsAcceptedAt: consentAcceptedAt,
+      privacyAcceptedAt: consentAcceptedAt,
+      legalVersionAccepted: legalVersion,
+    },
   });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
