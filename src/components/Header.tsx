@@ -101,7 +101,13 @@ export default function Header() {
                         ? `Logged in as ${session.user.email}`
                         : "Logged in"}
                     </span>
-                    <Button onClick={() => signOut()} className="ghost-btn" type="button">
+                    <Button
+                      onClick={() =>
+                        signOut({ callbackUrl: "/access-status?status=signedout" })
+                      }
+                      className="ghost-btn"
+                      type="button"
+                    >
                       Logout
                     </Button>
                   </>

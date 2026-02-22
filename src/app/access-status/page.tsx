@@ -12,6 +12,11 @@ const statusCopy = {
     description:
       "Google認証は完了しました。次にログインするか、利用資格の登録を行ってください。",
   },
+  signedout: {
+    title: "ログアウトしました",
+    description:
+      "再度利用する場合は、ログインまたは新規登録に進んでください。",
+  },
   rejected: {
     title: "利用資格が承認されませんでした",
     description: "恐れ入りますが現在はご利用いただけません。詳細が必要な場合はお問い合わせください。",
@@ -57,7 +62,7 @@ function AccessStatusPageContent() {
         <p className="mb-6 text-xs text-white/70">検出メール: {rawEmail}</p>
       )}
       <div className="space-y-3">
-        {status === "pending" && (
+        {(status === "pending" || status === "signedout") && (
           <>
             <Link
               href="/login"
@@ -98,7 +103,7 @@ function AccessStatusPageContent() {
           className="w-full px-4 py-2 border rounded"
           onClick={() => {
             play();
-            void signOut({ callbackUrl: "/" });
+            void signOut({ callbackUrl: "/access-status?status=signedout" });
           }}
         >
           ログアウト
