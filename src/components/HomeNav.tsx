@@ -48,7 +48,7 @@ export default function HomeNav() {
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-[92px] left-4 z-40 text-cyan-100 hover:text-white bg-slate-900/25 border border-cyan-200/20 rounded-full p-2 backdrop-blur-md"
+        className="fixed top-[84px] sm:top-[92px] left-4 z-40 text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
