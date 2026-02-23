@@ -84,14 +84,14 @@ export default function Header() {
               id="primary-navigation"
               className={`${isMenuOpen ? "block" : "hidden"} w-full sm:block sm:w-auto sm:ml-auto`}
             >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <div className="mt-1 rounded-xl border border-cyan-200/30 bg-slate-950/92 p-2 sm:mt-0 sm:border-0 sm:bg-transparent sm:p-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                 {session ? (
                   <>
                     {navLinks.map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}
-                        className={`nav-link ${pathname === link.href ? "active" : ""}`}
+                        className={`nav-link block border border-cyan-200/20 bg-slate-900/60 text-cyan-50 sm:border-0 sm:bg-transparent sm:text-inherit ${pathname === link.href ? "active border-cyan-200/55 bg-cyan-300/25 text-white" : ""}`}
                       >
                         {link.label}
                       </Link>
