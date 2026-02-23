@@ -11,6 +11,7 @@ export default function HomeNav() {
   const pathname = usePathname();
   const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
   const [isOpen, setIsOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(76);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { play, muted, toggleMuted } = useClickSound();
@@ -43,12 +44,48 @@ export default function HomeNav() {
     };
   }, []);
 
+  useEffect(() => {
+    const header = document.querySelector("header");
+    if (!header) return;
+
+    const updateHeaderHeight = () => {
+      const measured = Math.ceil(header.getBoundingClientRect().height);
+      if (measured > 0) setHeaderHeight(measured);
+    };
+
+    updateHeaderHeight();
+    const rafId = window.requestAnimationFrame(updateHeaderHeight);
+    const timeoutId = window.setTimeout(updateHeaderHeight, 200);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(() => {
+        updateHeaderHeight();
+      });
+      observer.observe(header);
+    }
+
+    window.addEventListener("resize", updateHeaderHeight);
+    window.addEventListener("orientationchange", updateHeaderHeight);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+      observer?.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+      window.removeEventListener("orientationchange", updateHeaderHeight);
+    };
+  }, [pathname, session?.user?.email]);
+
+  const buttonTop = headerHeight + 4;
+  const menuTop = Math.max(0, headerHeight + 2);
+
   return (
     <nav aria-label="サイドメニュー">
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-[73px] sm:top-[92px] left-4 z-40 text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
+        className="fixed left-4 z-[60] text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
+        style={{ top: `${buttonTop}px` }}
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
@@ -71,16 +108,18 @@ export default function HomeNav() {
       </button>
       {isOpen && (
         <div
-          className="fixed inset-x-0 top-[70px] sm:top-[76px] bottom-0 bg-black/45 z-30"
+          className="fixed inset-x-0 bottom-0 bg-black/45 z-30"
+          style={{ top: `${menuTop}px` }}
           onClick={() => setIsOpen(false)}
         />
       )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed top-[70px] sm:top-[76px] bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
+        className={`fixed bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
+        style={{ top: `${menuTop}px` }}
       >
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/65 mb-3 px-3">
           Quick Actions

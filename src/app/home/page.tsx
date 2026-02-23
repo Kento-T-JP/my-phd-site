@@ -163,7 +163,7 @@ export default async function Home({
 
   return (
     <main className="py-2">
-      <section className="mb-4 px-1">
+      <section className="mb-4 px-1 mt-2 md:mt-6">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Starting Eleven Tactical Preview
         </h1>
