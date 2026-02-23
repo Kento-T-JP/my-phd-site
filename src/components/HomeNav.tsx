@@ -48,7 +48,7 @@ export default function HomeNav() {
       <button
         ref={buttonRef}
         type="button"
-        className="fixed top-[74px] sm:top-[92px] left-4 z-40 text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
+        className="fixed top-[73px] sm:top-[92px] left-4 z-40 text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls="home-nav-menu"
@@ -71,14 +71,14 @@ export default function HomeNav() {
       </button>
       {isOpen && (
         <div
-          className="fixed inset-x-0 top-[76px] bottom-0 bg-black/45 z-30"
+          className="fixed inset-x-0 top-[70px] sm:top-[76px] bottom-0 bg-black/45 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed top-[76px] bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
+        className={`fixed top-[70px] sm:top-[76px] bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
       >
