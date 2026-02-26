@@ -14,6 +14,7 @@ export default function HomeNav() {
   const [headerHeight, setHeaderHeight] = useState(76);
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
   const { play, muted, toggleMuted } = useClickSound();
 
   const links = [
@@ -43,6 +44,67 @@ export default function HomeNav() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    lastFocusedRef.current = document.activeElement as HTMLElement | null;
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+    const focusables = menuEl.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    const firstFocusable = focusables[0];
+    firstFocusable?.focus();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsOpen(false);
+        window.requestAnimationFrame(() => buttonRef.current?.focus());
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusables = menuEl.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey) {
+        if (active === first || !menuEl.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !menuEl.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) return;
+    const last = lastFocusedRef.current;
+    if (last && document.contains(last)) {
+      window.requestAnimationFrame(() => {
+        if (document.activeElement === document.body) {
+          last.focus();
+        }
+      });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const header = document.querySelector("header");
@@ -84,7 +146,9 @@ export default function HomeNav() {
       <button
         ref={buttonRef}
         type="button"
-        className="fixed left-4 z-[60] text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md"
+        className={`fixed left-4 text-cyan-50 hover:text-white bg-slate-950/82 border border-cyan-200/55 rounded-full p-2.5 shadow-[0_6px_20px_rgba(0,8,28,0.42)] backdrop-blur-md ${
+          isOpen ? "z-[45]" : "z-[55]"
+        }`}
         style={{ top: `${buttonTop}px` }}
         aria-haspopup="true"
         aria-expanded={isOpen}
@@ -108,15 +172,27 @@ export default function HomeNav() {
       </button>
       {isOpen && (
         <div
-          className="fixed inset-x-0 bottom-0 bg-black/45 z-30"
+          className="fixed inset-x-0 bottom-0 bg-black/45 z-[50]"
           style={{ top: `${menuTop}px` }}
           onClick={() => setIsOpen(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="メニューを閉じる"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setIsOpen(false);
+            }
+          }}
         />
       )}
       <aside
         id="home-nav-menu"
         ref={menuRef}
-        className={`fixed bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-40 ${
+        role="dialog"
+        aria-modal="true"
+        aria-label="Quick Actions"
+        className={`fixed bottom-0 left-0 w-72 bg-slate-950/78 border-r border-cyan-300/18 p-4 backdrop-blur-md transform transition-all duration-300 ease-in-out z-[60] ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
         }`}
         style={{ top: `${menuTop}px` }}
@@ -136,6 +212,10 @@ export default function HomeNav() {
                       ? "bg-cyan-300/20 text-white"
                       : "text-cyan-100/85 hover:text-white hover:bg-cyan-300/12"
                   }`}
+                  onClick={() => {
+                    play();
+                    setIsOpen(false);
+                  }}
                 >
                   {link.label}
                 </Link>
@@ -150,6 +230,10 @@ export default function HomeNav() {
                     ? "bg-cyan-300/20 text-white"
                     : "text-cyan-100/85 hover:text-white hover:bg-cyan-300/12"
                 }`}
+                onClick={() => {
+                  play();
+                  setIsOpen(false);
+                }}
               >
                 管理者画面
               </Link>
