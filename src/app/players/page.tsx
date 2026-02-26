@@ -421,14 +421,14 @@ export default function PlayersPage({
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <MultiToggleGroup
-          legend={`Roster (${rosterInputs.length})`}
+          legend={`Squad (${rosterInputs.length})`}
           options={rosters.map((r) => ({
             value: String(r.id),
             label: rosterDisplayTitle(r),
           }))}
           selectedValues={rosterInputs}
           onChange={setRosterInputs}
-          emptyLabel="ロースターがありません"
+          emptyLabel="メンバーリストがありません"
           wrapSelectedLabel
           wrapOptionLabel
         />

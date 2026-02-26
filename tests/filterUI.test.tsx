@@ -44,7 +44,7 @@ function mockFetch() {
   });
 }
 
-describe('Roster filter UI', () => {
+describe('Squad filter UI', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();
@@ -62,15 +62,15 @@ describe('Roster filter UI', () => {
     });
   });
 
-  it('keeps roster and position filters available after selecting a roster', async () => {
+  it('keeps squad and position filters available after selecting a squad', async () => {
     global.fetch = mockFetch();
     render(<PlayersPage />);
     await screen.findByText('Apply Filters');
-    expect(screen.getByText('Roster (0)')).toBeTruthy();
+    expect(screen.getByText('Squad (0)')).toBeTruthy();
     expect(screen.getByText('Position (0)')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Roster (0) filter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Squad (0) filter' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Cup - 2024/01/01-2024/01/10' }));
-    await waitFor(() => expect(screen.getByText('Roster (1)')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Squad (1)')).toBeTruthy());
     expect(screen.getByText('Position (0)')).toBeTruthy();
   });
 

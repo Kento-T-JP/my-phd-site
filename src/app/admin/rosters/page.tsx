@@ -186,7 +186,7 @@ export default function AdminRostersPage() {
       if (!res.ok) {
         throw new Error(data.error || "削除に失敗しました");
       }
-      setInfo(`ロスター「${title}」を削除しました`);
+      setInfo(`メンバーリスト「${title}」を削除しました`);
       await loadRosters(selectedUser);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "削除に失敗しました";
@@ -199,9 +199,9 @@ export default function AdminRostersPage() {
   return (
     <main className="space-y-4 p-1">
       <header>
-        <h1 className="text-2xl font-bold text-cyan-50 sm:text-3xl">Rosters</h1>
+        <h1 className="text-2xl font-bold text-cyan-50 sm:text-3xl">Squads</h1>
         <p className="text-sm text-cyan-100/70">
-          Delete tournaments or individual rosters with user scope.
+          Delete tournaments or individual squads with user scope.
         </p>
       </header>
 
@@ -242,7 +242,7 @@ export default function AdminRostersPage() {
                 tournaments.map((t) => (
                   <article key={t.tournamentId} className="rounded-xl border border-cyan-300/25 bg-slate-900/45 p-3">
                     <p className="text-sm font-semibold text-cyan-50">{t.name}</p>
-                    <p className="mt-1 text-xs text-cyan-100/70">Rosters: {t.rosterCount}</p>
+                    <p className="mt-1 text-xs text-cyan-100/70">Squads: {t.rosterCount}</p>
                     <p className="text-xs text-cyan-100/70">Players: {t.playerCount}</p>
                     <button
                       className="mt-2 rounded-md border border-rose-300/40 px-2 py-1 text-xs text-rose-200 disabled:opacity-50"
@@ -260,7 +260,7 @@ export default function AdminRostersPage() {
                 <thead className="bg-slate-900/70 text-cyan-100/80">
                   <tr>
                     <th className="px-3 py-2 text-left">Name</th>
-                    <th className="px-3 py-2 text-right">Rosters</th>
+                    <th className="px-3 py-2 text-right">Squads</th>
                     <th className="px-3 py-2 text-right">Players</th>
                     <th className="px-3 py-2 text-left">Actions</th>
                   </tr>
@@ -296,11 +296,11 @@ export default function AdminRostersPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold text-cyan-50">ロスター（個別削除）</h2>
+            <h2 className="text-lg font-semibold text-cyan-50">メンバーリスト（個別削除）</h2>
             <div className="space-y-2 md:hidden">
               {rosters.length === 0 ? (
                 <div className="rounded-xl border border-cyan-300/20 bg-slate-900/40 p-3 text-sm text-cyan-100/75">
-                  該当ロスターはありません
+                  該当メンバーリストはありません
                 </div>
               ) : (
                 rosters.map((r) => (
@@ -325,7 +325,7 @@ export default function AdminRostersPage() {
                 <thead className="bg-slate-900/70 text-cyan-100/80">
                   <tr>
                     <th className="px-3 py-2 text-left">Tournament</th>
-                    <th className="px-3 py-2 text-left">Roster</th>
+                    <th className="px-3 py-2 text-left">Squad</th>
                     <th className="px-3 py-2 text-right">Players</th>
                     <th className="px-3 py-2 text-left">Date</th>
                     <th className="px-3 py-2 text-left">Actions</th>
@@ -335,7 +335,7 @@ export default function AdminRostersPage() {
                   {rosters.length === 0 ? (
                     <tr>
                       <td className="px-3 py-3 text-center text-cyan-100/70" colSpan={5}>
-                        該当ロスターはありません
+                        該当メンバーリストはありません
                       </td>
                     </tr>
                   ) : (

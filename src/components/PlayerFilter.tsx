@@ -129,14 +129,14 @@ export default function PlayerFilter({
         </div>
         <MultiToggleGroup
           className="xl:col-span-3"
-          legend={`Roster (${rosterInputs.length})`}
+          legend={`Squad (${rosterInputs.length})`}
           options={rosters.map((r) => ({
             value: String(r.id),
             label: rosterDisplayTitle(r),
           }))}
           selectedValues={rosterInputs}
           onChange={setRosterInputs}
-          emptyLabel="ロースターがありません"
+          emptyLabel="メンバーリストがありません"
           wrapSelectedLabel
           wrapOptionLabel
         />

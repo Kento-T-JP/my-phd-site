@@ -502,7 +502,7 @@ export default function EditPlayerPage() {
             {rosterOptions.length > 0 && (
               <div className="mb-2 rounded border border-cyan-300/30 p-2">
                 <p className="text-xs text-cyan-100/90 mb-1">
-                  既存ロースター（追加/解除）
+                  既存メンバーリスト（追加/解除）
                 </p>
                 <div className="space-y-1">
                   {rosterOptions.map((aff) => (
@@ -533,7 +533,7 @@ export default function EditPlayerPage() {
               </div>
             )}
             <p className="text-xs text-cyan-100/75 mb-2">
-              下の入力欄で新しい大会/ロースターを追加で紐付けできます。
+              下の入力欄で新しい大会/メンバーリストを追加で紐付けできます。
             </p>
             <TournamentSelect
               value={tournamentName}
@@ -542,7 +542,7 @@ export default function EditPlayerPage() {
             {/* Optional roster name; leave blank to assign only tournament */}
             {tournamentName.trim() !== "" && (
               <>
-                <label className="block mb-1 mt-2">Roster (optional)</label>
+                <label className="block mb-1 mt-2">Squad (optional)</label>
                 <input
                   data-testid="roster"
                   className="w-full p-2 border rounded"

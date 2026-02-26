@@ -92,9 +92,9 @@ describe('player roster input', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /既存ロースター/i })).toBeTruthy(),
+      expect(screen.getByRole('button', { name: /既存メンバーリスト/i })).toBeTruthy(),
     );
-    fireEvent.click(screen.getByRole('button', { name: /既存ロースター/i }));
+    fireEvent.click(screen.getByRole('button', { name: /既存メンバーリスト/i }));
     fireEvent.click(screen.getByLabelText('Main'));
     fireEvent.click(screen.getByLabelText('Sub'));
 

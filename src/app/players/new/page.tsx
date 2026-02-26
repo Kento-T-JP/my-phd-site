@@ -377,17 +377,17 @@ export default function NewPlayerPage() {
           <div className="mb-2">
             <MultiToggleGroup
               className="mb-2"
-              legend={`既存ロースター (任意) (${selectedRosterIds.length})`}
+              legend={`既存メンバーリスト (任意) (${selectedRosterIds.length})`}
               options={rosters.map((r) => ({
                 value: String(r.id),
                 label: rosterDisplayTitle(r),
               }))}
               selectedValues={selectedRosterIds}
               onChange={setSelectedRosterIds}
-              emptyLabel="ロースターがありません"
+              emptyLabel="メンバーリストがありません"
             />
             <p className="mb-2 text-xs text-cyan-200">
-              既存ロースターは複数選択できます。下の大会/ロースター自由入力と併用も可能です。
+              既存メンバーリストは複数選択できます。下の大会/メンバーリスト自由入力と併用も可能です。
             </p>
             <TournamentSelect
               value={tournamentName}
@@ -396,7 +396,7 @@ export default function NewPlayerPage() {
             {/* Optional roster name; leave blank to assign only tournament */}
             {tournamentName.trim() !== "" && (
               <>
-                <label className="block mb-1 mt-2">Roster (optional)</label>
+                <label className="block mb-1 mt-2">Squad (optional)</label>
                 <input
                   data-testid="roster"
                   className="w-full p-2 border rounded"

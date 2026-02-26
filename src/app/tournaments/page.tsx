@@ -77,7 +77,7 @@ export default function TournamentsPage() {
       }
       if (!rostersRes.ok) {
         const body = (await rostersRes.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error || "ロースター一覧の取得に失敗しました。");
+        throw new Error(body.error || "メンバーリスト一覧の取得に失敗しました。");
       }
       const tournamentData = (await tournamentsRes.json()) as Tournament[];
       const rosterData = (await rostersRes.json()) as Roster[];
@@ -121,13 +121,13 @@ export default function TournamentsPage() {
         error?: string;
       } & Partial<Roster>;
       if (!res.ok) {
-        throw new Error(body.error || "ロースターの追加に失敗しました。");
+        throw new Error(body.error || "メンバーリストの追加に失敗しました。");
       }
       const created = body as Roster;
       setRosterTitle("");
       setRosterDate("");
       setRosterInfo(
-        `ロースター「${(created.title ?? title) || "(自動生成)"}」を追加しました。`,
+        `メンバーリスト「${(created.title ?? title) || "(自動生成)"}」を追加しました。`,
       );
       if (typeof created.id === "number") {
         setRosters((prev) => {
@@ -149,7 +149,7 @@ export default function TournamentsPage() {
       }
       window.dispatchEvent(new Event("tournament-saved"));
     } catch (err) {
-      setRosterError(err instanceof Error ? err.message : "ロースターの追加に失敗しました。");
+      setRosterError(err instanceof Error ? err.message : "メンバーリストの追加に失敗しました。");
     } finally {
       setSavingRoster(false);
     }
@@ -157,7 +157,7 @@ export default function TournamentsPage() {
 
   async function deleteTournament(item: Tournament) {
     const confirmed = confirmDanger(
-      `大会「${item.name}」を削除しますか？\n紐づくロースターも削除されます。`,
+      `大会「${item.name}」を削除しますか？\n紐づくメンバーリストも削除されます。`,
     );
     if (!confirmed) return;
 
@@ -186,7 +186,7 @@ export default function TournamentsPage() {
   }
 
   async function deleteRoster(item: Roster) {
-    const confirmed = confirmDanger(`ロースター「${item.title}」を削除しますか？`);
+    const confirmed = confirmDanger(`メンバーリスト「${item.title}」を削除しますか？`);
     if (!confirmed) return;
 
     setDeletingRosterId(item.id);
@@ -200,13 +200,13 @@ export default function TournamentsPage() {
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        throw new Error(body.error || "ロースターの削除に失敗しました。");
+        throw new Error(body.error || "メンバーリストの削除に失敗しました。");
       }
-      setManageInfo(`ロースター「${item.title}」を削除しました。`);
+      setManageInfo(`メンバーリスト「${item.title}」を削除しました。`);
       setRosters((prev) => prev.filter((current) => current.id !== item.id));
       window.dispatchEvent(new Event("tournament-saved"));
     } catch (err) {
-      setManageError(err instanceof Error ? err.message : "ロースターの削除に失敗しました。");
+      setManageError(err instanceof Error ? err.message : "メンバーリストの削除に失敗しました。");
     } finally {
       setDeletingRosterId(null);
     }
@@ -224,7 +224,7 @@ export default function TournamentsPage() {
     return (
       <main className="p-4 sm:p-8">
         <p>
-          Please <Link href="/login">login</Link> to manage tournaments and rosters.
+          Please <Link href="/login">login</Link> to manage tournaments and squads.
         </p>
       </main>
     );
@@ -233,14 +233,14 @@ export default function TournamentsPage() {
   return (
     <main className="p-4 sm:p-8 space-y-4">
       <section className="glass-panel p-4 sm:p-6">
-        <h1 className="text-xl sm:text-2xl font-bold">大会・ロースター管理</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">大会・メンバーリスト管理</h1>
         <p className="text-sm text-cyan-100/75 mt-1">
-          大会名必須・ロースター名任意で登録できます。ロースター名未入力時は日付ベースで自動命名されます。
+          大会名必須・メンバーリスト名任意で登録できます。メンバーリスト名未入力時は日付ベースで自動命名されます。
         </p>
       </section>
 
       <section className="glass-panel p-4 sm:p-6 space-y-3">
-        <h2 className="text-lg font-semibold">ロースターを追加</h2>
+        <h2 className="text-lg font-semibold">メンバーリストを追加</h2>
         <form onSubmit={addRoster} className="space-y-2">
           <TournamentSelect
             value={rosterTournament}
@@ -252,7 +252,7 @@ export default function TournamentsPage() {
             type="text"
             value={rosterTitle}
             onChange={(event) => setRosterTitle(event.target.value)}
-            placeholder="ロースター名（任意）"
+            placeholder="メンバーリスト名（任意）"
             className="w-full rounded-lg border border-cyan-300/25 bg-slate-950/55 px-3 py-2 outline-none focus:border-cyan-300"
             maxLength={120}
           />
@@ -267,11 +267,11 @@ export default function TournamentsPage() {
             disabled={savingRoster}
             className="rounded-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium"
           >
-            {savingRoster ? "追加中..." : "ロースターを追加"}
+            {savingRoster ? "追加中..." : "メンバーリストを追加"}
           </button>
         </form>
         <p className="text-xs text-cyan-100/65">
-          必須: 大会名 / 任意: ロースター名・日付（ロースター名が空の場合は自動命名）
+          必須: 大会名 / 任意: メンバーリスト名・日付（メンバーリスト名が空の場合は自動命名）
         </p>
         {rosterError && <p className="text-sm text-red-300">{rosterError}</p>}
         {rosterInfo && <p className="text-sm text-emerald-300">{rosterInfo}</p>}
@@ -313,9 +313,9 @@ export default function TournamentsPage() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-cyan-50">ロースター</h3>
+              <h3 className="font-semibold text-cyan-50">メンバーリスト</h3>
               {sortedRosters.length === 0 ? (
-                <p className="text-sm text-cyan-100/75">ロースターはまだ登録されていません。</p>
+                <p className="text-sm text-cyan-100/75">メンバーリストはまだ登録されていません。</p>
               ) : (
                 <ul className="space-y-2">
                   {sortedRosters.map((item) => (
