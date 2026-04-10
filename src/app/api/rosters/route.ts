@@ -5,16 +5,22 @@ import { authOptions } from '@/lib/authOptions';
 import { resolveSessionUserId } from '@/lib/sessionUser';
 import { cacheTag } from '@/lib/cacheTags';
 import { revalidateTagSafe, runWithCache } from '@/lib/cacheRuntime';
+import { getFormationScopeOwnerId } from '@/lib/formationAccess';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug') || undefined;
+  const formationId = Number(searchParams.get('formationId') ?? '');
   const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
   const { userId } = await resolveSessionUserId(session);
   if (!Number.isFinite(userId)) {
     return NextResponse.json([]);
   }
-  const ownerId = userId as number;
+  let ownerId = userId as number;
+  if (Number.isFinite(formationId) && formationId > 0) {
+    const scopedOwnerId = await getFormationScopeOwnerId(formationId, ownerId);
+    ownerId = scopedOwnerId ?? ownerId;
+  }
   const rosters = await runWithCache(
     async () => getRosters(slug, ownerId),
     ['api-rosters', String(ownerId), slug ?? 'all'],

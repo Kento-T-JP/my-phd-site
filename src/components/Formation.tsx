@@ -22,10 +22,24 @@ import type { Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
 import MultiToggleGroup from "@/components/MultiToggleGroup";
 import useClickSound from "@/lib/useClickSound";
+import FormationCollaborationPanel from "@/components/FormationCollaborationPanel";
+import { useFormationCollaboration } from "@/lib/useFormationCollaboration";
 
 export interface InitialFormation {
   id?: number;
   name: string;
+  accessRole?: "owner" | "collaborator";
+  collaborators?: Array<{
+    id: number;
+    name: string | null;
+    email: string;
+  }>;
+  activeEditors?: Array<{
+    id: number;
+    name: string | null;
+    email: string;
+    lastSeenAt: string | Date;
+  }>;
   positions: {
     lineupOrder: number[];
     benchOrder: number[];
@@ -264,11 +278,13 @@ export default function Formation({
   onSaved,
   onUpdated,
   screenshotMode = false,
+  mode = "standalone",
 }: {
   initialFormation?: InitialFormation;
   onSaved?: (saved: SavedFormation) => void;
-  onUpdated?: () => void;
+  onUpdated?: (updated?: SavedFormation) => void;
   screenshotMode?: boolean;
+  mode?: "standalone" | "single" | "collaborative";
 }) {
   const [initialFormation, setInitialFormation] = useState<
     InitialFormation | undefined
@@ -308,6 +324,11 @@ export default function Formation({
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempoPulseId, setTempoPulseId] = useState<number | null>(null);
   const tempoPulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clientInstanceIdRef = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `instance-${Date.now()}`
+  );
 
   const [frontmostId, setFrontmostId] = useState<number | null>(null);
 
@@ -364,6 +385,11 @@ export default function Formation({
   const { data: session } = useSession();
   const router = useRouter();
   const { play } = useClickSound();
+  const isOwner = initialFormation?.accessRole !== "collaborator";
+  const isCollaborativeMode = mode === "collaborative";
+  const canCollaborate = Boolean(
+    isCollaborativeMode && session && initialFormation?.id
+  );
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const [fieldWidth, setFieldWidth] = useState(0);
@@ -473,14 +499,18 @@ export default function Formation({
 
   const fetchRosters = useCallback(async () => {
     try {
-      const res = await fetch('/api/rosters');
+      const params = new URLSearchParams();
+      if (initialFormation?.id) {
+        params.set("formationId", String(initialFormation.id));
+      }
+      const res = await fetch(`/api/rosters${params.toString() ? `?${params.toString()}` : ""}`);
       if (!res.ok) throw new Error('Failed to fetch rosters');
       const data: Roster[] = await res.json();
       setRosters(data);
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [initialFormation?.id]);
 
   useEffect(() => {
     if (!session) return;
@@ -567,7 +597,14 @@ export default function Formation({
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/players?includeRosterLinks=1&includeExtra=0');
+      const params = new URLSearchParams({
+        includeRosterLinks: "1",
+        includeExtra: "0",
+      });
+      if (initialFormation?.id) {
+        params.set("formationId", String(initialFormation.id));
+      }
+      const res = await fetch(`/api/players?${params.toString()}`);
       if (!res.ok) throw new Error('プレイヤー取得に失敗しました');
       const data: (Player & { rosterPlayers?: { rosterId: number }[] })[] = await res.json();
       setPlayers(data.filter((p) => p.position.length > 0));
@@ -577,7 +614,7 @@ export default function Formation({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialFormation?.id]);
 
   useEffect(() => {
     fetchPlayers();
@@ -588,7 +625,11 @@ export default function Formation({
     if (!session?.user?.id) return;
     const loadManagedPositions = async () => {
       try {
-        const res = await fetch("/api/positions");
+        const url = new URL("/api/positions", window.location.origin);
+        if (initialFormation?.id) {
+          url.searchParams.set("formationId", String(initialFormation.id));
+        }
+        const res = await fetch(url.toString());
         if (!res.ok) throw new Error("Failed to fetch positions");
         const data = (await res.json()) as { id: number; name: string }[];
         setManagedPositions(data.map((item) => item.name));
@@ -604,7 +645,7 @@ export default function Formation({
     return () => {
       window.removeEventListener("position-saved", refresh);
     };
-  }, [session?.user?.id]);
+  }, [initialFormation?.id, session?.user?.id]);
 
   const refetchPlayersAndRosters = useCallback(() => {
     fetchPlayers();
@@ -965,6 +1006,57 @@ export default function Formation({
     setSelectedIsBench(null);
   };
 
+  const buildPersistedPayload = useCallback(() => {
+    return {
+      name: alias.trim() || formation.name,
+      positions: {
+        lineupOrder,
+        benchOrder,
+        benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+        offBenchSize: normalizeOffBenchSize(
+          offBenchLimit,
+          DEFAULT_OFF_BENCH_LIMIT
+        ),
+        playerPositions,
+        baseFormationName: formation.name,
+      },
+      clientInstanceId: clientInstanceIdRef.current,
+    };
+  }, [
+    alias,
+    benchOrder,
+    benchSize,
+    formation.name,
+    lineupOrder,
+    offBenchLimit,
+    playerPositions,
+  ]);
+  const {
+    syncStatus,
+    isSyncing,
+    collaboratorInput,
+    setCollaboratorInput,
+    collaborationStatus,
+    isSavingCollaborators,
+    activeEditors,
+    collaborators,
+    syncExistingFormation,
+    saveCollaborators,
+  } = useFormationCollaboration({
+    enabled: canCollaborate && !screenshotMode,
+    formationId: initialFormation?.id,
+    sessionUserId: session?.user?.id,
+    initialCollaborators: initialFormation?.collaborators,
+    initialActiveEditors: initialFormation?.activeEditors,
+    buildPersistedPayload,
+    onFormationReceived: (received) => {
+      setInitialFormation(received);
+    },
+    onDeleted: () => {
+      onUpdated?.();
+    },
+  });
+
   const handleSave = async () => {
     play();
     if (!session) {
@@ -988,20 +1080,7 @@ export default function Formation({
       const res = await fetch("/api/formations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          positions: {
-            lineupOrder,
-            benchOrder,
-            benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
-            offBenchSize: normalizeOffBenchSize(
-              offBenchLimit,
-              DEFAULT_OFF_BENCH_LIMIT
-            ),
-            playerPositions,
-            baseFormationName: formation.name,
-          },
-        }),
+        body: JSON.stringify(buildPersistedPayload()),
       });
       if (res.ok) {
         const saved = (await res.json()) as SavedFormation;
@@ -1032,45 +1111,29 @@ export default function Formation({
       alert("更新するフォーメーションがありません");
       return;
     }
-    const name = alias.trim() || formation.name;
-    if (!window.confirm('フォーメーション「' + name + '」を更新しますか?')) {
+    let updated: SavedFormation | null = null;
+    if (isCollaborativeMode) {
+      updated = await syncExistingFormation({ immediate: true });
+    } else {
+      try {
+        const res = await fetch(`/api/formations/${initialFormation.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPersistedPayload()),
+        });
+        if (res.ok) {
+          updated = (await res.json()) as SavedFormation;
+        }
+      } catch {
+        updated = null;
+      }
+    }
+    if (!updated) {
+      alert("更新に失敗しました");
       return;
     }
-    try {
-      const res = await fetch(`/api/formations/${initialFormation.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          positions: {
-            lineupOrder,
-            benchOrder,
-            benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
-            offBenchSize: normalizeOffBenchSize(
-              offBenchLimit,
-              DEFAULT_OFF_BENCH_LIMIT
-            ),
-            playerPositions,
-            baseFormationName: formation.name,
-          },
-        }),
-      });
-      if (res.ok) {
-        const updated = (await res.json()) as SavedFormation;
-        alert("更新しました");
-        startTransition(() => setInitialFormation(updated));
-        onUpdated?.();
-      } else {
-        const data = await res.json();
-        alert(
-          typeof data?.error === "string"
-            ? data.error
-            : "更新に失敗しました"
-        );
-      }
-    } catch {
-      alert("更新に失敗しました");
-    }
+    alert("更新しました");
+    onUpdated?.(updated);
   };
 
   const handleProfilerRender = useCallback(
@@ -1412,9 +1475,14 @@ export default function Formation({
                         <button
                           type="button"
                           onClick={handleUpdate}
-                          className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full"
+                          disabled={isSyncing}
+                          className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full disabled:opacity-50"
                         >
-                          更新
+                          {isCollaborativeMode
+                            ? isSyncing
+                              ? "同期中…"
+                              : "今すぐ同期"
+                            : "更新"}
                         </button>
                       ) : (
                         <Link
@@ -1436,22 +1504,29 @@ export default function Formation({
                       )}
                     </div>
                     {initialFormation?.id && (
-                      <Link
-                        href={screenshotHref}
-                        aria-disabled={!initialFormation?.id}
-                        onClick={(e) => {
-                          play();
-                          if (!initialFormation?.id) {
-                            e.preventDefault();
-                            alert("Save the formation first");
-                          }
-                        }}
-                        className={`tap-action px-4 py-2 bg-purple-500 text-white rounded text-center ${
-                          !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                      >
-                        Screenshot
-                      </Link>
+                      <>
+                        <Link
+                          href={screenshotHref}
+                          aria-disabled={!initialFormation?.id}
+                          onClick={(e) => {
+                            play();
+                            if (!initialFormation?.id) {
+                              e.preventDefault();
+                              alert("Save the formation first");
+                            }
+                          }}
+                          className={`tap-action px-4 py-2 bg-purple-500 text-white rounded text-center ${
+                            !initialFormation?.id ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          Screenshot
+                        </Link>
+                        {isCollaborativeMode && (
+                          <p className="text-xs text-cyan-100/75">
+                            {syncStatus || "共同編集画面では変更が自動同期されます"}
+                          </p>
+                        )}
+                      </>
                     )}
                   </>
                 ) : (
@@ -1464,6 +1539,24 @@ export default function Formation({
           )}
         </div>
       </section>
+      {!screenshotMode && isCollaborativeMode && initialFormation?.id && (
+        <FormationCollaborationPanel
+          isOwner={isOwner}
+          activeEditors={activeEditors}
+          collaborators={collaborators}
+          collaboratorInput={collaboratorInput}
+          onCollaboratorInputChange={setCollaboratorInput}
+          onSave={() => {
+            void saveCollaborators().then((updated) => {
+              if (updated) {
+                onUpdated?.(updated);
+              }
+            });
+          }}
+          collaborationStatus={collaborationStatus}
+          isSavingCollaborators={isSavingCollaborators}
+        />
+      )}
       {!screenshotMode && (
         <section className="mb-4 rounded-xl border border-cyan-300/20 bg-slate-950/35 p-3 sm:p-4">
           <div className="flex items-center justify-between gap-2">

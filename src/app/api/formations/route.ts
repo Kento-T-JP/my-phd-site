@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions";
 import { FormationCreateSchema } from "@/lib/schemas/formations";
+import {
+  getAccessibleFormation,
+  getFormationActor,
+  mapFormationForClient,
+} from "@/lib/formationAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +26,6 @@ function buildPerfHeaders(
   return headers;
 }
 
-async function getUser() {
-  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.email) return null;
-  return prisma.user.findUnique({ where: { email: session.user.email } });
-}
-
 export async function GET(req: Request) {
   const wantsPerf = new URL(req.url).searchParams.get("_perf") === "1";
   const profileEnabled = shouldProfileApi() || wantsPerf;
@@ -40,40 +37,50 @@ export async function GET(req: Request) {
   };
 
   let marker = performance.now();
-  const user = await getUser();
-  profileStep("getUser", marker);
-  if (!user) {
+  const actor = await getFormationActor();
+  profileStep("getFormationActor", marker);
+  if (!actor) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
-    if (profileEnabled) {
-      console.log("[API_PERF] /api/formations GET", {
-        authorized: false,
-        totalMs,
-        steps: profileSteps,
-      });
-    }
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401, headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
   const list = await prisma.formation.findMany({
-    where: { userId: user.id },
-    orderBy: { id: "asc" },
-    include: { nodes: { orderBy: { id: "asc" } } },
+    where: {
+      OR: [
+        { userId: actor.userId },
+        { collaborators: { some: { userId: actor.userId } } },
+      ],
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    include: {
+      nodes: { orderBy: { id: "asc" } },
+      user: { select: { id: true, name: true, email: true } },
+      collaborators: {
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+      editSessions: {
+        where: { lastSeenAt: { gte: new Date(Date.now() - 30_000) } },
+        orderBy: { lastSeenAt: "desc" },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+    },
   });
   profileStep("prisma.formation.findMany", marker);
+
+  const mapped = list
+    .map((formation) => mapFormationForClient(formation, actor.userId))
+    .filter(Boolean);
+
   const totalMs = Number((performance.now() - profileStart).toFixed(2));
-  if (profileEnabled) {
-    console.log("[API_PERF] /api/formations GET", {
-      authorized: true,
-      userId: user.id,
-      resultCount: list.length,
-      totalMs,
-      steps: profileSteps,
-    });
-  }
-  return NextResponse.json(list, {
+  return NextResponse.json(mapped, {
     headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps),
   });
 }
@@ -89,48 +96,34 @@ export async function POST(req: Request) {
   };
 
   let marker = performance.now();
-  const user = await getUser();
-  profileStep("getUser", marker);
-  if (!user) {
+  const actor = await getFormationActor();
+  profileStep("getFormationActor", marker);
+  if (!actor) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
-    if (profileEnabled) {
-      console.log("[API_PERF] /api/formations POST", {
-        authorized: false,
-        totalMs,
-        steps: profileSteps,
-      });
-    }
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
   const body = await req.json();
   profileStep("parseJsonBody", marker);
   const parsed = FormationCreateSchema.safeParse(body);
   if (!parsed.success) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
-    if (profileEnabled) {
-      console.log("[API_PERF] /api/formations POST", {
-        authorized: true,
-        userId: user.id,
-        validation: "failed",
-        totalMs,
-        steps: profileSteps,
-      });
-    }
     return NextResponse.json(
       { error: parsed.error.issues },
       { status: 400, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   const { name, positions, nodes } = parsed.data;
   const normalizedName = (name || "Untitled").trim();
   marker = performance.now();
   const duplicate = await prisma.formation.findFirst({
     where: {
-      userId: user.id,
+      userId: actor.userId,
       name: { equals: normalizedName, mode: "insensitive" },
     },
     select: { id: true },
@@ -138,51 +131,38 @@ export async function POST(req: Request) {
   profileStep("prisma.formation.findFirst", marker);
   if (duplicate) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
-    if (profileEnabled) {
-      console.log("[API_PERF] /api/formations POST", {
-        authorized: true,
-        userId: user.id,
-        duplicate: true,
-        totalMs,
-        steps: profileSteps,
-      });
-    }
     return NextResponse.json(
       { error: "同じ名前のフォーメーションは保存できません。別名にしてください。" },
       { status: 409, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
   const saved = await prisma.formation.create({
     data: {
       name: normalizedName,
       positions,
-      userId: user.id,
+      userId: actor.userId,
       nodes: nodes
         ? {
-            create: nodes.map((n) => ({
-              x: n.x,
-              y: n.y,
-              playerId: n.playerId,
+            create: nodes.map((node) => ({
+              x: node.x,
+              y: node.y,
+              playerId: node.playerId,
             })),
           }
         : undefined,
     },
-    include: { nodes: { orderBy: { id: "asc" } } },
+    select: { id: true },
   });
   profileStep("prisma.formation.create", marker);
+
+  marker = performance.now();
+  const hydrated = await getAccessibleFormation(saved.id, actor.userId);
+  profileStep("getAccessibleFormation", marker);
+
   const totalMs = Number((performance.now() - profileStart).toFixed(2));
-  if (profileEnabled) {
-    console.log("[API_PERF] /api/formations POST", {
-      authorized: true,
-      userId: user.id,
-      savedId: saved.id,
-      nodeCount: saved.nodes.length,
-      totalMs,
-      steps: profileSteps,
-    });
-  }
-  return NextResponse.json(saved, {
+  return NextResponse.json(mapFormationForClient(hydrated, actor.userId), {
     status: 201,
     headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps),
   });

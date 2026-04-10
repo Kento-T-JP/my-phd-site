@@ -37,6 +37,23 @@ export interface SavedFormation {
   };
   nodes: FormationNode[];
   userId?: number;
+  owner?: {
+    id: number;
+    name: string | null;
+    email: string;
+  };
+  collaborators?: Array<{
+    id: number;
+    name: string | null;
+    email: string;
+  }>;
+  activeEditors?: Array<{
+    id: number;
+    name: string | null;
+    email: string;
+    lastSeenAt: string | Date;
+  }>;
+  accessRole?: "owner" | "collaborator";
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

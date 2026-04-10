@@ -6,6 +6,7 @@ import { resolveSessionUserId } from "@/lib/sessionUser";
 import { cacheTag } from "@/lib/cacheTags";
 import { revalidateTagSafe, runWithCache } from "@/lib/cacheRuntime";
 import { getDefaultPositions } from "@/lib/defaultPositions";
+import { getFormationScopeOwnerId } from "@/lib/formationAccess";
 
 function normalizePositionName(value: string): string {
   return value.normalize("NFKC").trim().replace(/\s+/g, " ");
@@ -19,7 +20,7 @@ const defaultPositionKeys = new Set(
   getDefaultPositions().map((name) => positionKey(name)),
 );
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = (await getServerSession(authOptions)) as {
     user?: { id?: string; email?: string; isAdmin?: boolean; status?: string };
     loginStage?: string;
@@ -29,7 +30,13 @@ export async function GET() {
   if (!Number.isFinite(userId)) {
     return NextResponse.json([]);
   }
-  const ownerId = userId as number;
+  const { searchParams } = new URL(req.url);
+  const formationId = Number(searchParams.get("formationId") ?? "");
+  let ownerId = userId as number;
+  if (Number.isFinite(formationId) && formationId > 0) {
+    const scopedOwnerId = await getFormationScopeOwnerId(formationId, ownerId);
+    ownerId = scopedOwnerId ?? ownerId;
+  }
   const list = await runWithCache(
     async () =>
       prisma.userPosition.findMany({

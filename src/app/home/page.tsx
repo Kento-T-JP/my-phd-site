@@ -1,4 +1,4 @@
-import Formation from "@/components/Formation";
+import SingleFormationEditor from "@/components/SingleFormationEditor";
 import JfaImportForm from "@/components/JfaImportForm";
 import type { SavedFormation } from "@/types/formation";
 import type { Metadata } from "next";
@@ -172,7 +172,7 @@ export default async function Home({
         </p>
       </section>
       <section className="glass-panel p-3 sm:p-5">
-        <Formation initialFormation={initialFormation} />
+        <SingleFormationEditor initialFormation={initialFormation} />
       </section>
     </main>
   );

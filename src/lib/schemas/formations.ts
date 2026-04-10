@@ -16,10 +16,12 @@ export const FormationCreateSchema = z.object({
   name: z.string().optional(),
   positions: PositionsSchema,
   nodes: z.array(FormationNodeSchema).optional(),
+  clientInstanceId: z.string().min(1).max(100).optional(),
 });
 
 export const FormationUpdateSchema = z.object({
   name: z.string().optional(),
   positions: PositionsSchema.optional(),
   nodes: z.array(FormationNodeSchema).optional(),
+  clientInstanceId: z.string().min(1).max(100).optional(),
 });

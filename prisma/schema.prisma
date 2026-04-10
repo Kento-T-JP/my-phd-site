@@ -89,6 +89,8 @@ model User {
   verificationTokens EmailVerificationToken[]
   favoritePlayers    FavoritePlayer[]
   formations         Formation[]
+  formationCollaborations FormationCollaborator[]
+  formationEditSessions FormationEditSession[]
   formationShares    FormationShare[]
   positions          UserPosition[]
   players            Player[]
@@ -166,9 +168,35 @@ model Formation {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   user      User            @relation(fields: [userId], references: [id])
+  collaborators FormationCollaborator[]
+  editSessions  FormationEditSession[]
   nodes     FormationNode[]
 
   @@index([userId, updatedAt])
+}
+
+model FormationCollaborator {
+  formationId Int
+  userId      Int
+  createdAt   DateTime  @default(now())
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([formationId, userId])
+  @@index([userId, createdAt])
+}
+
+model FormationEditSession {
+  formationId Int
+  userId      Int
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([formationId, userId])
+  @@index([formationId, lastSeenAt])
+  @@index([userId, lastSeenAt])
 }
 
 model FormationNode {

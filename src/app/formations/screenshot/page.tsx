@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Formation from "@/components/Formation";
+import FormationPreview from "@/components/FormationPreview";
 import type { SavedFormation } from "@/types/formation";
 
 function FormationScreenshotPageContent() {
@@ -55,7 +55,7 @@ function FormationScreenshotPageContent() {
   return (
     <main className="min-h-screen p-4 flex items-center justify-center">
       {formation ? (
-        <Formation initialFormation={formation} screenshotMode />
+        <FormationPreview initialFormation={formation} screenshotMode />
       ) : error ? (
         <p>{error}</p>
       ) : (

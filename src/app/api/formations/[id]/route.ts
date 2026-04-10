@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
 import type { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions";
+import prisma from "@/lib/db";
 import { FormationUpdateSchema } from "@/lib/schemas/formations";
 import { unwrapParams } from "@/lib/unwrap";
+import {
+  getAccessibleFormation,
+  getFormationActor,
+  mapFormationForClient,
+} from "@/lib/formationAccess";
+import { publishFormationEvent } from "@/lib/formationRealtime";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +29,14 @@ function buildPerfHeaders(
   return headers;
 }
 
-async function getUser() {
-  const session = (await getServerSession(authOptions)) as { user?: { id?: string; email?: string; isAdmin?: boolean; status?: string }; loginStage?: string; gatePassed?: boolean } | null;
-  if (!session?.user?.email) return null;
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  return user;
+async function readFormationId(params: Promise<{ id: string }>) {
+  const { id } = await unwrapParams(params);
+  const num = Number(id);
+  return Number.isNaN(num) ? null : num;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const wantsPerf = new URL(_req.url).searchParams.get("_perf") === "1";
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const wantsPerf = new URL(req.url).searchParams.get("_perf") === "1";
   const profileEnabled = shouldProfileApi() || wantsPerf;
   const profileStart = performance.now();
   const profileSteps: Array<{ step: string; ms: number }> = [];
@@ -43,59 +46,40 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   };
 
   let marker = performance.now();
-  const { id } = await unwrapParams(params);
-  profileStep("unwrapParams", marker);
-  const num = Number(id);
-  if (Number.isNaN(num)) {
+  const formationId = await readFormationId(params);
+  profileStep("readFormationId", marker);
+  if (!formationId) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Invalid id" },
-      {
-        status: 400,
-        headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps),
-      }
+      { status: 400, headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
-  const user = await getUser();
-  profileStep("getUser", marker);
-  if (!user) {
+  const actor = await getFormationActor();
+  profileStep("getFormationActor", marker);
+  if (!actor) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Unauthorized" },
-      {
-        status: 401,
-        headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps),
-      }
+      { status: 401, headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
-  const formation = await prisma.formation.findUnique({
-    where: { id: num },
-    include: { nodes: { orderBy: { id: "asc" } } },
-  });
-  profileStep("prisma.formation.findUnique", marker);
-  if (!formation || formation.userId !== user.id) {
+  const formation = await getAccessibleFormation(formationId, actor.userId);
+  profileStep("getAccessibleFormation", marker);
+  if (!formation) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Not found" },
-      {
-        status: 404,
-        headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps),
-      }
+      { status: 404, headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   const totalMs = Number((performance.now() - profileStart).toFixed(2));
-  if (profileEnabled) {
-    console.log("[API_PERF] /api/formations/[id] GET", {
-      userId: user.id,
-      id: num,
-      nodeCount: formation.nodes.length,
-      totalMs,
-      steps: profileSteps,
-    });
-  }
-  return NextResponse.json(formation, {
+  return NextResponse.json(mapFormationForClient(formation, actor.userId), {
     headers: buildPerfHeaders(noStoreHeaders, wantsPerf, totalMs, profileSteps),
   });
 }
@@ -111,26 +95,27 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   };
 
   let marker = performance.now();
-  const { id } = await unwrapParams(params);
-  profileStep("unwrapParams", marker);
-  const num = Number(id);
-  if (Number.isNaN(num)) {
+  const formationId = await readFormationId(params);
+  profileStep("readFormationId", marker);
+  if (!formationId) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Invalid id" },
       { status: 400, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
-  const user = await getUser();
-  profileStep("getUser", marker);
-  if (!user) {
+  const actor = await getFormationActor();
+  profileStep("getFormationActor", marker);
+  if (!actor) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
   const body = await req.json();
   profileStep("parseJsonBody", marker);
@@ -142,28 +127,43 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       { status: 400, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
-  const data = parsed.data;
+
   marker = performance.now();
-  const formation = await prisma.formation.findUnique({ where: { id: num } });
-  profileStep("prisma.formation.findUnique", marker);
-  if (!formation || formation.userId !== user.id) {
+  const formation = await prisma.formation.findFirst({
+    where: {
+      id: formationId,
+      OR: [
+        { userId: actor.userId },
+        { collaborators: { some: { userId: actor.userId } } },
+      ],
+    },
+    select: {
+      id: true,
+      userId: true,
+      name: true,
+      positions: true,
+    },
+  });
+  profileStep("prisma.formation.findFirst", marker);
+  if (!formation) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
       { error: "Not found" },
       { status: 404, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
-  const normalizedName = (data.name ?? formation.name).trim();
+
+  const normalizedName = (parsed.data.name ?? formation.name).trim();
   marker = performance.now();
   const duplicate = await prisma.formation.findFirst({
     where: {
-      userId: user.id,
-      id: { not: num },
+      userId: formation.userId,
+      id: { not: formationId },
       name: { equals: normalizedName, mode: "insensitive" },
     },
     select: { id: true },
   });
-  profileStep("prisma.formation.findFirst", marker);
+  profileStep("prisma.formation.findFirst.duplicate", marker);
   if (duplicate) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     return NextResponse.json(
@@ -171,44 +171,83 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       { status: 409, headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps) }
     );
   }
+
   marker = performance.now();
-  const updated = await prisma.formation.update({
-    where: { id: num },
+  await prisma.formationEditSession.upsert({
+    where: {
+      formationId_userId: {
+        formationId,
+        userId: actor.userId,
+      },
+    },
+    update: { lastSeenAt: new Date() },
+    create: {
+      formationId,
+      userId: actor.userId,
+    },
+  });
+  profileStep("prisma.formationEditSession.upsert", marker);
+
+  marker = performance.now();
+  await prisma.formation.update({
+    where: { id: formationId },
     data: {
       name: normalizedName,
-      positions: (data.positions ?? formation.positions) as Prisma.InputJsonValue,
+      positions: (parsed.data.positions ?? formation.positions) as Prisma.InputJsonValue,
     },
   });
   profileStep("prisma.formation.update", marker);
-  const totalMs = Number((performance.now() - profileStart).toFixed(2));
-  if (profileEnabled) {
-    console.log("[API_PERF] /api/formations/[id] PUT", {
-      userId: user.id,
-      id: num,
-      updatedId: updated.id,
-      totalMs,
-      steps: profileSteps,
+
+  marker = performance.now();
+  const hydrated = await getAccessibleFormation(formationId, actor.userId);
+  profileStep("getAccessibleFormation", marker);
+  const mapped = mapFormationForClient(hydrated, actor.userId);
+
+  if (mapped) {
+    publishFormationEvent(formationId, {
+      type: "formation-updated",
+      formationId,
+      formation: mapped,
+      actorUserId: actor.userId,
+      occurredAt: new Date().toISOString(),
     });
   }
-  return NextResponse.json(updated, {
+
+  const totalMs = Number((performance.now() - profileStart).toFixed(2));
+  return NextResponse.json(mapped, {
     headers: buildPerfHeaders(undefined, wantsPerf, totalMs, profileSteps),
   });
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await unwrapParams(params);
-  const num = Number(id);
-  if (Number.isNaN(num)) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const formationId = await readFormationId(params);
+  if (!formationId) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
-  const user = await getUser();
-  if (!user) {
+
+  const actor = await getFormationActor();
+  if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const formation = await prisma.formation.findUnique({ where: { id: num } });
-  if (!formation || formation.userId !== user.id) {
+
+  const formation = await prisma.formation.findUnique({
+    where: { id: formationId },
+    select: { id: true, userId: true },
+  });
+  if (!formation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  await prisma.formation.delete({ where: { id: num } });
+  if (formation.userId !== actor.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await prisma.formation.delete({ where: { id: formationId } });
+  publishFormationEvent(formationId, {
+    type: "formation-updated",
+    formationId,
+    formation: null,
+    actorUserId: actor.userId,
+    occurredAt: new Date().toISOString(),
+  });
   return NextResponse.json({ success: true });
 }

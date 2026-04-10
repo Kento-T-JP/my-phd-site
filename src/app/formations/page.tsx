@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SavedFormation } from "@/types/formation";
-import Formation from "@/components/Formation";
+import SingleFormationEditor from "@/components/SingleFormationEditor";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import useClickSound from "@/lib/useClickSound";
 
@@ -67,6 +67,16 @@ function FormationsPageContent() {
     setSelectedId(saved.id);
   };
 
+  const handleUpdated = (updated?: SavedFormation) => {
+    if (!updated) {
+      void loadList();
+      return;
+    }
+    setList((prev) =>
+      prev.map((item) => (item.id === updated.id ? updated : item))
+    );
+  };
+
   const handleCreateShare = async () => {
     if (!selectedId || isCreatingShare) return;
     setIsCreatingShare(true);
@@ -117,6 +127,7 @@ function FormationsPageContent() {
 
   const selectedFormation =
     selectedId === "" ? null : list.find((f) => f.id === selectedId) || null;
+  const isOwner = selectedFormation?.accessRole !== "collaborator";
 
   useEffect(() => {
     if (selectedId === "") {
@@ -176,32 +187,43 @@ function FormationsPageContent() {
               {list.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
+                  {f.accessRole === "collaborator" ? " (共同編集)" : ""}
                 </option>
               ))}
             </select>
             {selectedId && (
               <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    play();
-                    void handleCreateShare();
-                  }}
-                  className="tap-action w-full sm:w-auto px-3 py-2 rounded border border-emerald-300/55 bg-emerald-500/25 text-emerald-100 hover:bg-emerald-500/35"
-                  disabled={isCreatingShare}
+                <Link
+                  href={`/formations/collaborative/${selectedId}`}
+                  className="tap-action w-full sm:w-auto px-3 py-2 rounded border border-cyan-300/55 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 text-center"
                 >
-                  {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    play();
-                    handleDelete(Number(selectedId));
-                  }}
-                  className="tap-action w-full sm:w-auto px-3 py-2 rounded border border-red-300/55 bg-red-500/25 text-red-100 hover:bg-red-500/35"
-                >
-                  Delete
-                </button>
+                  共同編集ページを開く
+                </Link>
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      play();
+                      void handleCreateShare();
+                    }}
+                    className="tap-action w-full sm:w-auto px-3 py-2 rounded border border-emerald-300/55 bg-emerald-500/25 text-emerald-100 hover:bg-emerald-500/35"
+                    disabled={isCreatingShare}
+                  >
+                    {isCreatingShare ? "共有リンク作成中..." : "共有リンクを作成"}
+                  </button>
+                )}
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      play();
+                      handleDelete(Number(selectedId));
+                    }}
+                    className="tap-action w-full sm:w-auto px-3 py-2 rounded border border-red-300/55 bg-red-500/25 text-red-100 hover:bg-red-500/35"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -227,13 +249,26 @@ function FormationsPageContent() {
               )}
             </div>
           )}
-          {selectedFormation && (
-            <Formation
+          {selectedFormation?.accessRole === "collaborator" ? (
+            <section className="rounded-xl border border-cyan-300/20 bg-slate-950/35 p-4">
+              <h2 className="text-lg font-semibold text-cyan-50">共同編集フォーメーション</h2>
+              <p className="mt-2 text-sm text-cyan-100/75">
+                このフォーメーションは共同編集専用ページで操作します。
+              </p>
+              <Link
+                href={`/formations/collaborative/${selectedFormation.id}`}
+                className="mt-4 inline-flex rounded border border-cyan-300/40 px-4 py-2 text-cyan-100 hover:bg-cyan-300/10"
+              >
+                共同編集ページへ移動
+              </Link>
+            </section>
+          ) : selectedFormation ? (
+            <SingleFormationEditor
               initialFormation={selectedFormation}
               onSaved={handleSaved}
-              onUpdated={loadList}
+              onUpdated={handleUpdated}
             />
-          )}
+          ) : null}
         </>
       )}
     </main>

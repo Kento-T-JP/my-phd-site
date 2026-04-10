@@ -18,6 +18,7 @@ import { resolveSessionUserId } from '@/lib/sessionUser';
 import type { Prisma } from '@prisma/client';
 import { cacheTag } from '@/lib/cacheTags';
 import { revalidateTagSafe } from '@/lib/cacheRuntime';
+import { getFormationScopeOwnerId } from '@/lib/formationAccess';
 
 const shouldProfileApi = () =>
   /^(1|true|on|yes)$/i.test(String(process.env.DEBUG_API_PERF ?? ''));
@@ -76,6 +77,7 @@ export async function GET(req: Request) {
     includeImageParam === null ? !lite : includeImageParam === '1';
   const includeExtra =
     includeExtraParam === null ? !lite : includeExtraParam === '1';
+  const formationIdParam = Number(searchParams.get('formationId') ?? '');
   const q = (searchParams.get('q') ?? '').trim();
   const rosterIds = (searchParams.get('rosterIds') ?? '')
     .split(',')
@@ -94,7 +96,13 @@ export async function GET(req: Request) {
   marker = performance.now();
   const { userId } = await resolveSessionUserId(session);
   profileStep('resolveSessionUserId', marker);
-  const uid = Number.isFinite(userId) ? Number(userId) : undefined;
+  let uid = Number.isFinite(userId) ? Number(userId) : undefined;
+  if (uid && Number.isFinite(formationIdParam) && formationIdParam > 0) {
+    marker = performance.now();
+    const scopedOwnerId = await getFormationScopeOwnerId(formationIdParam, uid);
+    profileStep('getFormationScopeOwnerId', marker);
+    uid = scopedOwnerId ?? uid;
+  }
   if (!uid) {
     const totalMs = Number((performance.now() - profileStart).toFixed(2));
     if (profileEnabled) {
