@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Types } from "ably";
+import type { Message, PresenceMessage } from "ably";
 import { getAblyClient } from "@/lib/ablyClient";
 import type { CollaborativeFormationDraft, SavedFormation } from "@/types/formation";
 
@@ -35,7 +35,7 @@ function getAblyErrorMessage(error: unknown, fallback: string) {
 }
 
 function mapPresenceMembers(
-  members: Types.PresenceMessage[]
+  members: PresenceMessage[]
 ): NonNullable<SavedFormation["activeEditors"]> {
   const seen = new Set<string>();
   return members
@@ -164,7 +164,7 @@ export function useFormationCollaboration({
       try {
         const members = await stateChannel.presence.get();
         if (!isCancelled) {
-          setActiveEditors(mapPresenceMembers(members as Types.PresenceMessage[]));
+          setActiveEditors(mapPresenceMembers(members as PresenceMessage[]));
         }
       } catch {
         if (!isCancelled) {
@@ -193,7 +193,7 @@ export function useFormationCollaboration({
       }
     };
 
-    const onDraft = (message: Types.Message) => {
+    const onDraft = (message: Message) => {
       const payload = message.data as CollaborativeFormationDraft;
       if (!payload || payload.clientInstanceId === draftPayload.clientInstanceId) {
         return;
@@ -210,7 +210,7 @@ export function useFormationCollaboration({
       remoteDraftHandlerRef.current(payload);
     };
 
-    const onPlayerMoved = (message: Types.Message) => {
+    const onPlayerMoved = (message: Message) => {
       const payload = message.data as PlayerMovedEvent;
       if (!payload || payload.clientInstanceId === draftPayload.clientInstanceId) {
         return;
@@ -227,7 +227,7 @@ export function useFormationCollaboration({
       });
     };
 
-    const onCollaboratorsUpdated = (message: Types.Message) => {
+    const onCollaboratorsUpdated = (message: Message) => {
       const payload = message.data as CollaboratorUpdateEvent;
       setCollaborators(payload.collaborators ?? []);
       setCollaboratorInput((payload.collaborators ?? []).map((item) => item.email).join(", "));
