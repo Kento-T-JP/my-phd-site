@@ -8,7 +8,7 @@ import {
   getFormationActor,
   mapFormationForClient,
 } from "@/lib/formationAccess";
-import { publishFormationEvent } from "@/lib/formationRealtime";
+import { publishFormationAblyEvent } from "@/lib/ablyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -173,22 +173,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   marker = performance.now();
-  await prisma.formationEditSession.upsert({
-    where: {
-      formationId_userId: {
-        formationId,
-        userId: actor.userId,
-      },
-    },
-    update: { lastSeenAt: new Date() },
-    create: {
-      formationId,
-      userId: actor.userId,
-    },
-  });
-  profileStep("prisma.formationEditSession.upsert", marker);
-
-  marker = performance.now();
   await prisma.formation.update({
     where: { id: formationId },
     data: {
@@ -202,16 +186,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const hydrated = await getAccessibleFormation(formationId, actor.userId);
   profileStep("getAccessibleFormation", marker);
   const mapped = mapFormationForClient(hydrated, actor.userId);
-
-  if (mapped) {
-    publishFormationEvent(formationId, {
-      type: "formation-updated",
-      formationId,
-      formation: mapped,
-      actorUserId: actor.userId,
-      occurredAt: new Date().toISOString(),
-    });
-  }
 
   const totalMs = Number((performance.now() - profileStart).toFixed(2));
   return NextResponse.json(mapped, {
@@ -242,10 +216,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   await prisma.formation.delete({ where: { id: formationId } });
-  publishFormationEvent(formationId, {
-    type: "formation-updated",
+  await publishFormationAblyEvent(formationId, "formation-deleted", {
     formationId,
-    formation: null,
     actorUserId: actor.userId,
     occurredAt: new Date().toISOString(),
   });

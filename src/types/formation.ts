@@ -57,3 +57,11 @@ export interface SavedFormation {
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
+
+export interface CollaborativeFormationDraft {
+  name: string;
+  positions: SavedFormation["positions"];
+  clientInstanceId: string;
+  actorUserId?: number;
+  occurredAt?: string;
+}

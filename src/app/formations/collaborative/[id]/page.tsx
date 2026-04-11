@@ -81,7 +81,7 @@ export default function CollaborativeFormationPage() {
         <div>
           <h1 className="text-xl font-bold">Collaborative Formation</h1>
           <p className="text-sm text-cyan-100/75">
-            共同編集専用ページです。変更は自動で同期されます。
+            共同編集専用ページです。変更はリアルタイム共有されますが、通常フォーメーションとして保存するまで恒久保存はされません。
           </p>
         </div>
         <Link

@@ -1,6 +1,6 @@
 import prisma from "@/lib/db";
 import { getAccessibleFormation, getFormationActor, mapFormationForClient } from "@/lib/formationAccess";
-import { publishFormationEvent } from "@/lib/formationRealtime";
+import { publishFormationAblyEvent } from "@/lib/ablyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -70,11 +70,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const accessible = await getAccessibleFormation(formationId, actor.userId);
   const mapped = mapFormationForClient(accessible, actor.userId);
-  publishFormationEvent(formationId, {
-    type: "formation-updated",
+  await publishFormationAblyEvent(formationId, "collaborators-updated", {
     formationId,
-    formation: mapped,
     actorUserId: actor.userId,
+    collaborators: mapped?.collaborators ?? [],
     occurredAt: new Date().toISOString(),
   });
   return Response.json(mapped);

@@ -1,48 +1,102 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { SavedFormation } from "@/types/formation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Types } from "ably";
+import { getAblyClient } from "@/lib/ablyClient";
+import type { CollaborativeFormationDraft, SavedFormation } from "@/types/formation";
 
-type RealtimeFormationMessage =
-  | {
-      type: "formation-updated";
-      formationId: number;
-      formation: SavedFormation | null;
-      actorUserId: number;
-      occurredAt: string;
-    }
-  | {
-      type: "presence";
-      formationId: number;
-      editors: NonNullable<SavedFormation["activeEditors"]>;
-      occurredAt: string;
-    };
+type CollaboratorUpdateEvent = {
+  collaborators: NonNullable<SavedFormation["collaborators"]>;
+  occurredAt: string;
+};
+
+type PlayerMovedEvent = {
+  playerId: number;
+  top: number;
+  left: number;
+  actorUserId?: number;
+  clientInstanceId: string;
+  occurredAt: string;
+};
+
+function getAblyErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (
+    typeof error === "object" &&
+    error &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function mapPresenceMembers(
+  members: Types.PresenceMessage[]
+): NonNullable<SavedFormation["activeEditors"]> {
+  const seen = new Set<string>();
+  return members
+    .filter((member) => {
+      const key = `${member.clientId}:${member.connectionId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((member) => ({
+      id: Number(String(member.clientId).replace("user-", "")) || 0,
+      name:
+        typeof member.data === "object" &&
+        member.data &&
+        "name" in member.data &&
+        typeof member.data.name === "string"
+          ? member.data.name
+          : null,
+      email:
+        typeof member.data === "object" &&
+        member.data &&
+        "email" in member.data &&
+        typeof member.data.email === "string"
+          ? member.data.email
+          : String(member.clientId),
+      lastSeenAt: new Date(member.timestamp ?? Date.now()),
+    }));
+}
 
 export function useFormationCollaboration({
   enabled,
   formationId,
+  isDragging,
   sessionUserId,
+  sessionUserName,
+  sessionUserEmail,
   initialCollaborators,
   initialActiveEditors,
-  onFormationReceived,
+  draftPayload,
+  onRemotePlayerMove,
+  onRemoteDraftReceived,
   onDeleted,
-  buildPersistedPayload,
 }: {
   enabled: boolean;
   formationId?: number;
+  isDragging: boolean;
   sessionUserId?: string;
+  sessionUserName?: string | null;
+  sessionUserEmail?: string | null;
   initialCollaborators?: NonNullable<SavedFormation["collaborators"]>;
   initialActiveEditors?: NonNullable<SavedFormation["activeEditors"]>;
-  onFormationReceived: (formation: SavedFormation) => void;
+  draftPayload: CollaborativeFormationDraft;
+  onRemotePlayerMove: (event: {
+    playerId: number;
+    top: number;
+    left: number;
+  }) => void;
+  onRemoteDraftReceived: (draft: CollaborativeFormationDraft) => void;
   onDeleted: () => void;
-  buildPersistedPayload: () => {
-    name: string;
-    positions: SavedFormation["positions"];
-    clientInstanceId: string;
-  };
 }) {
   const [syncStatus, setSyncStatus] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
   const [collaboratorInput, setCollaboratorInput] = useState("");
   const [collaborationStatus, setCollaborationStatus] = useState("");
   const [isSavingCollaborators, setIsSavingCollaborators] = useState(false);
@@ -52,75 +106,309 @@ export function useFormationCollaboration({
   const [collaborators, setCollaborators] = useState<
     NonNullable<SavedFormation["collaborators"]>
   >(initialCollaborators ?? []);
-  const skipNextSyncRef = useRef(true);
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextPublishRef = useRef(true);
+  const lastPublishedSignatureRef = useRef("");
+  const publishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMoveRef = useRef<PlayerMovedEvent | null>(null);
+  const lastMoveSentAtRef = useRef(0);
+  const remotePlayerMoveHandlerRef = useRef(onRemotePlayerMove);
+  const remoteDraftHandlerRef = useRef(onRemoteDraftReceived);
+  const deletedHandlerRef = useRef(onDeleted);
+
+  const stateChannelName = useMemo(
+    () => (formationId ? `formation-state:${formationId}` : ""),
+    [formationId]
+  );
+  const moveChannelName = useMemo(
+    () => (formationId ? `formation-move:${formationId}` : ""),
+    [formationId]
+  );
+  const draftSignature = useMemo(
+    () =>
+      JSON.stringify({
+        name: draftPayload.name,
+        positions: draftPayload.positions,
+      }),
+    [draftPayload.name, draftPayload.positions]
+  );
 
   useEffect(() => {
     setCollaborators(initialCollaborators ?? []);
     setActiveEditors(initialActiveEditors ?? []);
     setCollaboratorInput((initialCollaborators ?? []).map((item) => item.email).join(", "));
-    skipNextSyncRef.current = true;
+    skipNextPublishRef.current = true;
   }, [initialActiveEditors, initialCollaborators]);
 
   useEffect(() => {
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+    remotePlayerMoveHandlerRef.current = onRemotePlayerMove;
+  }, [onRemotePlayerMove]);
+
+  useEffect(() => {
+    remoteDraftHandlerRef.current = onRemoteDraftReceived;
+  }, [onRemoteDraftReceived]);
+
+  useEffect(() => {
+    deletedHandlerRef.current = onDeleted;
+  }, [onDeleted]);
+
+  useEffect(() => {
+    if (!enabled || !formationId || !stateChannelName || !moveChannelName) return;
+
+    const client = getAblyClient();
+    const stateChannel = client.channels.get(stateChannelName);
+    const moveChannel = client.channels.get(moveChannelName);
+    let isCancelled = false;
+
+    const refreshPresence = async () => {
+      try {
+        const members = await stateChannel.presence.get();
+        if (!isCancelled) {
+          setActiveEditors(mapPresenceMembers(members as Types.PresenceMessage[]));
+        }
+      } catch {
+        if (!isCancelled) {
+          setSyncStatus("参加者情報の取得に失敗しました");
+        }
       }
     };
-  }, []);
 
-  const syncExistingFormation = useCallback(
-    async (opts?: { immediate?: boolean }) => {
-      if (!enabled || !formationId) return null;
-      const execute = async () => {
-        setIsSyncing(true);
-        setSyncStatus("同期中…");
-        try {
-          const res = await fetch(`/api/formations/${formationId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(buildPersistedPayload()),
-          });
-          const data = (await res.json().catch(() => null)) as SavedFormation | { error?: string } | null;
-          if (!res.ok) {
-            setSyncStatus(
-              data && typeof data === "object" && "error" in data && typeof data.error === "string"
-                ? data.error
-                : "同期に失敗しました"
-            );
-            return null;
-          }
-          const updated = data as SavedFormation;
-          setCollaborators(updated.collaborators ?? []);
-          setActiveEditors(updated.activeEditors ?? []);
-          setSyncStatus("他ユーザーと同期済み");
-          return updated;
-        } catch {
-          setSyncStatus("同期に失敗しました");
-          return null;
-        } finally {
-          setIsSyncing(false);
+    const setup = async () => {
+      try {
+        await Promise.all([stateChannel.attach(), moveChannel.attach()]);
+        await stateChannel.presence.enter({
+          name: sessionUserName ?? null,
+          email: sessionUserEmail ?? `user-${sessionUserId ?? "unknown"}`,
+        });
+        await refreshPresence();
+        if (!isCancelled) {
+          setSyncStatus("共同編集に接続しました");
         }
+      } catch (error) {
+        if (!isCancelled) {
+          setSyncStatus(
+            getAblyErrorMessage(error, "共同編集への接続に失敗しました")
+          );
+        }
+      }
+    };
+
+    const onDraft = (message: Types.Message) => {
+      const payload = message.data as CollaborativeFormationDraft;
+      if (!payload || payload.clientInstanceId === draftPayload.clientInstanceId) {
+        return;
+      }
+      if (payload.actorUserId === Number(sessionUserId)) {
+        return;
+      }
+      skipNextPublishRef.current = true;
+      lastPublishedSignatureRef.current = JSON.stringify({
+        name: payload.name,
+        positions: payload.positions,
+      });
+      setSyncStatus("他ユーザーの変更を反映しました");
+      remoteDraftHandlerRef.current(payload);
+    };
+
+    const onPlayerMoved = (message: Types.Message) => {
+      const payload = message.data as PlayerMovedEvent;
+      if (!payload || payload.clientInstanceId === draftPayload.clientInstanceId) {
+        return;
+      }
+      if (payload.actorUserId === Number(sessionUserId)) {
+        return;
+      }
+      skipNextPublishRef.current = true;
+      setSyncStatus("他ユーザーが選手を移動中");
+      remotePlayerMoveHandlerRef.current({
+        playerId: payload.playerId,
+        top: payload.top,
+        left: payload.left,
+      });
+    };
+
+    const onCollaboratorsUpdated = (message: Types.Message) => {
+      const payload = message.data as CollaboratorUpdateEvent;
+      setCollaborators(payload.collaborators ?? []);
+      setCollaboratorInput((payload.collaborators ?? []).map((item) => item.email).join(", "));
+    };
+
+    const onDeletedEvent = () => {
+      setSyncStatus("この共同編集セッションは終了しました");
+      deletedHandlerRef.current();
+    };
+
+    const onPresenceChanged = () => {
+      void refreshPresence();
+    };
+
+    void setup();
+    void stateChannel.subscribe("draft-updated", onDraft);
+    void moveChannel.subscribe("player-moved", onPlayerMoved);
+    void stateChannel.subscribe("collaborators-updated", onCollaboratorsUpdated);
+    void stateChannel.subscribe("formation-deleted", onDeletedEvent);
+    void stateChannel.presence.subscribe(["enter", "leave", "update"], onPresenceChanged);
+
+    return () => {
+      isCancelled = true;
+      stateChannel.unsubscribe("draft-updated", onDraft);
+      moveChannel.unsubscribe("player-moved", onPlayerMoved);
+      stateChannel.unsubscribe("collaborators-updated", onCollaboratorsUpdated);
+      stateChannel.unsubscribe("formation-deleted", onDeletedEvent);
+      stateChannel.presence.unsubscribe(["enter", "leave", "update"], onPresenceChanged);
+      if (publishTimerRef.current) {
+        clearTimeout(publishTimerRef.current);
+        publishTimerRef.current = null;
+      }
+      if (pendingMoveTimeoutRef.current) {
+        clearTimeout(pendingMoveTimeoutRef.current);
+        pendingMoveTimeoutRef.current = null;
+      }
+      pendingMoveRef.current = null;
+      try {
+        if (stateChannel.state === "attached") {
+          void stateChannel.presence.leave().catch(() => undefined);
+        }
+      } catch {
+        // ignore cleanup failures after auth/connect errors
+      }
+    };
+  }, [
+    moveChannelName,
+    draftPayload.clientInstanceId,
+    enabled,
+    formationId,
+    sessionUserEmail,
+    sessionUserId,
+    sessionUserName,
+    stateChannelName,
+  ]);
+
+  useEffect(() => {
+    if (!enabled || !stateChannelName) return;
+    if (isDragging) {
+      if (publishTimerRef.current) {
+        clearTimeout(publishTimerRef.current);
+        publishTimerRef.current = null;
+      }
+      return;
+    }
+    if (skipNextPublishRef.current) {
+      skipNextPublishRef.current = false;
+      return;
+    }
+    if (draftSignature === lastPublishedSignatureRef.current) {
+      return;
+    }
+    if (publishTimerRef.current) {
+      clearTimeout(publishTimerRef.current);
+      publishTimerRef.current = null;
+    }
+
+    const client = getAblyClient();
+    const channel = client.channels.get(stateChannelName);
+    publishTimerRef.current = setTimeout(() => {
+      const payload = {
+        ...draftPayload,
+        occurredAt: new Date().toISOString(),
+      };
+      void channel.publish("draft-updated", payload).then(
+        () => {
+          lastPublishedSignatureRef.current = draftSignature;
+          publishTimerRef.current = null;
+          setSyncStatus("共同編集中");
+        },
+        () => {
+          publishTimerRef.current = null;
+          setSyncStatus("共同編集イベントの送信に失敗しました");
+        }
+      );
+    }, 250);
+
+    return () => {
+      if (publishTimerRef.current) {
+        clearTimeout(publishTimerRef.current);
+        publishTimerRef.current = null;
+      }
+    };
+  }, [draftPayload, draftSignature, enabled, isDragging, stateChannelName]);
+
+  const publishPlayerMove = useCallback(
+    (playerId: number, top: number, left: number) => {
+      if (!enabled || !moveChannelName) return;
+      const now = Date.now();
+      const payload: PlayerMovedEvent = {
+        playerId,
+        top,
+        left,
+        actorUserId: sessionUserId ? Number(sessionUserId) : undefined,
+        clientInstanceId: draftPayload.clientInstanceId,
+        occurredAt: new Date().toISOString(),
+      };
+      const publishNow = () => {
+        const client = getAblyClient();
+        const channel = client.channels.get(moveChannelName);
+        pendingMoveRef.current = null;
+        lastMoveSentAtRef.current = Date.now();
+        void channel.publish("player-moved", payload).catch(() => {
+          setSyncStatus("共同編集イベントの送信に失敗しました");
+        });
       };
 
-      if (opts?.immediate) {
-        if (autosaveTimerRef.current) {
-          clearTimeout(autosaveTimerRef.current);
-          autosaveTimerRef.current = null;
+      const MOVE_THROTTLE_MS = 180;
+      if (now - lastMoveSentAtRef.current >= MOVE_THROTTLE_MS) {
+        if (pendingMoveTimeoutRef.current) {
+          clearTimeout(pendingMoveTimeoutRef.current);
+          pendingMoveTimeoutRef.current = null;
         }
-        return execute();
+        publishNow();
+        return;
       }
 
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+      pendingMoveRef.current = payload;
+      if (pendingMoveTimeoutRef.current) {
+        return;
       }
-      autosaveTimerRef.current = setTimeout(() => {
-        void execute();
-      }, 500);
-      return null;
+      pendingMoveTimeoutRef.current = setTimeout(() => {
+        pendingMoveTimeoutRef.current = null;
+        const nextPayload = pendingMoveRef.current;
+        if (!nextPayload) return;
+        const client = getAblyClient();
+        const channel = client.channels.get(moveChannelName);
+        pendingMoveRef.current = null;
+        lastMoveSentAtRef.current = Date.now();
+        void channel.publish("player-moved", nextPayload).catch(() => {
+          setSyncStatus("共同編集イベントの送信に失敗しました");
+        });
+      }, MOVE_THROTTLE_MS);
     },
-    [buildPersistedPayload, enabled, formationId]
+    [draftPayload.clientInstanceId, enabled, moveChannelName, sessionUserId]
+  );
+
+  const publishDraftNow = useCallback(
+    (draft: CollaborativeFormationDraft) => {
+      if (!enabled || !stateChannelName) return;
+      const signature = JSON.stringify({
+        name: draft.name,
+        positions: draft.positions,
+      });
+      if (publishTimerRef.current) {
+        clearTimeout(publishTimerRef.current);
+        publishTimerRef.current = null;
+      }
+      lastPublishedSignatureRef.current = signature;
+      const client = getAblyClient();
+      const channel = client.channels.get(stateChannelName);
+      const payload = {
+        ...draft,
+        occurredAt: new Date().toISOString(),
+      };
+      void channel.publish("draft-updated", payload).then(
+        () => setSyncStatus("共同編集中"),
+        () => setSyncStatus("共同編集イベントの送信に失敗しました")
+      );
+    },
+    [enabled, stateChannelName]
   );
 
   const saveCollaborators = useCallback(async () => {
@@ -160,82 +448,16 @@ export function useFormationCollaboration({
     }
   }, [collaboratorInput, enabled, formationId]);
 
-  useEffect(() => {
-    if (!enabled || !formationId) return;
-    if (skipNextSyncRef.current) {
-      skipNextSyncRef.current = false;
-      return;
-    }
-    void syncExistingFormation();
-  }, [buildPersistedPayload, enabled, formationId, syncExistingFormation]);
-
-  useEffect(() => {
-    if (!enabled || !formationId) return;
-
-    const updatePresence = async (method: "POST" | "DELETE" = "POST") => {
-      try {
-        await fetch(`/api/formations/${formationId}/presence`, {
-          method,
-          keepalive: method === "DELETE",
-        });
-      } catch {
-        // ignore presence failures
-      }
-    };
-
-    void updatePresence("POST");
-    const intervalId = setInterval(() => {
-      void updatePresence("POST");
-    }, 15_000);
-
-    return () => {
-      clearInterval(intervalId);
-      void updatePresence("DELETE");
-    };
-  }, [enabled, formationId]);
-
-  useEffect(() => {
-    if (!enabled || !formationId) return;
-    const numericSessionUserId = Number(sessionUserId);
-    const source = new EventSource(`/api/formations/${formationId}/events`);
-    source.addEventListener("message", (event) => {
-      const payload = JSON.parse(event.data) as RealtimeFormationMessage;
-      if (payload.type === "presence") {
-        setActiveEditors(payload.editors ?? []);
-        return;
-      }
-      if (payload.actorUserId === numericSessionUserId) {
-        return;
-      }
-      if (!payload.formation) {
-        setSyncStatus("このフォーメーションは削除されました");
-        onDeleted();
-        return;
-      }
-      setSyncStatus("他ユーザーの変更を反映しました");
-      skipNextSyncRef.current = true;
-      setCollaborators(payload.formation.collaborators ?? []);
-      setActiveEditors(payload.formation.activeEditors ?? []);
-      onFormationReceived(payload.formation);
-    });
-    source.onerror = () => {
-      setSyncStatus("リアルタイム接続を再試行中…");
-    };
-    return () => {
-      source.close();
-    };
-  }, [enabled, formationId, onDeleted, onFormationReceived, sessionUserId]);
-
   return {
     syncStatus,
-    isSyncing,
     collaboratorInput,
     setCollaboratorInput,
     collaborationStatus,
     isSavingCollaborators,
     activeEditors,
     collaborators,
-    syncExistingFormation,
+    publishDraftNow,
+    publishPlayerMove,
     saveCollaborators,
   };
 }

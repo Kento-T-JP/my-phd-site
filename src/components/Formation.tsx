@@ -18,7 +18,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Player, PositionKey, Roster } from "@/types/player";
 import { formations } from "@/data/formations";
-import type { Formation, SavedFormation } from "@/types/formation";
+import type { CollaborativeFormationDraft, Formation, SavedFormation } from "@/types/formation";
 import PlayerFilter from "@/components/PlayerFilter";
 import MultiToggleGroup from "@/components/MultiToggleGroup";
 import useClickSound from "@/lib/useClickSound";
@@ -306,6 +306,9 @@ export default function Formation({
   const [playerPositions, setPlayerPositions] = useState<
     Record<number, { top: number; left: number }>
   >(initialFormation?.positions.playerPositions ?? {});
+  const playerPositionsRef = useRef<Record<number, { top: number; left: number }>>(
+    initialFormation?.positions.playerPositions ?? {}
+  );
   const [players, setPlayers] = useState<
     (Player & { rosterPlayers?: { rosterId: number; roster?: { tournamentId: number } }[] })[]
   >([]);
@@ -324,6 +327,9 @@ export default function Formation({
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempoPulseId, setTempoPulseId] = useState<number | null>(null);
   const tempoPulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const publishPlayerMoveRef = useRef<(playerId: number, top: number, left: number) => void>(
+    () => undefined
+  );
   const clientInstanceIdRef = useRef(
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
@@ -446,6 +452,10 @@ export default function Formation({
   useEffect(() => {
     setInitialFormation(initialFormationProp);
   }, [initialFormationProp]);
+
+  useEffect(() => {
+    playerPositionsRef.current = playerPositions;
+  }, [playerPositions]);
 
   useEffect(() => {
     return () => {
@@ -696,14 +706,25 @@ export default function Formation({
     const scheduleUpdate = () => {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
-        setPlayerPositions((prev) => {
-          const prevPos = prev[dragging!.id];
-          // 位置がほぼ変わらない（0.2% 未満）の場合は更新しない
-          if (prevPos && Math.abs(prevPos.left - nextLeft) < 0.2 && Math.abs(prevPos.top - nextTop) < 0.2) {
-            return prev;
-          }
-          return { ...prev, [dragging!.id]: { top: nextTop, left: nextLeft } };
-        });
+        const prevPos = playerPositionsRef.current[dragging!.id];
+        // 位置がほぼ変わらない（0.2% 未満）の場合は更新しない
+        if (
+          prevPos &&
+          Math.abs(prevPos.left - nextLeft) < 0.2 &&
+          Math.abs(prevPos.top - nextTop) < 0.2
+        ) {
+          rafId = null;
+          return;
+        }
+        if (canCollaborate && !screenshotMode) {
+          publishPlayerMoveRef.current(dragging!.id, nextTop, nextLeft);
+        }
+        const nextPositions = {
+          ...playerPositionsRef.current,
+          [dragging!.id]: { top: nextTop, left: nextLeft },
+        };
+        playerPositionsRef.current = nextPositions;
+        setPlayerPositions(nextPositions);
         rafId = null;
       });
     };
@@ -732,7 +753,7 @@ export default function Formation({
       window.removeEventListener("pointercancel", up);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [dragging]);
+  }, [canCollaborate, dragging, screenshotMode]);
 
   /* ───────── swap (bench ↔ field) ───────── */
   const handleClick = (id: number, isBench: boolean) => {
@@ -791,32 +812,58 @@ export default function Formation({
           /* --- Bench↔Bench: swap order in benchOrder --- */
           const a = selectedId;
           const b = id;
-          setBenchOrder((prev) => {
-            const arr = [...prev];
-            const ia = arr.indexOf(a);
-            const ib = arr.indexOf(b);
-            if (ia !== -1 && ib !== -1) {
-              [arr[ia], arr[ib]] = [arr[ib], arr[ia]];
-            }
-            return arr;
-          });
+          const nextBenchOrder = [...benchOrder];
+          const ia = nextBenchOrder.indexOf(a);
+          const ib = nextBenchOrder.indexOf(b);
+          if (ia !== -1 && ib !== -1) {
+            [nextBenchOrder[ia], nextBenchOrder[ib]] = [nextBenchOrder[ib], nextBenchOrder[ia]];
+          }
+          setBenchOrder(nextBenchOrder);
+          if (canCollaborate && !screenshotMode) {
+            publishDraftNow(
+              buildCollaborativeDraft({
+                positions: {
+                  lineupOrder,
+                  benchOrder: nextBenchOrder,
+                  benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+                  offBenchSize: normalizeOffBenchSize(offBenchLimit, DEFAULT_OFF_BENCH_LIMIT),
+                  playerPositions,
+                  baseFormationName: formation.name,
+                },
+              })
+            );
+          }
         } else {
           /* --- Field↔Field: swap coordinates --- */
-          setPlayerPositions((prev) => {
-            const defaults = buildDefaultPositionMap(
-              lineupOrder,
-              formation,
-              adaptiveOffsetStep,
-              adjustBaseLeft
+          const defaults = buildDefaultPositionMap(
+            lineupOrder,
+            formation,
+            adaptiveOffsetStep,
+            adjustBaseLeft
+          );
+          const posA = playerPositionsRef.current[selectedId] ?? defaults[selectedId];
+          const posB = playerPositionsRef.current[id] ?? defaults[id];
+          const nextPositions = {
+            ...playerPositionsRef.current,
+            [selectedId]: posB,
+            [id]: posA,
+          };
+          playerPositionsRef.current = nextPositions;
+          setPlayerPositions(nextPositions);
+          if (canCollaborate && !screenshotMode) {
+            publishDraftNow(
+              buildCollaborativeDraft({
+                positions: {
+                  lineupOrder,
+                  benchOrder,
+                  benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+                  offBenchSize: normalizeOffBenchSize(offBenchLimit, DEFAULT_OFF_BENCH_LIMIT),
+                  playerPositions: nextPositions,
+                  baseFormationName: formation.name,
+                },
+              })
             );
-            const posA = prev[selectedId] ?? defaults[selectedId];
-            const posB = prev[id] ?? defaults[id];
-            return {
-              ...prev,
-              [selectedId]: posB,
-              [id]: posA,
-            };
-          });
+          }
         }
         setSelectedId(null);
         setSelectedIsBench(null);
@@ -829,31 +876,29 @@ export default function Formation({
       // swap lists
 
       /* --- update benchOrder: replace benchId with fieldId --- */
-      setBenchOrder((prev) => {
-        const arr = [...prev];
-        const idx = arr.indexOf(benchId);
-        if (idx !== -1) {
-          arr[idx] = fieldId; // 出て行く fieldId がベンチ側へ
-        }
-        return arr;
-      });
-
-      setLineupOrder((prev) => prev.map((x) => (x === fieldId ? benchId : x)));
+      const nextBenchOrder = [...benchOrder];
+      const idx = nextBenchOrder.indexOf(benchId);
+      if (idx !== -1) {
+        nextBenchOrder[idx] = fieldId;
+      }
+      const nextLineupOrder = lineupOrder.map((x) => (x === fieldId ? benchId : x));
+      setBenchOrder(nextBenchOrder);
+      setLineupOrder(nextLineupOrder);
 
       // pos swap (bench gets field coord, field coord removed)
-      setPlayerPositions((prev) => {
-        const defaults = buildDefaultPositionMap(
-          lineupOrder,
-          formation,
-          adaptiveOffsetStep,
-          adjustBaseLeft
-        );
-        const fieldPos = prev[fieldId] ?? defaults[fieldId] ?? { top: 50, left: 50 };
-        const copy = { ...prev };
-        copy[benchId] = fieldPos;
-        delete copy[fieldId];
-        return copy;
-      });
+      const defaults = buildDefaultPositionMap(
+        lineupOrder,
+        formation,
+        adaptiveOffsetStep,
+        adjustBaseLeft
+      );
+      const fieldPos =
+        playerPositionsRef.current[fieldId] ?? defaults[fieldId] ?? { top: 50, left: 50 };
+      const nextPositions = { ...playerPositionsRef.current };
+      nextPositions[benchId] = fieldPos;
+      delete nextPositions[fieldId];
+      playerPositionsRef.current = nextPositions;
+      setPlayerPositions(nextPositions);
 
       if (!customMode)
         freezeDefaults(
@@ -867,6 +912,20 @@ export default function Formation({
           adjustBaseLeft
         );
       setCustomMode(true);
+      if (canCollaborate && !screenshotMode) {
+        publishDraftNow(
+          buildCollaborativeDraft({
+            positions: {
+              lineupOrder: nextLineupOrder,
+              benchOrder: nextBenchOrder,
+              benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+              offBenchSize: normalizeOffBenchSize(offBenchLimit, DEFAULT_OFF_BENCH_LIMIT),
+              playerPositions: nextPositions,
+              baseFormationName: formation.name,
+            },
+          })
+        );
+      }
 
       setSelectedId(null);
       setSelectedIsBench(null);
@@ -904,20 +963,50 @@ export default function Formation({
       const hasCustom = Object.keys(saved.playerPositions).length > 0;
       setCustomMode(hasCustom);
       setDefaultsFrozen(hasCustom);
+      if (canCollaborate && !screenshotMode) {
+        publishDraftNow(
+          buildCollaborativeDraft({
+            name: alias.trim() || f.name,
+            positions: {
+              lineupOrder: saved.lineupOrder,
+              benchOrder: saved.benchOrder,
+              benchSize: normalizeBenchSize(saved.benchSize, benchSize),
+              offBenchSize: normalizeOffBenchSize(saved.offBenchSize, offBenchLimit),
+              playerPositions: saved.playerPositions,
+              baseFormationName: f.name,
+            },
+          })
+        );
+      }
     } else {
       const ids = makeInitialFieldIds(f, filteredPlayers);
-      setLineupOrder(Array.from(ids));
-      setBenchOrder(
-        sortBenchIdsForInitialLayout(
-          filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
-          filteredPlayers
-        )
+      const nextLineupOrder = Array.from(ids);
+      const nextBenchOrder = sortBenchIdsForInitialLayout(
+        filteredPlayers.map((p) => p.id).filter((id) => !ids.has(id)),
+        filteredPlayers
       );
+      setLineupOrder(nextLineupOrder);
+      setBenchOrder(nextBenchOrder);
       setBenchSize(benchSize);
       setOffBenchLimit(offBenchLimit);
       setPlayerPositions({});
       setCustomMode(false);
       setDefaultsFrozen(false);
+      if (canCollaborate && !screenshotMode) {
+        publishDraftNow(
+          buildCollaborativeDraft({
+            name: alias.trim() || f.name,
+            positions: {
+              lineupOrder: nextLineupOrder,
+              benchOrder: nextBenchOrder,
+              benchSize,
+              offBenchSize: offBenchLimit,
+              playerPositions: {},
+              baseFormationName: f.name,
+            },
+          })
+        );
+      }
     }
     setFormation(f);
     setSelectedId(null);
@@ -947,6 +1036,20 @@ export default function Formation({
     setDefaultsFrozen(false);
     setSelectedId(null);
     setSelectedIsBench(null);
+    if (canCollaborate && !screenshotMode) {
+      publishDraftNow(
+        buildCollaborativeDraft({
+          positions: {
+            lineupOrder: newState.lineupOrder,
+            benchOrder: newState.benchOrder,
+            benchSize: normalizeBenchSize(newState.benchSize, DEFAULT_BENCH_LIMIT),
+            offBenchSize: normalizeOffBenchSize(newState.offBenchSize, DEFAULT_OFF_BENCH_LIMIT),
+            playerPositions: newState.playerPositions,
+            baseFormationName: formation.name,
+          },
+        })
+      );
+    }
   };
 
   const handleRestoreSaved = () => {
@@ -1004,6 +1107,27 @@ export default function Formation({
     setDefaultsFrozen(false);
     setSelectedId(null);
     setSelectedIsBench(null);
+    if (canCollaborate && !screenshotMode) {
+      publishDraftNow(
+        buildCollaborativeDraft({
+          name: initialFormation.name ?? restored.name,
+          positions: {
+            lineupOrder: initialFormation.positions.lineupOrder ?? [],
+            benchOrder: initialFormation.positions.benchOrder ?? [],
+            benchSize: normalizeBenchSize(
+              initialFormation.positions.benchSize,
+              DEFAULT_BENCH_LIMIT
+            ),
+            offBenchSize: normalizeOffBenchSize(
+              initialFormation.positions.offBenchSize,
+              DEFAULT_OFF_BENCH_LIMIT
+            ),
+            playerPositions: initialFormation.positions.playerPositions ?? {},
+            baseFormationName: restored.name,
+          },
+        })
+      );
+    }
   };
 
   const buildPersistedPayload = useCallback(() => {
@@ -1031,31 +1155,95 @@ export default function Formation({
     offBenchLimit,
     playerPositions,
   ]);
+  const collaborativeDraftPayload = useMemo<CollaborativeFormationDraft>(
+    () => ({
+      ...buildPersistedPayload(),
+      actorUserId: session?.user?.id ? Number(session.user.id) : undefined,
+    }),
+    [buildPersistedPayload, session?.user?.id]
+  );
   const {
     syncStatus,
-    isSyncing,
     collaboratorInput,
     setCollaboratorInput,
     collaborationStatus,
     isSavingCollaborators,
     activeEditors,
     collaborators,
-    syncExistingFormation,
+    publishDraftNow,
+    publishPlayerMove,
     saveCollaborators,
   } = useFormationCollaboration({
     enabled: canCollaborate && !screenshotMode,
     formationId: initialFormation?.id,
+    isDragging: Boolean(dragging),
     sessionUserId: session?.user?.id,
+    sessionUserName: session?.user?.name,
+    sessionUserEmail: session?.user?.email,
     initialCollaborators: initialFormation?.collaborators,
     initialActiveEditors: initialFormation?.activeEditors,
-    buildPersistedPayload,
-    onFormationReceived: (received) => {
-      setInitialFormation(received);
+    draftPayload: collaborativeDraftPayload,
+    onRemotePlayerMove: ({ playerId, top, left }) => {
+      setPlayerPositions((prev) => {
+        const prevPos = prev[playerId];
+        if (
+          prevPos &&
+          Math.abs(prevPos.left - left) < 0.1 &&
+          Math.abs(prevPos.top - top) < 0.1
+        ) {
+          return prev;
+        }
+        return { ...prev, [playerId]: { top, left } };
+      });
+    },
+    onRemoteDraftReceived: (draft) => {
+      setInitialFormation((prev) => {
+        const next = {
+          ...(prev ?? initialFormationProp ?? { name: draft.name, positions: draft.positions }),
+          name: draft.name,
+          positions: draft.positions,
+        };
+        return next;
+      });
     },
     onDeleted: () => {
       onUpdated?.();
     },
   });
+  publishPlayerMoveRef.current = publishPlayerMove;
+
+  const buildCollaborativeDraft = useCallback(
+    (overrides?: {
+      name?: string;
+      positions?: CollaborativeFormationDraft["positions"];
+    }): CollaborativeFormationDraft => ({
+      name: overrides?.name ?? (alias.trim() || formation.name),
+      positions:
+        overrides?.positions ?? {
+          lineupOrder,
+          benchOrder,
+          benchSize: normalizeBenchSize(benchSize, DEFAULT_BENCH_LIMIT),
+          offBenchSize: normalizeOffBenchSize(
+            offBenchLimit,
+            DEFAULT_OFF_BENCH_LIMIT
+          ),
+          playerPositions,
+          baseFormationName: formation.name,
+        },
+      clientInstanceId: clientInstanceIdRef.current,
+      actorUserId: session?.user?.id ? Number(session.user.id) : undefined,
+    }),
+    [
+      alias,
+      benchOrder,
+      benchSize,
+      formation.name,
+      lineupOrder,
+      offBenchLimit,
+      playerPositions,
+      session?.user?.id,
+    ]
+  );
 
   const handleSave = async () => {
     play();
@@ -1065,6 +1253,7 @@ export default function Formation({
     }
     const name = alias.trim() || formation.name;
     if (
+      !isCollaborativeMode &&
       initialFormation?.id &&
       name.toLowerCase() === (initialFormation.name ?? "").trim().toLowerCase()
     ) {
@@ -1084,8 +1273,10 @@ export default function Formation({
       });
       if (res.ok) {
         const saved = (await res.json()) as SavedFormation;
-        alert("保存しました");
-        startTransition(() => setInitialFormation(saved));
+        alert(isCollaborativeMode ? "通常フォーメーションとして保存しました" : "保存しました");
+        if (!isCollaborativeMode) {
+          startTransition(() => setInitialFormation(saved));
+        }
         onSaved?.(saved);
       } else {
         const data = await res.json();
@@ -1107,26 +1298,25 @@ export default function Formation({
 
   const handleUpdate = async () => {
     play();
+    if (isCollaborativeMode) {
+      return;
+    }
     if (!session || !initialFormation?.id) {
       alert("更新するフォーメーションがありません");
       return;
     }
     let updated: SavedFormation | null = null;
-    if (isCollaborativeMode) {
-      updated = await syncExistingFormation({ immediate: true });
-    } else {
-      try {
-        const res = await fetch(`/api/formations/${initialFormation.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildPersistedPayload()),
-        });
-        if (res.ok) {
-          updated = (await res.json()) as SavedFormation;
-        }
-      } catch {
-        updated = null;
+    try {
+      const res = await fetch(`/api/formations/${initialFormation.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPersistedPayload()),
+      });
+      if (res.ok) {
+        updated = (await res.json()) as SavedFormation;
       }
+    } catch {
+      updated = null;
     }
     if (!updated) {
       alert("更新に失敗しました");
@@ -1455,7 +1645,7 @@ export default function Formation({
                       value={alias}
                       onChange={(e) => setAlias(e.target.value)}
                     />
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className={`grid grid-cols-1 gap-2 ${isCollaborativeMode ? "" : "sm:grid-cols-2"}`}>
                       <button
                         type="button"
                         onClick={handleSave}
@@ -1468,23 +1658,22 @@ export default function Formation({
                             保存中…
                           </span>
                         ) : (
-                          initialFormation?.id ? "別名で保存" : "保存"
+                          isCollaborativeMode
+                            ? "通常フォーメーションとして保存"
+                            : initialFormation?.id
+                              ? "別名で保存"
+                              : "保存"
                         )}
                       </button>
-                      {initialFormation?.id ? (
+                      {!isCollaborativeMode && initialFormation?.id ? (
                         <button
                           type="button"
                           onClick={handleUpdate}
-                          disabled={isSyncing}
-                          className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full disabled:opacity-50"
+                          className="tap-action px-4 py-2 bg-green-600 text-white rounded w-full"
                         >
-                          {isCollaborativeMode
-                            ? isSyncing
-                              ? "同期中…"
-                              : "今すぐ同期"
-                            : "更新"}
+                          更新
                         </button>
-                      ) : (
+                      ) : !isCollaborativeMode ? (
                         <Link
                           href={screenshotHref}
                           aria-disabled={!initialFormation?.id}
@@ -1501,9 +1690,9 @@ export default function Formation({
                         >
                           Screenshot
                         </Link>
-                      )}
+                      ) : null}
                     </div>
-                    {initialFormation?.id && (
+                    {initialFormation?.id && !isCollaborativeMode && (
                       <>
                         <Link
                           href={screenshotHref}
@@ -1521,12 +1710,12 @@ export default function Formation({
                         >
                           Screenshot
                         </Link>
-                        {isCollaborativeMode && (
-                          <p className="text-xs text-cyan-100/75">
-                            {syncStatus || "共同編集画面では変更が自動同期されます"}
-                          </p>
-                        )}
                       </>
+                    )}
+                    {isCollaborativeMode && (
+                      <p className="text-xs text-cyan-100/75">
+                        {syncStatus || "共同編集ページでは変更はその場限りで共有され、保存はされません"}
+                      </p>
                     )}
                   </>
                 ) : (

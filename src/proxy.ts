@@ -6,7 +6,7 @@ const ContentSecurityPolicy = `
   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
   style-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
   img-src 'self' data: blob: https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
-  connect-src 'self' https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
+  connect-src 'self' https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://rest.ably.io https://realtime.ably.io https://*.ably-realtime.com wss://realtime.ably.io wss://*.ably-realtime.com;
   font-src 'self';
   frame-src 'self' https://www.google.com https://www.recaptcha.net;
 `;
@@ -80,6 +80,7 @@ export async function proxy(req: NextRequest) {
       '/share',
       '/api/formation-shares',
       '/api/cron',
+      '/api/realtime',
       '/api/auth',
       '/api/debug-session',
       '/api/auth/callback/credentials',
@@ -87,6 +88,7 @@ export async function proxy(req: NextRequest) {
     const stageAllowedPaths = [
       '/login',
       '/access-status',
+      '/api/realtime',
       '/api/auth',
       '/api/debug-session',
       '/api/auth/callback/credentials',
@@ -126,6 +128,7 @@ export async function proxy(req: NextRequest) {
       '/share',
       '/api/formation-shares',
       '/api/cron',
+      '/api/realtime',
       '/contact',
       '/api/auth',
       '/api/register',
