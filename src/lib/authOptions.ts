@@ -34,6 +34,19 @@ const isGateEnabled = (value?: string): boolean => {
   return !['false', '0', 'off', 'no'].includes(normalized);
 };
 
+const isFeatureEnabled = (value: string | undefined, defaultValue: boolean): boolean => {
+  if (!value) return defaultValue;
+  const normalized = value.trim().toLowerCase();
+  if (['false', '0', 'off', 'no', 'disabled'].includes(normalized)) return false;
+  if (['true', '1', 'on', 'yes', 'enabled'].includes(normalized)) return true;
+  return defaultValue;
+};
+
+export const isGoogleAuthEnabled = isFeatureEnabled(
+  process.env.GOOGLE_AUTH_ENABLED,
+  false,
+);
+
 const isValidIntId = (value: number): boolean =>
   Number.isSafeInteger(value) && value > 0 && value <= 2147483647;
 
@@ -132,15 +145,19 @@ export const authOptions: NextAuthOptions = {
     },
   },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      authorization: {
-        params: {
-          prompt: 'select_account',
-        },
-      },
-    }),
+    ...(isGoogleAuthEnabled
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+            authorization: {
+              params: {
+                prompt: 'select_account',
+              },
+            },
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {

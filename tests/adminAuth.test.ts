@@ -9,6 +9,8 @@ let prisma: any;
 
 describe("admin authentication", () => {
   beforeEach(async () => {
+    vi.resetModules();
+    delete process.env.GOOGLE_AUTH_ENABLED;
     const db = await import("@/lib/prisma");
     prisma = db.default;
     prisma.user.findUnique.mockReset();
@@ -31,5 +33,19 @@ describe("admin authentication", () => {
 
     const session = await options.callbacks.session({ session: { user: {} }, token });
     expect(session.user.isAdmin).toBe(true);
+  });
+
+  it("keeps Google provider disabled by default", async () => {
+    const mod = await import("../src/lib/authOptions");
+    const options = mod.authOptions as any;
+    expect(options.providers.map((provider: { id: string }) => provider.id)).not.toContain("google");
+  });
+
+  it("enables Google provider when GOOGLE_AUTH_ENABLED is true", async () => {
+    process.env.GOOGLE_AUTH_ENABLED = "true";
+    vi.resetModules();
+    const mod = await import("../src/lib/authOptions");
+    const options = mod.authOptions as any;
+    expect(options.providers.map((provider: { id: string }) => provider.id)).toContain("google");
   });
 });

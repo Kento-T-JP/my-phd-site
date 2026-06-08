@@ -71,7 +71,7 @@ Start XI (https://start-xi.com) は、サッカーのフォーメーション作
 
 ### 4. セキュリティ
 
-- NextAuth による JWT セッション管理（Google / Credentials）
+- NextAuth による JWT セッション管理（Credentials、必要に応じて Google）
 - 管理者ログイン比較に `timingSafeEqual` を使用し、比較漏洩リスクを低減
 - パスワードは `bcrypt` ハッシュで保存
 - 新規登録はメール認証必須（24時間有効トークン）
@@ -244,6 +244,7 @@ npm run build
 
 ### 認証 / SSO
 
+- `GOOGLE_AUTH_ENABLED`（`true` で Google 認証を有効化、既定は無効）
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `NEXTAUTH_DEBUG`（任意、通常 `false`）
