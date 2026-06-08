@@ -1,6 +1,6 @@
 # Start XI
 
-Start XI は、サッカーのフォーメーション作成・選手管理・大会/メンバーリスト管理を一体化した Web アプリです。  
+Start XI (https://start-xi.com) は、サッカーのフォーメーション作成・選手管理・大会/メンバーリスト管理を一体化した Web アプリです。  
 本番運用は Vercel + Neon (PostgreSQL) を想定しています。
 
 ## 何ができるか
